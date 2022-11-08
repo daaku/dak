@@ -24,11 +24,10 @@
   [ctx & children]
   #[:header
     [:h1 children]
-    [:nav
-     [:ul
-      [:li [:a {:href "#/"} "Home"]]
-      [:li [:a {:href "#/about"} "About"]]
-      [:li [:a {:href (today-path)} "Today"]]]]])
+    [:nav [:ul
+           [:li [:a {:href "#/"} "Home"]]
+           [:li [:a {:href "#/about"} "About"]]
+           [:li [:a {:href (today-path)} "Today"]]]]])
 
 (defn- render-quantity [q]
   (let [qs (quantity-string q)]
