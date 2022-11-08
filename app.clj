@@ -38,20 +38,20 @@
                         {:label "Carb"
                          :amount (or (?. summary :macros :carb :amount) 0)}]})]
     #[:svg {:viewBox (:viewBox pie)}
-      (map (fn [{:keys [d fill label title]}]
-             #[:<>
-               [:path {:d d :fill fill} [:title title]]
-               [:text {:x label.x :y label.y :fill "#fff"
-                       :font-size "2.5rem" :font-weight 700
-                       :dominant-baseline "middle" :text-anchor "middle"}
-                title]])
-           (.paths p))]))
+      (.map (p.paths)
+            (fn [{:keys [d fill label title]}]
+              #[:<>
+                [:path {:d d :fill fill} [:title title]]
+                [:text {:x label.x :y label.y :fill "#fff"
+                        :font-size "2.5rem" :font-weight 700
+                        :dominant-baseline "middle" :text-anchor "middle"}
+                 title]]))]))
 
 (defn- render-missing [missing]
   (when (pos? missing.length)
     #[:<>
       [:h4 "Missing Nutrition Data"]
-      [:ul (map #([:li %]) missing)]]))
+      [:ul (missing.map #([:li %]))]]))
 
 (defn- render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
@@ -59,9 +59,8 @@
         summary (summarizeMacros ctx.db recipe)]
     #[:<>
       [site-header ctx "Plan for " (date.toDateString)]
-      [:div [:div [:ul (map #(#[:li (title-case %.label)
-                                [render-quantity %.quantity]])
-                            recipe.items)
+      [:div [:div [:ul (recipe.items.map #(#[:li (title-case %.label)
+                                             [render-quantity %.quantity]]))
                    [render-missing summary.missing]]
              [:div [render-macros summary]
               [render-pie summary]]]]]))
