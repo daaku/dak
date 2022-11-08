@@ -6,19 +6,22 @@
                                summarizeMacros Summary Unit]]
         ["./pie.js" :refer [Pie]])
 
+; Janky title case.
 (defn- title-case [s]
   (-> s
       (.split " ")
       (.map #(%.replace (. % 0) (.toUpperCase (. % 0))))
       (.join " ")))
 
-; Make the path for today's plan.
-(defn- today-path []
+(defn- today-path
+  "Make the path for today's plan."
+  []
   (let [d (Date.)]
     (str "#/date/" (d.getFullYear) "/" (inc (d.getMonth)) "/" (d.getDate))))
 
-; Render the top level site header.
-(defn- site-header [ctx & children]
+(defn- site-header
+  "Render the top level site header."
+  [ctx & children]
   #[:header
     [:h1 children]
     [:nav
