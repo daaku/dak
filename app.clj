@@ -58,7 +58,7 @@
         recipe (.findDay (:db ctx) date)
         summary (summarizeMacros (:db ctx) recipe)]
     #[:<>
-      [site-header p.ctx "Plan for " (.toDateString date)]
+      [site-header ctx "Plan for " (.toDateString date)]
       [:div [:div [:ul (map (fn [r]
                               #[:li (title-case (:label r))
                                 [render-quantity (:quantity r)]])
@@ -110,13 +110,12 @@
       [:div "Tell us more."]]))
 
 (defn- make-handler [component ctx]
-  (fn [params]
-    (-> (.getElementById document "root")
-        (.replaceChildren #[component ctx params]))))
+  (let [root (.getElementById document "root")]
+    #(.replaceChildren root #[component ctx %])))
 
 (defn@ main [fs]
   (let [db (DB. fs "../data/")
-        auth @(Auth.new {:apiKey __FIREBASE_API_KEY__})
+        auth @(.new Auth {:apiKey __FIREBASE_API_KEY__})
         router (Router.)
         ctx {:db db :auth auth :router router}]
     (.on router "#/" (make-handler home ctx))
