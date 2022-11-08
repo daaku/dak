@@ -51,7 +51,7 @@
   (when (pos? missing.length)
     #[:<>
       [:h4 "Missing Nutrition Data"]
-      [:ul (missing.map #([:li %]))]]))
+      [:ul (missing.map #(#[:li %]))]]))
 
 (defn- render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
