@@ -32,11 +32,11 @@
 
 (defn- render-pie [summary]
   (let [p (Pie. {:data [{:label "Protein"
-                         :amount (or (?. summary :macros :protein :amount) 0)}
+                         :amount (or summary.macros?.protein?.amount 0)}
                         {:label "Fat"
-                         :amount (or (?. summary :macros :fat :amount) 0)}
+                         :amount (or summary.macros?.fat?.amount 0)}
                         {:label "Carb"
-                         :amount (or (?. summary :macros :carb :amount) 0)}]})]
+                         :amount (or summary.macros?.carb?.amount 0)}]})]
     #[:svg {:viewBox (:viewBox pie)}
       (.map (p.paths)
             (fn [{:keys [d fill label title]}]
@@ -55,7 +55,7 @@
 
 (defn- render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
-        recipe (.findDay ctx.db date)
+        recipe (ctx.db.findDay date)
         summary (summarizeMacros ctx.db recipe)]
     #[:<>
       [site-header ctx "Plan for " (date.toDateString)]
@@ -67,8 +67,8 @@
 
 (defn- render-macros [summary]
   (let [row (fn [label macro indent]
-              (let [q (?. summary :macros (. Macro macro))]
-                (if (pos? (?. q :amount))
+              (let [q (?. summary.macros (. Macro macro))]
+                (if (pos? q?.amount)
                   #[:tr
                     [:th (if indent [:span label] label)]
                     [:td (quantity-string q)]])))]
@@ -84,7 +84,7 @@
               [row "Potassium" :Potassium false]]]))
 
 (defn- auth-status [ctx]
-  (if-let [email (?. ctx :auth :user :email)]
+  (if-let [email ctx?.auth?.user?.email]
     #[:p "Welcome " [:strong email]]
     #[:p "Sign in for the best experience."]))
 

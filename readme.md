@@ -3,12 +3,12 @@
 #{} Set
 defn ()
 defn* function*
-defn async
+defn@ async
 ...args
 { a, b }
-default argument values
 import
 await
+default argument values
 defmacro
 try/catch/finally
 throw
@@ -31,3 +31,5 @@ sourcemaps
 repl
 lsp
 fmt
+--
+lit-html?
