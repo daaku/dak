@@ -9,12 +9,12 @@
 (defn- title-case [s]
   (-> s
       (.split " ")
-      (.map (fn [w] (.replace w (. w 0) (.toUpperCase (. w 0)))))
+      (.map #(%.replace (. % 0) (.toUpperCase (. % 0))))
       (.join " ")))
 
 (defn- today-path []
   (let [d (Date.)]
-    (str "#/date/" (.getFullYear d) "/" (inc (.getMonth d)) "/" (.getDate d))))
+    (str "#/date/" (d.getFullYear) "/" (inc (d.getMonth)) "/" (d.getDate))))
 
 (defn- site-header [ctx & children]
   #[:header
@@ -41,49 +41,48 @@
       (map (fn [{:keys [d fill label title]}]
              #[:<>
                [:path {:d d :fill fill} [:title title]]
-               [:text {:x (:x label) :y (:y label) :fill "#fff"
+               [:text {:x label.x :y label.y :fill "#fff"
                        :font-size "2.5rem" :font-weight 700
                        :dominant-baseline "middle" :text-anchor "middle"}
                 title]])
            (.paths p))]))
 
 (defn- render-missing [missing]
-  (when (pos? (:length missing))
+  (when (pos? missing.length)
     #[:<>
       [:h4 "Missing Nutrition Data"]
       [:ul (map #([:li %]) missing)]]))
 
 (defn- render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
-        recipe (.findDay (:db ctx) date)
-        summary (summarizeMacros (:db ctx) recipe)]
+        recipe (.findDay ctx.db date)
+        summary (summarizeMacros ctx.db recipe)]
     #[:<>
-      [site-header ctx "Plan for " (.toDateString date)]
-      [:div [:div [:ul (map (fn [r]
-                              #[:li (title-case (:label r))
-                                [render-quantity (:quantity r)]])
-                            (:items recipe))
-                   [render-missing (:missing summary)]]
+      [site-header ctx "Plan for " (date.toDateString)]
+      [:div [:div [:ul (map #(#[:li (title-case %.label)
+                                [render-quantity %.quantity]])
+                            recipe.items)
+                   [render-missing summary.missing]]
              [:div [render-macros summary]
               [render-pie summary]]]]]))
 
 (defn- render-macros [summary]
   (let [row (fn [label macro indent]
-              (let [q (?. summary :macros macro)]
+              (let [q (?. summary :macros (. Macro macro))]
                 (if (pos? (?. q :amount))
                   #[:tr
                     [:th (if indent [:span label] label)]
                     [:td (quantity-string q)]])))]
     #[:table [:tbody
-              [row "Calorie" (:Calorie Macro) false]
-              [row "Fat" (:Fat Macro) false]
-              [row "Saturated Fat" (:SaturatedFat Macro) true]
-              [row "Carb" (:Carb Macro) false]
-              [row "Fiber" (:Fiber Macro) true]
-              [row "Sugar" (:Sugar Macro) true]
-              [row "Protein" (:Protein Macro) false]
-              [row "Salt" (:Salt Macro) false]
-              [row "Potassium" (:Potassium Macro) false]]]))
+              [row "Calorie" :Calorie false]
+              [row "Fat" :Fat false]
+              [row "Saturated Fat" :SaturatedFat true]
+              [row "Carb" :Carb false]
+              [row "Fiber" :Fiber true]
+              [row "Sugar" :Sugar true]
+              [row "Protein" :Protein false]
+              [row "Salt" :Salt false]
+              [row "Potassium" :Potassium false]]]))
 
 (defn- auth-status [ctx]
   (if-let [email (?. ctx :auth :user :email)]
@@ -110,12 +109,12 @@
       [:div "Tell us more."]]))
 
 (defn- make-handler [component ctx]
-  (let [root (.getElementById document "root")]
-    #(.replaceChildren root #[component ctx %])))
+  (let [root (document.getElementById "root")]
+    #(root.replaceChildren #[component ctx %])))
 
 (defn@ main [fs]
   (let [db (DB. fs "../data/")
-        auth @(.new Auth {:apiKey __FIREBASE_API_KEY__})
+        auth @(Auth.new {:apiKey __FIREBASE_API_KEY__})
         router (Router.)
         ctx {:db db :auth auth :router router}]
     (.on router "#/" (make-handler home ctx))
