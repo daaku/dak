@@ -63,11 +63,13 @@
         summary (summarizeMacros ctx.db recipe)]
     #[:<>
       [site-header ctx "Plan for " (date.toDateString)]
-      [:div [:div [:ul (recipe.items.map #(#[:li (title-case %.label)
-                                             [render-quantity %.quantity]]))
-                   [render-missing summary.missing]]
-             [:div [render-macros summary]
-              [render-pie summary]]]]]))
+      [:div
+       [:div
+        [:ul (recipe.items.map #(#[:li (title-case %.label)
+                                   [render-quantity %.quantity]]))]
+        [render-missing summary.missing]]
+       [:div [render-macros summary]
+        [render-pie summary]]]]))
 
 (defn- render-macros [summary]
   (let [row (fn [label macro indent]
