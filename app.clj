@@ -12,10 +12,12 @@
       (.map #(%.replace (. % 0) (.toUpperCase (. % 0))))
       (.join " ")))
 
+; Make the path for today's plan.
 (defn- today-path []
   (let [d (Date.)]
     (str "#/date/" (d.getFullYear) "/" (inc (d.getMonth)) "/" (d.getDate))))
 
+; Render the top level site header.
 (defn- site-header [ctx & children]
   #[:header
     [:h1 children]
@@ -26,9 +28,9 @@
       [:li [:a {:href (today-path)} "Today"]]]]])
 
 (defn- render-quantity [q]
-  (let [q (quantity-string q)]
-    (when-not (= q "")
-      #[:span q])))
+  (let [qs (quantity-string q)]
+    (when-not (= qs "")
+      #[:span qs])))
 
 (defn- render-pie [summary]
   (let [p (Pie. {:data [{:label "Protein"
