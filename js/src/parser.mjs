@@ -98,11 +98,6 @@ export function* tokens(input) {
   }
 }
 
-function* prepend(one, rest) {
-  yield one
-  yield* rest
-}
-
 function* transpileMap(input) {
   yield '{'
   for (let token of input) {
