@@ -97,3 +97,94 @@ export function* tokens(input) {
     }
   }
 }
+
+function* prepend(one, rest) {
+  yield one
+  yield* rest
+}
+
+function* transpileMap(input) {
+  yield '{'
+  for (let token of input) {
+    if (token.kind === '}') {
+      yield '}'
+      return
+    }
+    yield '['
+    yield* transpileExpr(prepend(token, input))
+    yield ']:'
+    yield* transpileExpr(input)
+    yield ','
+  }
+  throw new Error('unterminated map literal')
+}
+
+function* transpileArray(input) {
+  yield '['
+  for (let token of input) {
+    if (token.kind === ']') {
+      yield ']'
+      return
+    }
+    yield* transpileExpr(prepend(token, input))
+    yield ','
+  }
+  throw new Error('unterminated array literal')
+}
+
+function* transpileKeyword(token) {
+  yield '"'
+  yield token.value
+  yield '"'
+}
+
+function* transpileString(token) {
+  yield '"'
+  yield token.value
+  yield '"'
+}
+
+function* transpileSymbol(token) {
+  yield token.value
+}
+
+function* transpileExpr(input) {
+  let next = input.next()
+  if (next.done) {
+    return
+  }
+  let token = next.value
+  switch (token.kind) {
+    case '{':
+      yield* transpileMap(input)
+      break
+    case '[':
+      yield* transpileArray(input)
+      break
+    case 'keyword':
+      yield* transpileKeyword(token)
+      break
+    case 'string':
+      yield* transpileString(token)
+      break
+    case 'symbol':
+      yield* transpileSymbol(token)
+      break
+    default:
+      throw new Error(`unhandled token: ${token.kind}`)
+  }
+}
+
+export function* transpile(code) {
+  let input = tokens(code)
+  while (true) {
+    let empty = true
+    for (let v of transpileExpr(input)) {
+      empty = false
+      yield v
+    }
+    if (empty) {
+      return
+    }
+  }
+}
