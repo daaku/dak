@@ -1,10 +1,10 @@
-(import ["@daaku/hashnav" :refer [Router]]
-        ["@daaku/firebase-auth" :refer [Auth]]
-        ["./jsx.js" :refer [JSX]]
+(import ["@daaku/hashnav" [Router]]
+        ["@daaku/firebase-auth" :rename {Auth FirebaseAuth}]
+        ["./jsx.js" [JSX]]
         ["./index.css"]
-        ["./parser.js" :refer [DB Item Macro Quantity quantityString
-                               summarizeMacros Summary Unit]]
-        ["./pie.js" :refer [Pie]])
+        ["./parser.js" [DB Item Macro Quantity quantityString summarizeMacros
+                        Summary Unit]]
+        ["./pie.js" [Pie]])
 
 ; Janky title case.
 (fn title-case [s]
