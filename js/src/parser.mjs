@@ -118,15 +118,12 @@ function* transpileArray(input) {
   yield '['
   for (let token of input) {
     if (token.kind === ']') {
-      console.log('array loop end', token)
       yield ']'
       return
     }
-    console.log('array loop', token)
     yield* transpileExpr(input, token)
     yield ','
   }
-  console.log('before throw', input.next())
   throw new Error('unterminated array literal')
 }
 
@@ -154,7 +151,6 @@ function* transpileExpr(input, token) {
     }
     token = next.value
   }
-  console.log('expr', token)
   switch (token.kind) {
     case '{':
       yield* transpileMap(input)
@@ -178,6 +174,14 @@ function* transpileExpr(input, token) {
 }
 
 export function* transpile(code) {
-  let input = tokens(code)
-  while (yield* transpileExpr(input)) {}
+  const input = tokens(code)
+  const wrapper = {
+    next() {
+      return input.next()
+    },
+    [Symbol.iterator]() {
+      return this
+    },
+  }
+  while (yield* transpileExpr(wrapper)) {}
 }
