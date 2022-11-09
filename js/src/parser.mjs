@@ -175,6 +175,10 @@ function* transpileExpr(input, token) {
 
 export function* transpile(code) {
   const input = tokens(code)
+  // generators have cleanup logic which makes early returns void the rest of
+  // the generator run. this wrapper creates a custom iterator that disables
+  // that behavior. see:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
   const wrapper = {
     next() {
       return input.next()
