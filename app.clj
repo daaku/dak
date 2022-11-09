@@ -13,15 +13,13 @@
       (.map #(%.replace (. % 0) (.toUpperCase (. % 0))))
       (.join " ")))
 
-(fn today-path
+(fn today-path []
   "Make the path for today's plan."
-  []
   (let [d (Date.)]
     (str "#/date/" (d.getFullYear) "/" (inc (d.getMonth)) "/" (d.getDate))))
 
-(fn site-header
+(fn site-header [ctx & children]
   "Render the top level site header."
-  [ctx & children]
   #[:header
     [:h1 children]
     [:nav [:ul
