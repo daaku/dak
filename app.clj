@@ -10,7 +10,7 @@
 (fn title-case [s]
   (-> s
       (.split " ")
-      (.map #(%.replace (. % 0) (.toUpperCase (. % 0))))
+      (.map #($.replace (. $ 0) (.toUpperCase (. $ 0))))
       (.join " ")))
 
 (fn today-path []
@@ -53,7 +53,7 @@
   (when (pos? missing.length)
     #[:<>
       [:h4 "Missing Nutrition Data"]
-      [:ul (missing.map #(#[:li %]))]]))
+      [:ul (missing.map #(#[:li $]))]]))
 
 (fn render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
@@ -63,8 +63,8 @@
       [site-header ctx "Plan for " (date.toDateString)]
       [:div
        [:div
-        [:ul (recipe.items.map #(#[:li (title-case %.label)
-                                   [render-quantity %.quantity]]))]
+        [:ul (recipe.items.map #(#[:li (title-case $.label)
+                                   [render-quantity $.quantity]]))]
         [render-missing summary.missing]]
        [:div [render-macros summary]
         [render-pie summary]]]]))
@@ -113,7 +113,7 @@
 
 (fn make-handler [component ctx]
   (let [root (document.getElementById "root")]
-    #(root.replaceChildren #[component ctx %])))
+    #(root.replaceChildren #[component ctx $])))
 
 (fn@ ^:export main [fs]
   (let [db (DB. fs "../data/")
