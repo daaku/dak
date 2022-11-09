@@ -3,6 +3,12 @@
   "scripts": {
     "test": "uvu"
   },
+  "prettier": {
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
   "devDependencies": {
     "uvu": "^0.5.6"
   }
