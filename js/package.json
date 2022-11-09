@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "uvu"
+  },
+  "devDependencies": {
+    "uvu": "^0.5.6"
+  }
+}
