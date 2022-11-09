@@ -111,7 +111,7 @@ function* transpileMap(input) {
       return
     }
     yield '['
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(input, token)
     yield ']:'
     yield* transpileExpr(input)
     yield ','
@@ -123,12 +123,15 @@ function* transpileArray(input) {
   yield '['
   for (let token of input) {
     if (token.kind === ']') {
+      console.log('array loop end', token)
       yield ']'
       return
     }
-    yield* transpileExpr(prepend(token, input))
+    console.log('array loop', token)
+    yield* transpileExpr(input, token)
     yield ','
   }
+  console.log('before throw', input.next())
   throw new Error('unterminated array literal')
 }
 
@@ -148,12 +151,15 @@ function* transpileSymbol(token) {
   yield token.value
 }
 
-function* transpileExpr(input) {
-  let next = input.next()
-  if (next.done) {
-    return
+function* transpileExpr(input, token) {
+  if (!token) {
+    let next = input.next()
+    if (next.done) {
+      return false
+    }
+    token = next.value
   }
-  let token = next.value
+  console.log('expr', token)
   switch (token.kind) {
     case '{':
       yield* transpileMap(input)
@@ -173,18 +179,10 @@ function* transpileExpr(input) {
     default:
       throw new Error(`unhandled token: ${token.kind}`)
   }
+  return true
 }
 
 export function* transpile(code) {
   let input = tokens(code)
-  while (true) {
-    let empty = true
-    for (let v of transpileExpr(input)) {
-      empty = false
-      yield v
-    }
-    if (empty) {
-      return
-    }
-  }
+  while (yield* transpileExpr(input)) {}
 }
