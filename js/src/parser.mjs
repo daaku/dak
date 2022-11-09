@@ -1,22 +1,21 @@
-const single = ["(", ")", "[", "]", "{", "}", "@", "#"]
-const whitespace = [" ", "\r", "\n", "\t"]
+const single = ['(', ')', '[', ']', '{', '}', '@', '#']
+const whitespace = [' ', '\r', '\n', '\t']
 
-const err = (expected, offset) =>
-  `expected ${expected} at position ${offset}`
+const err = (expected, offset) => `expected ${expected} at position ${offset}`
 
 const readString = (input, len, start) => {
   // TODO: handle escapes
   if (start === len) {
-    throw new Error(err("complete string", start))
+    throw new Error(err('complete string', start))
   }
   let end
   let lines = 0
-  for (end = start; end<len; end++) {
+  for (end = start; end < len; end++) {
     const c = input[end]
-    if (c === "\"") {
+    if (c === '"') {
       break
     }
-    if (c === "\n") {
+    if (c === '\n') {
       lines++
     }
   }
@@ -28,7 +27,7 @@ const readSymbol = (input, len, start, expected) => {
     throw new Error(err(expected, start))
   }
   let end
-  for (end = start; end<len; end++) {
+  for (end = start; end < len; end++) {
     const c = input[end]
     if (single.includes(c) || whitespace.includes(c)) {
       break
@@ -39,8 +38,8 @@ const readSymbol = (input, len, start, expected) => {
 
 const readEOL = (input, len, start) => {
   let end
-  for (end = start; end<len; end++) {
-    if (input[end] === "\n") {
+  for (end = start; end < len; end++) {
+    if (input[end] === '\n') {
       break
     }
   }
@@ -73,25 +72,25 @@ export function* tokens(input) {
       continue
     }
     switch (c) {
-      case "\"":
-        [value, end, deltaLines] = readString(input, len, offset+1)
+      case '"':
+        ;[value, end, deltaLines] = readString(input, len, offset + 1)
         yield { kind: 'string', value, offset, line, column }
         offset = end
         line += deltaLines
         break
-      case ":":
-        [value, end] = readSymbol(input, len, offset+1, "keyword")
+      case ':':
+        ;[value, end] = readSymbol(input, len, offset + 1, 'keyword')
         yield { kind: 'keyword', value, offset, line, column }
         offset = end
         break
-      case ";":
-        [value, end] = readEOL(input, len, offset+1)
+      case ';':
+        ;[value, end] = readEOL(input, len, offset + 1)
         yield { kind: 'comment', value, offset, line, column }
         line++
         offset = end
         break
       default:
-        [value, end] = readSymbol(input, len, offset, "symbol")
+        ;[value, end] = readSymbol(input, len, offset, 'symbol')
         yield { kind: 'symbol', value, offset, line, column }
         offset = end
         break
