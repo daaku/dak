@@ -187,5 +187,8 @@ export function* transpile(code) {
       return this
     },
   }
+  // yield* each expression, and use the final return (from transpileExpr) to
+  // decide if we should continue. this return is setup to return false when the
+  // input iterator stops producing tokens.
   while (yield* transpileExpr(wrapper)) {}
 }
