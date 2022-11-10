@@ -5,21 +5,17 @@ const err = (expected, offset) => `expected ${expected} at position ${offset}`
 
 const readString = (input, len, start) => {
   // TODO: handle escapes
-  if (start === len) {
-    throw new Error(err('complete string', start))
-  }
-  let end
   let lines = 0
-  for (end = start; end < len; end++) {
-    const c = input[end]
-    if (c === '"') {
-      break
-    }
-    if (c === '\n') {
-      lines++
+  for (let end = start; end < len; end++) {
+    switch (input[end]) {
+      case '"':
+        return [input.substring(start, end), end + 1, lines]
+      case '\n':
+        lines++
+        break
     }
   }
-  return [input.substring(start, end), end + 1, lines]
+  throw new Error('unterminated string')
 }
 
 const readSymbol = (input, len, start, expected) => {
