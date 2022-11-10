@@ -111,7 +111,7 @@ function* transpileMap(input) {
     yield* transpileExpr(input)
     yield ','
   }
-  throw new Error('unterminated map literal')
+  throw new Error('unterminated map')
 }
 
 function* transpileArray(input) {
@@ -124,7 +124,34 @@ function* transpileArray(input) {
     yield* transpileExpr(input, token)
     yield ','
   }
-  throw new Error('unterminated array literal')
+  throw new Error('unterminated array')
+}
+
+function* transpileList(input) {
+  let { value: token, done } = input.next()
+  if (done) {
+    throw new Error('unterminated list')
+  }
+  switch (token.kind) {
+    case 'symbol':
+      if (token.value.startsWith('.')) {
+        yield* transpileExpr(input)
+      }
+      yield* transpileSymbol(token)
+      yield '('
+      break
+    default:
+      throw new Error(`cannot call ${token.kind}`)
+  }
+  for (let token of input) {
+    if (token.kind === ')') {
+      yield ')'
+      return
+    }
+    yield* transpileExpr(input, token)
+    yield ','
+  }
+  throw new Error('unterminated list')
 }
 
 function* transpileKeyword(token) {
@@ -152,6 +179,9 @@ function* transpileExpr(input, token) {
     token = next.value
   }
   switch (token.kind) {
+    case '(':
+      yield* transpileList(input)
+      break
     case '{':
       yield* transpileMap(input)
       break

@@ -22,6 +22,7 @@ test('transpile', () => {
     '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}',
   )
   assert.equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],]')
+  assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,},)')
 })
 
 test.run()
