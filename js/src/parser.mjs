@@ -19,7 +19,7 @@ const readString = (input, len, start) => {
       lines++
     }
   }
-  return [input.substring(start, end), end, lines]
+  return [input.substring(start, end), end + 1, lines]
 }
 
 const readSymbol = (input, len, start, expected) => {
@@ -127,6 +127,61 @@ function* transpileArray(input) {
   throw new Error('unterminated array')
 }
 
+function* expect(input, ...expected) {
+  let i = 0
+  for (const actual of input) {
+    const expect = expected[i]
+    if (actual.kind !== expect.kind) {
+      throw new Error(`expected ${expect.kind} but got ${actual.kind}`)
+    }
+    if ('value' in expect) {
+      if (actual.value !== expect.value) {
+        throw new Error(`expected ${expect.value} but got ${actual.value}`)
+      }
+    }
+    yield actual
+    i++
+    if (i === expected.length) {
+      return
+    }
+  }
+  throw new Error(`input ended while expecting ${expected[i].kind}`)
+}
+
+function discard(iterator) {
+  for (const _ of iterator) {
+  }
+}
+
+function* transpileImport(input) {
+  for (let token of input) {
+    if (token.kind === ')') {
+      return
+    }
+    if (token.kind !== '[') {
+      throw new Error('expected [')
+    }
+    yield 'import {'
+    const [importPath] = expect(input, { kind: 'string' })
+    discard(expect(input, { kind: '[' }))
+    for (let name of input) {
+      if (name.kind === ']') {
+        break
+      }
+      if (name.kind !== 'symbol') {
+        throw new Error('expecting a symbol')
+      }
+      yield* transpileSymbol(name)
+      yield ','
+    }
+    discard(expect(input, { kind: ']' }))
+    yield '} from '
+    yield* transpileString(importPath)
+    yield ';'
+  }
+  throw new Error('unterminated import')
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -134,6 +189,11 @@ function* transpileList(input) {
   }
   switch (token.kind) {
     case 'symbol':
+      switch (token.value) {
+        case 'import':
+          yield* transpileImport(input)
+          return
+      }
       if (token.value.startsWith('.')) {
         yield* transpileExpr(input)
       }

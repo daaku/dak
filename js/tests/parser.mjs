@@ -24,6 +24,13 @@ test('transpile', () => {
   assert.equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],]')
   assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,},)')
   assert.equal(tostr('(.a b {:c d})'), 'b.a({["c"]:d,},)')
+  assert.equal(
+    tostr(`
+    (import ["./a.js" [A B c-d]]
+            ["./b/c.js" [E]])
+    `),
+    `import {A,B,c-d,} from "./a.js";import {E,} from "./b/c.js";`,
+  )
 })
 
 test.run()
