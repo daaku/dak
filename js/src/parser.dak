@@ -1,0 +1,31 @@
+(def single ["(" ")" "[" "]" "{" "}" "@" "#"])
+(def whitespace [" " "\r" "\n" "\t"])
+
+(fn err [expected offset]
+  (str "expected " expected " at position " offset))
+
+(fn read-string [input len start]
+  (let [lines 0]
+    (for [end start len]
+      (case (. input end)
+        "\"" (return [(input.substring start end) (inc end) lines])
+        "\n" (set! lines (inc lines)))))
+  (throw (Error. "unterminated string")))
+
+(fn read-symbol [input len start expected]
+  (when (= start len)
+    (throw (Error. (err expected start))))
+  (let [end start]
+    (while (< end len)
+      (let [c (. input end)]
+        (if (or (single.includes c) (whitespace.includes c))
+          (break)))
+      (set! end (inc end)))
+    [(input.substring start end) end]))
+
+(fn read-eol [input len start]
+  (let [end start]
+    (while (< end len)
+      (if (= (. input end) "\n")
+        (break)))
+    [(input.substring start end) end]))
