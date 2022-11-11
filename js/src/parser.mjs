@@ -178,6 +178,16 @@ function* transpileImport(input) {
   throw new Error('unterminated import')
 }
 
+function* transpileDef(input) {
+  yield 'let '
+  const [name] = expect(input, { kind: 'symbol' })
+  yield* transpileSymbol(name)
+  yield '='
+  yield* transpileExpr(input)
+  yield ';'
+  discard(expect(input, { kind: ')' }))
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -188,6 +198,9 @@ function* transpileList(input) {
       switch (token.value) {
         case 'import':
           yield* transpileImport(input)
+          return
+        case 'def':
+          yield* transpileDef(input)
           return
       }
       if (token.value.startsWith('.')) {

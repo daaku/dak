@@ -31,6 +31,7 @@ test('transpile', () => {
     `),
     `import {A,B,c-d,} from "./a.js";import {E,} from "./b/c.js";`,
   )
+  assert.equal(tostr('(def a 42)'), 'let a=42;')
 })
 
 test.run()
