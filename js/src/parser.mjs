@@ -125,6 +125,21 @@ function* prepend(one, rest) {
   yield* rest
 }
 
+// generators have cleanup logic which makes early returns void the rest of
+// the generator run. this creates a custom iterator that disables
+// that behavior. see:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
+const uninterrupt = it => {
+  return {
+    next() {
+      return it.next()
+    },
+    [Symbol.iterator]() {
+      return this
+    },
+  }
+}
+
 function* transpileMap(input) {
   yield '{'
   for (let token of input) {
@@ -215,7 +230,7 @@ function* transpileDestructure(input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw new Error(`unexpected ${token.kind}`)
+        throw new Error(`unexpected ${token.kind} ${token.value}`)
       case 'symbol':
         yield* transpileSymbol(token)
         return
@@ -226,9 +241,80 @@ function* transpileDestructure(input) {
             yield ']'
             return
           }
-          yield* transpileDestructure(prepend(inner, input))
+          yield* transpileDestructure(uninterrupt(prepend(inner, input)))
           yield ','
         }
+        return
+      case '{':
+        const keys = []
+        const rename = {}
+        const or = {}
+        for (const token of input) {
+          if (token.kind === '}') {
+            break
+          }
+          switch (token.value) {
+            default:
+              if (token.kind !== 'symbol') {
+                throw new Error(`unexpected ${token}`)
+              }
+              const [{ value: source }] = expect(input, { kind: 'keyword' })
+              if (source !== token.value) {
+                rename[source] = token.value
+              }
+              if (!keys.includes(source)) {
+                keys.push(source)
+              }
+              break
+            case 'keys':
+              discard(expect(input, { kind: '[' }))
+              for (const token of input) {
+                if (token.kind === ']') {
+                  break
+                }
+                if (token.kind !== 'symbol') {
+                  throw new Error(`unexpected key ${token.kind}`)
+                }
+                keys.push(token.value)
+              }
+              break
+            case 'or':
+              discard(expect(input, { kind: '{' }))
+              for (const token of input) {
+                if (token.kind === '}') {
+                  break
+                }
+                if (token.kind !== 'symbol') {
+                  throw new Error(`unexpected key ${token.kind}`)
+                }
+                or[token.value] = [...transpileExpr(input)]
+                if (!keys.includes(token.value)) {
+                  keys.push(token.value)
+                }
+              }
+              break
+          }
+        }
+        yield '{'
+        let first = true
+        for (const key of keys) {
+          if (first) {
+            first = false
+          } else {
+            yield ','
+          }
+          yield* transpileSymbol({ value: key })
+          if (Object.hasOwn(rename, key)) {
+            yield ':'
+            yield* transpileSymbol({ value: rename[key] })
+          }
+          if (Object.hasOwn(or, key)) {
+            yield '='
+            yield* or[key]
+          }
+        }
+        yield '}'
+        return
     }
   }
 }
@@ -244,7 +330,7 @@ function* transpileFn(input) {
       yield ')'
       break
     }
-    yield* transpileDestructure(prepend(token, input))
+    yield* transpileDestructure(uninterrupt(prepend(token, input)))
     yield ','
   }
   yield '=>{'
@@ -357,21 +443,9 @@ function* transpileExpr(input, token) {
 }
 
 export function* transpile(code) {
-  const input = tokens(code)
-  // generators have cleanup logic which makes early returns void the rest of
-  // the generator run. this wrapper creates a custom iterator that disables
-  // that behavior. see:
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
-  const wrapper = {
-    next() {
-      return input.next()
-    },
-    [Symbol.iterator]() {
-      return this
-    },
-  }
+  const input = uninterrupt(tokens(code))
   // yield* each expression, and use the final return (from transpileExpr) to
   // decide if we should continue. this return is setup to return false when the
   // input iterator stops producing tokens.
-  while (yield* transpileExpr(wrapper)) {}
+  while (yield* transpileExpr(input)) {}
 }

@@ -46,6 +46,13 @@ test('transpile', () => {
     `),
     `const first=([first,second,],other,)=>{return first;}`,
   )
+  assert.equal(
+    tostr(`
+    (fn run [{x :y :keys [b c] :or {a 1 b 2 d 3}}]
+      a)
+    `),
+    `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;}`,
+  )
 })
 
 test.run()
