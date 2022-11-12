@@ -94,6 +94,32 @@ export function* tokens(input) {
   }
 }
 
+function* expect(input, ...expected) {
+  let i = 0
+  for (const actual of input) {
+    const expect = expected[i]
+    if (actual.kind !== expect.kind) {
+      throw new Error(`expected ${expect.kind} but got ${actual.kind}`)
+    }
+    if ('value' in expect) {
+      if (actual.value !== expect.value) {
+        throw new Error(`expected ${expect.value} but got ${actual.value}`)
+      }
+    }
+    yield actual
+    i++
+    if (i === expected.length) {
+      return
+    }
+  }
+  throw new Error(`input ended while expecting ${expected[i].kind}`)
+}
+
+function discard(iterator) {
+  for (const _ of iterator) {
+  }
+}
+
 function* transpileMap(input) {
   yield '{'
   for (let token of input) {
@@ -121,32 +147,6 @@ function* transpileArray(input) {
     yield ','
   }
   throw new Error('unterminated array')
-}
-
-function* expect(input, ...expected) {
-  let i = 0
-  for (const actual of input) {
-    const expect = expected[i]
-    if (actual.kind !== expect.kind) {
-      throw new Error(`expected ${expect.kind} but got ${actual.kind}`)
-    }
-    if ('value' in expect) {
-      if (actual.value !== expect.value) {
-        throw new Error(`expected ${expect.value} but got ${actual.value}`)
-      }
-    }
-    yield actual
-    i++
-    if (i === expected.length) {
-      return
-    }
-  }
-  throw new Error(`input ended while expecting ${expected[i].kind}`)
-}
-
-function discard(iterator) {
-  for (const _ of iterator) {
-  }
 }
 
 function* transpileImport(input) {
