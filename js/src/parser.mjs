@@ -120,6 +120,11 @@ function discard(iterator) {
   }
 }
 
+function* prepend(one, rest) {
+  yield one
+  yield* rest
+}
+
 function* transpileMap(input) {
   yield '{'
   for (let token of input) {
@@ -206,6 +211,28 @@ function* transpileDo(input) {
   throw new Error('unterminated list')
 }
 
+function* transpileDestructure(input) {
+  for (const token of input) {
+    switch (token.kind) {
+      default:
+        throw new Error(`unexpected ${token.kind}`)
+      case 'symbol':
+        yield* transpileSymbol(token)
+        return
+      case '[':
+        yield '['
+        for (const inner of input) {
+          if (inner.kind === ']') {
+            yield ']'
+            return
+          }
+          yield* transpileDestructure(prepend(inner, input))
+          yield ','
+        }
+    }
+  }
+}
+
 function* transpileFn(input) {
   yield 'const '
   const [name] = expect(input, { kind: 'symbol' })
@@ -217,10 +244,7 @@ function* transpileFn(input) {
       yield ')'
       break
     }
-    if (token.kind !== 'symbol') {
-      throw new Error(`unexpected ${token}`)
-    }
-    yield* transpileSymbol(token)
+    yield* transpileDestructure(prepend(token, input))
     yield ','
   }
   yield '=>{'

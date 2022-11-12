@@ -39,6 +39,13 @@ test('transpile', () => {
     `),
     `const err=(expected,offset,)=>{return "expected "+expected+" at position "+offset;}`,
   )
+  assert.equal(
+    tostr(`
+    (fn first [[first second] other]
+      first)
+    `),
+    `const first=([first,second,],other,)=>{return first;}`,
+  )
 })
 
 test.run()
