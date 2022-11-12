@@ -53,6 +53,16 @@ test('transpile', () => {
     `),
     `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;}`,
   )
+  assert.equal(
+    tostr(`
+    (fn run []
+      (let [a 0
+            b (inc a)]
+        (console.log a)
+        b))
+    `),
+    `const run=()=>{return (() => {let a=0,b=inc(a,);console.log(a,);return b;})();}`,
+  )
 })
 
 test.run()

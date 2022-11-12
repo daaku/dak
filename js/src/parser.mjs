@@ -352,6 +352,28 @@ function* transpileStr(input) {
   }
 }
 
+function* transpileLet(input) {
+  discard(expect(input, { kind: '[' }))
+  let first = true
+  yield '(() => {let '
+  for (const token of input) {
+    if (token.kind === ']') {
+      yield ';'
+      break
+    }
+    if (first) {
+      first = false
+    } else {
+      yield ','
+    }
+    yield* transpileDestructure(uninterrupt(prepend(token, input)))
+    yield '='
+    yield* transpileExpr(input)
+  }
+  yield* transpileDo(input)
+  yield '})()'
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -371,6 +393,9 @@ function* transpileList(input) {
           return
         case 'str':
           yield* transpileStr(input)
+          return
+        case 'let':
+          yield* transpileLet(input)
           return
       }
       if (token.value.startsWith('.')) {
