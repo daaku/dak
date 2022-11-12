@@ -29,3 +29,48 @@
       (if (= (. input end) "\n")
         (break)))
     [(input.substring start end) end]))
+
+(fn pos-default [] [0 0 0])
+
+(fn pos-inc [[offset line column] l]
+  [(+ offset l) line (+ column l)])
+
+(fn pos-nl [[offset line column]]
+  [(inc offset) (inc line) 0])
+
+(fn pos-mv-end [[offset line column] end delta-lines]
+  [end (+ line delta-lines) (if (pos? delta-lines) 0 (+ end offset))])
+
+(fn* tokens [input]
+  (loop [pos (pos-default)] :when (< pos.offset input.len)
+    (let [c (. input offset)]
+      (if (= c "\n")
+          (pos-nl pos)
+
+          (whitespace.includes c)
+          (pos-inc pos)
+
+          (single.includes c)
+          (do
+            (yield {:kind c :pos pos})
+            (pos-inc pos))
+
+          (= c "\"")
+          (let [[value end delta-lines] (read-string input len (inc offset))]
+            (yield {:kind :string :value value :pos pos})
+            (pos-mv-end pos end delta-lines)) ; TODO column doesn't move correctly
+
+          (= c ";")
+          (let [[value end] (read-eol input len (inc offset))]
+            (yield {:keyword :keyword :value value :pos pos})
+            (pos-mv-end pos end 1))
+
+          (= c ":")
+          (let [[value end] (read-symbol input len (inc offset) :keyword)]
+            (yield {:keyword :keyword :value value :pos pos})
+            (pos-mv-end pos end 0))
+
+          :else
+          (let [[value end] (read-symbol input len (inc offset) :symbol)]
+            (yield {:keyword :symbol :value value :pos pos})
+            (pos-mv-end pos end 0))))))

@@ -188,6 +188,60 @@ function* transpileDef(input) {
   discard(expect(input, { kind: ')' }))
 }
 
+function* transpileDo(input) {
+  let prev
+  for (const token of input) {
+    if (token.kind === ')') {
+      yield 'return '
+      yield* prev
+      yield ';'
+      return
+    }
+    if (prev) {
+      yield* prev
+      yield ';'
+    }
+    prev = [...transpileExpr(input, token)]
+  }
+  throw new Error('unterminated list')
+}
+
+function* transpileFn(input) {
+  yield 'const '
+  const [name] = expect(input, { kind: 'symbol' })
+  yield* transpileSymbol(name)
+  yield '=('
+  discard(expect(input, { kind: '[' }))
+  for (const token of input) {
+    if (token.kind === ']') {
+      yield ')'
+      break
+    }
+    if (token.kind !== 'symbol') {
+      throw new Error(`unexpected ${token}`)
+    }
+    yield* transpileSymbol(token)
+    yield ','
+  }
+  yield '=>{'
+  yield* transpileDo(input)
+  yield '}'
+}
+
+function* transpileStr(input) {
+  let first = true
+  for (const token of input) {
+    if (token.kind === ')') {
+      return
+    }
+    if (!first) {
+      yield '+'
+    }
+    first = false
+    yield* transpileExpr(input, token)
+  }
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -201,6 +255,12 @@ function* transpileList(input) {
           return
         case 'def':
           yield* transpileDef(input)
+          return
+        case 'fn':
+          yield* transpileFn(input)
+          return
+        case 'str':
+          yield* transpileStr(input)
           return
       }
       if (token.value.startsWith('.')) {
