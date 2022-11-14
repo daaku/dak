@@ -46,47 +46,45 @@ const readEOL = (input, len, start) => {
 }
 
 export function* tokens(input) {
-  let offset = 0
-  let line = 0
-  let column = 0
+  let pos = { offset: 0, line: 0, column: 0 }
   let len = input.length
   let value, end, deltaLines
-  while (offset < len) {
-    let c = input[offset]
+  while (pos.offset < len) {
+    let c = input[pos.offset]
     if (c === '\n') {
-      offset++
-      line++
-      column = 0
+      pos.offset++
+      pos.line++
+      pos.column = 0
       continue
     }
     if (whitespace.includes(c)) {
-      offset++
-      column++
+      pos.offset++
+      pos.column++
       continue
     }
     if (single.includes(c)) {
-      yield { kind: c, offset, line, column }
-      offset++
-      column++
+      yield { kind: c, pos }
+      pos.offset++
+      pos.column++
       continue
     }
     switch (c) {
       case '"':
-        ;[value, end, deltaLines] = readString(input, len, offset + 1)
-        yield { kind: 'string', value, offset, line, column }
-        offset = end
-        line += deltaLines
+        ;[value, end, deltaLines] = readString(input, len, pos.offset + 1)
+        yield { kind: 'string', value, pos }
+        pos.offset = end
+        pos.line += deltaLines
         break
       case ';':
-        ;[value, end] = readEOL(input, len, offset + 1)
-        yield { kind: 'comment', value, offset, line, column }
-        line++
-        offset = end
+        ;[value, end] = readEOL(input, len, pos.offset + 1)
+        yield { kind: 'comment', value, pos }
+        pos.line++
+        pos.offset = end
         break
       default:
-        ;[value, end] = readSymbol(input, len, offset)
-        yield { kind: 'symbol', value, offset, line, column }
-        offset = end
+        ;[value, end] = readSymbol(input, len, pos.offset)
+        yield { kind: 'symbol', value, pos }
+        pos.offset = end
         break
     }
   }
@@ -97,7 +95,7 @@ function* expect(input, ...expected) {
   for (const actual of input) {
     if (actual.kind !== expected[i]) {
       throw new Error(
-        `expected ${expected[i]} but got ${actual.kind} ${posS(actual)}`,
+        `expected ${expected[i]} but got ${actual.kind} ${posS(actual.pos)}`,
       )
     }
     yield actual
@@ -172,7 +170,7 @@ function* transpileImport(input) {
       return
     }
     if (token.kind !== '[') {
-      throw new Error(`expected [ ${posS(token)}`)
+      throw new Error(`expected [ ${posS(token.pos)}`)
     }
     yield 'import {'
     const [importPath] = expect(input, 'string')
@@ -182,7 +180,7 @@ function* transpileImport(input) {
         break
       }
       if (name.kind !== 'symbol') {
-        throw new Error(`expecting a symbol ${posS(token)}`)
+        throw new Error(`expecting a symbol ${posS(token.pos)}`)
       }
       yield* transpileSymbol(name)
       yield ','
@@ -228,7 +226,7 @@ function* transpileDestructure(input) {
     switch (token.kind) {
       default:
         throw new Error(
-          `unexpected ${token.kind} ${token.value} ${posS(token)}`,
+          `unexpected ${token.kind} ${token.value} ${posS(token.pos)}`,
         )
       case 'symbol':
         yield* transpileSymbol(token)
@@ -263,13 +261,13 @@ function* transpileDestructure(input) {
             continue
           }
           if (token.kind !== ':') {
-            throw new Error(`unexpected ${token} ${posS(token)}`)
+            throw new Error(`unexpected ${token} ${posS(token.pos)}`)
           }
           const [op] = expect(input, 'symbol')
           switch (op.value) {
             default:
               throw new Error(
-                `unexpected destructing op ${op.value} ${posS(op)}`,
+                `unexpected destructing op ${op.value} ${posS(op.pos)}`,
               )
             case 'keys':
               discard(expect(input, '['))
@@ -278,7 +276,9 @@ function* transpileDestructure(input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(`unexpected key ${token.kind} ${posS(token)}`)
+                  throw new Error(
+                    `unexpected key ${token.kind} ${posS(token.pos)}`,
+                  )
                 }
                 keys.push(token.value)
               }
@@ -290,7 +290,9 @@ function* transpileDestructure(input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(`unexpected key ${token.kind} ${posS(token)}`)
+                  throw new Error(
+                    `unexpected key ${token.kind} ${posS(token.pos)}`,
+                  )
                 }
                 or[token.value] = [...transpileExpr(input)]
                 if (!keys.includes(token.value)) {
@@ -525,7 +527,7 @@ function* transpileExpr(input) {
       yield* transpileSymbol(token)
       break
     default:
-      throw new Error(`unhandled token: ${token.kind} ${posS(token)}`)
+      throw new Error(`unhandled token: ${token.kind} ${posS(token.pos)}`)
   }
   return true
 }

@@ -87,6 +87,18 @@ const cases = [
     `,
     `switch (inc(1,)){case "foo":"bar";break;case "baz":"boo";break;default:"otherwise";break}`,
   ],
+  // [
+  //   'compound: read-string',
+  //   `(fn read-string [input len start]
+  //     (let [lines 0]
+  //       (for [end start len]
+  //         (case (. input end)
+  //           "\"" (return [(input.substring start end) (inc end) lines])
+  //           "\n" (set! lines (inc lines)))))
+  //     (throw (Error. "unterminated string")))
+  //   `,
+  //   ``,
+  // ],
 ]
 
 cases.forEach(([name, input, output]) => {
