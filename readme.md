@@ -2,6 +2,15 @@
 
 ## TODO
 
+- new: (Error. "foo")
+- return
+- break
+- yield
+- yield star
+- math ops
+- ?.
+- .
+
 - (do ) needs final assignment
 - (let )
 - (case )
