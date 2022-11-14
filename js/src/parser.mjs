@@ -377,6 +377,42 @@ function* transpileThrow(input) {
   yield ';'
 }
 
+function* transpileFor(input) {
+  discard(expect(input, '['))
+  const [binding] = expect(input, 'symbol')
+  yield 'for(let '
+  yield* transpileSymbol(binding)
+  yield '='
+  yield* transpileExpr(input)
+  yield ';'
+  yield* transpileSymbol(binding)
+  yield '<'
+  yield* transpileExpr(input)
+  yield ';'
+  yield* transpileSymbol(binding)
+  const { value, done } = input.next()
+  if (done) {
+    throw new Error('unfinished for')
+  }
+  if (value === ']') {
+    yield '++'
+  } else {
+    yield '+='
+    yield* transpileExpr(prepend(value, input))
+    discard(expect(input, ']'))
+  }
+  yield '){'
+  for (const token of input) {
+    if (token.kind === ')') {
+      yield '}'
+      return
+    }
+    yield* transpileExpr(prepend(token, input))
+    yield ';'
+  }
+  throw new Error('unfinished for')
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -402,6 +438,9 @@ function* transpileList(input) {
           return
         case 'throw':
           yield* transpileThrow(input)
+          return
+        case 'for':
+          yield* transpileFor(input)
           return
       }
       if (token.value.startsWith('.')) {
