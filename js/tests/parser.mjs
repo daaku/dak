@@ -17,20 +17,26 @@ const tostr = code => {
 }
 
 const cases = [
-  [':foo', '"foo"'],
-  ['{:a 1 :b [1 2] :c [3 4]}', '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}'],
-  ['[[1 2 3] [4 5 6]]', '[[1,2,3,],[4,5,6,],]'],
-  ['(a {:b c})', 'a({["b"]:c,},)'],
-  ['(.a b {:c d})', 'b.a({["c"]:d,},)'],
+  ['plain keyword', ':foo', '"foo"'],
   [
+    'data structures',
+    '{:a 1 :b [1 2] :c [3 4]}',
+    '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}',
+  ],
+  ['nested arrays', '[[1 2 3] [4 5 6]]', '[[1,2,3,],[4,5,6,],]'],
+  ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
+  ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
+  [
+    'special: import',
     `
     (import ["./a.js" [A B c-d]]
             ["./b/c.js" [E]])
     `,
     `import {A,B,c-d,} from "./a.js";import {E,} from "./b/c.js";`,
   ],
-  ['(def a 42)', 'let a=42;'],
+  ['special: def', '(def a 42)', 'let a=42;'],
   [
+    'special: fn',
     `
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
@@ -38,6 +44,7 @@ const cases = [
     `const err=(expected,offset,)=>{return "expected "+expected+" at position "+offset;}`,
   ],
   [
+    'fn with array destructuring',
     `
     (fn first [[first second] other]
       first)
@@ -45,15 +52,15 @@ const cases = [
     `const first=([first,second,],other,)=>{return first;}`,
   ],
   [
-    `
-    (fn run [{x :y :keys [b c] :or {a 1 b 2 d 3}}]
+    'fn with object destructuring',
+    `(fn run [{x :y :keys [b c] :or {a 1 b 2 d 3}}]
       a)
     `,
     `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;}`,
   ],
   [
-    `
-    (fn run []
+    'special: let',
+    `(fn run []
       (let [a 0
             b (inc a)]
         (console.log a)
@@ -61,8 +68,9 @@ const cases = [
     `,
     `const run=()=>{return (() => {let a=0,b=inc(a,);console.log(a,);return b;})();}`,
   ],
-  ['(throw (error "foo"))', 'throw error("foo",);'],
+  ['special: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   [
+    'special: for',
     `
     (for [i 0 len step]
       (console.log i))
@@ -70,6 +78,7 @@ const cases = [
     `for(let i=0;i<len;i+=step){console.log(i,);}`,
   ],
   [
+    'special: case',
     `
     (case (inc 1)
       "foo" :bar
@@ -80,8 +89,8 @@ const cases = [
   ],
 ]
 
-test('transpile', () => {
-  cases.forEach(([input, output]) => {
+cases.forEach(([name, input, output]) => {
+  test(name, () => {
     assert.equal(tostr(input), output)
   })
 })
