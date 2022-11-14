@@ -10,11 +10,14 @@
 - math ops
 - ?.
 - .
+- symbol name mangling
+- binding context
 
 - (do ) needs final assignment
 - (let )
 - (case )
 - (try )
+- (if )
 
 ## Notes
 
