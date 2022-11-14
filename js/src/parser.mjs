@@ -370,6 +370,13 @@ function* transpileLet(input) {
   yield '})()'
 }
 
+function* transpileThrow(input) {
+  yield 'throw '
+  yield* transpileExpr(input)
+  discard(expect(input, ')'))
+  yield ';'
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -392,6 +399,9 @@ function* transpileList(input) {
           return
         case 'let':
           yield* transpileLet(input)
+          return
+        case 'throw':
+          yield* transpileThrow(input)
           return
       }
       if (token.value.startsWith('.')) {

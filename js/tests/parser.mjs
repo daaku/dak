@@ -64,6 +64,7 @@ test('transpile', () => {
     `),
     `const run=()=>{return (() => {let a=0,b=inc(a,);console.log(a,);return b;})();}`,
   )
+  assert.equal(tostr('(throw (error "foo"))'), 'throw error("foo",);')
 })
 
 test.run()
