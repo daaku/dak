@@ -4,7 +4,7 @@ const whitespace = [' ', '\r', '\n', '\t']
 const err = (expected, offset) => `expected ${expected} at position ${offset}`
 
 const posS = pos =>
-  `on line ${pos.line} column ${pos.column} with offset ${pos.offset}`
+  `on line ${pos.line + 1} column ${pos.column + 1} at offset ${pos.offset + 1}`
 
 const readString = (input, len, pos) => {
   // TODO: handle escapes
