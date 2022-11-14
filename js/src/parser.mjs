@@ -413,6 +413,16 @@ function* transpileFor(input) {
   throw new Error('unfinished for')
 }
 
+const builtins = {
+  import: transpileImport,
+  def: transpileDef,
+  fn: transpileFn,
+  str: transpileStr,
+  let: transpileLet,
+  throw: transpileThrow,
+  for: transpileFor,
+}
+
 function* transpileList(input) {
   let { value: token, done } = input.next()
   if (done) {
@@ -420,28 +430,10 @@ function* transpileList(input) {
   }
   switch (token.kind) {
     case 'symbol':
-      switch (token.value) {
-        case 'import':
-          yield* transpileImport(input)
-          return
-        case 'def':
-          yield* transpileDef(input)
-          return
-        case 'fn':
-          yield* transpileFn(input)
-          return
-        case 'str':
-          yield* transpileStr(input)
-          return
-        case 'let':
-          yield* transpileLet(input)
-          return
-        case 'throw':
-          yield* transpileThrow(input)
-          return
-        case 'for':
-          yield* transpileFor(input)
-          return
+      const builtin = builtins[token.value]
+      if (builtin) {
+        yield* builtin(input)
+        return
       }
       if (token.value.startsWith('.')) {
         yield* transpileExpr(input)
