@@ -1,4 +1,4 @@
-const single = ['(', ')', '[', ']', '{', '}', '@', '#']
+const single = ['(', ')', '[', ']', '{', '}', '@', '#', ':']
 const whitespace = [' ', '\r', '\n', '\t']
 
 const err = (expected, offset) => `expected ${expected} at position ${offset}`
@@ -18,9 +18,9 @@ const readString = (input, len, start) => {
   throw new Error('unterminated string')
 }
 
-const readSymbol = (input, len, start, expected) => {
+const readSymbol = (input, len, start) => {
   if (start === len) {
-    throw new Error(err(expected, start))
+    throw new Error(err('symbol', start))
   }
   let end
   for (end = start; end < len; end++) {
@@ -74,11 +74,6 @@ export function* tokens(input) {
         offset = end
         line += deltaLines
         break
-      case ':':
-        ;[value, end] = readSymbol(input, len, offset + 1, 'keyword')
-        yield { kind: 'keyword', value, offset, line, column }
-        offset = end
-        break
       case ';':
         ;[value, end] = readEOL(input, len, offset + 1)
         yield { kind: 'comment', value, offset, line, column }
@@ -86,7 +81,7 @@ export function* tokens(input) {
         offset = end
         break
       default:
-        ;[value, end] = readSymbol(input, len, offset, 'symbol')
+        ;[value, end] = readSymbol(input, len, offset)
         yield { kind: 'symbol', value, offset, line, column }
         offset = end
         break
@@ -253,19 +248,27 @@ function* transpileDestructure(input) {
           if (token.kind === '}') {
             break
           }
-          switch (token.value) {
+          if (token.kind === 'symbol') {
+            const [, { value: source }] = expect(
+              input,
+              { kind: ':' },
+              { kind: 'symbol' },
+            )
+            if (source !== token.value) {
+              rename[source] = token.value
+            }
+            if (!keys.includes(source)) {
+              keys.push(source)
+            }
+            continue
+          }
+          if (token.kind !== ':') {
+            throw new Error(`unexpected ${token}`)
+          }
+          const [{ value: op }] = expect(input, { kind: 'symbol' })
+          switch (op) {
             default:
-              if (token.kind !== 'symbol') {
-                throw new Error(`unexpected ${token}`)
-              }
-              const [{ value: source }] = expect(input, { kind: 'keyword' })
-              if (source !== token.value) {
-                rename[source] = token.value
-              }
-              if (!keys.includes(source)) {
-                keys.push(source)
-              }
-              break
+              throw new Error(`unexpected destructing op ${op}`)
             case 'keys':
               discard(expect(input, { kind: '[' }))
               for (const token of input) {
@@ -418,10 +421,9 @@ function* transpileList(input) {
   throw new Error('unterminated list')
 }
 
-function* transpileKeyword(token) {
-  yield '"'
-  yield token.value
-  yield '"'
+function* transpileKeyword(input) {
+  const [token] = expect(input, { kind: 'symbol' })
+  yield* transpileString(token)
 }
 
 function* transpileString(token) {
@@ -452,8 +454,8 @@ function* transpileExpr(input, token) {
     case '[':
       yield* transpileArray(input)
       break
-    case 'keyword':
-      yield* transpileKeyword(token)
+    case ':':
+      yield* transpileKeyword(input)
       break
     case 'string':
       yield* transpileString(token)

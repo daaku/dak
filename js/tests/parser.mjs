@@ -17,6 +17,7 @@ const tostr = code => {
 }
 
 test('transpile', () => {
+  assert.equal(tostr(':foo'), '"foo"')
   assert.equal(
     tostr('{:a 1 :b [1 2] :c [3 4]}'),
     '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}',
