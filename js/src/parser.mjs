@@ -424,26 +424,17 @@ const builtins = {
 }
 
 function* transpileList(input) {
-  let { value: token, done } = input.next()
-  if (done) {
-    throw new Error('unterminated list')
+  const [token] = expect(input, 'symbol')
+  const builtin = builtins[token.value]
+  if (builtin) {
+    yield* builtin(input)
+    return
   }
-  switch (token.kind) {
-    case 'symbol':
-      const builtin = builtins[token.value]
-      if (builtin) {
-        yield* builtin(input)
-        return
-      }
-      if (token.value.startsWith('.')) {
-        yield* transpileExpr(input)
-      }
-      yield* transpileSymbol(token)
-      yield '('
-      break
-    default:
-      throw new Error(`cannot call ${token.kind}`)
+  if (token.value.startsWith('.')) {
+    yield* transpileExpr(input)
   }
+  yield* transpileSymbol(token)
+  yield '('
   for (let token of input) {
     if (token.kind === ')') {
       yield ')'
