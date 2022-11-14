@@ -3,6 +3,9 @@ const whitespace = [' ', '\r', '\n', '\t']
 
 const err = (expected, offset) => `expected ${expected} at position ${offset}`
 
+const posS = pos =>
+  `on line ${pos.line} column ${pos.column} with offset ${pos.offset}`
+
 const readString = (input, len, start) => {
   // TODO: handle escapes
   let lines = 0
@@ -93,7 +96,9 @@ function* expect(input, ...expected) {
   let i = 0
   for (const actual of input) {
     if (actual.kind !== expected[i]) {
-      throw new Error(`expected ${expected[i]} but got ${actual.kind}`)
+      throw new Error(
+        `expected ${expected[i]} but got ${actual.kind} ${posS(actual)}`,
+      )
     }
     yield actual
     i++
@@ -167,7 +172,7 @@ function* transpileImport(input) {
       return
     }
     if (token.kind !== '[') {
-      throw new Error('expected [')
+      throw new Error(`expected [ ${posS(token)}`)
     }
     yield 'import {'
     const [importPath] = expect(input, 'string')
@@ -177,7 +182,7 @@ function* transpileImport(input) {
         break
       }
       if (name.kind !== 'symbol') {
-        throw new Error('expecting a symbol')
+        throw new Error(`expecting a symbol ${posS(token)}`)
       }
       yield* transpileSymbol(name)
       yield ','
@@ -222,7 +227,9 @@ function* transpileDestructure(input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw new Error(`unexpected ${token.kind} ${token.value}`)
+        throw new Error(
+          `unexpected ${token.kind} ${token.value} ${posS(token)}`,
+        )
       case 'symbol':
         yield* transpileSymbol(token)
         return
@@ -256,12 +263,14 @@ function* transpileDestructure(input) {
             continue
           }
           if (token.kind !== ':') {
-            throw new Error(`unexpected ${token}`)
+            throw new Error(`unexpected ${token} ${posS(token)}`)
           }
-          const [{ value: op }] = expect(input, 'symbol')
-          switch (op) {
+          const [op] = expect(input, 'symbol')
+          switch (op.value) {
             default:
-              throw new Error(`unexpected destructing op ${op}`)
+              throw new Error(
+                `unexpected destructing op ${op.value} ${posS(op)}`,
+              )
             case 'keys':
               discard(expect(input, '['))
               for (const token of input) {
@@ -269,7 +278,7 @@ function* transpileDestructure(input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(`unexpected key ${token.kind}`)
+                  throw new Error(`unexpected key ${token.kind} ${posS(token)}`)
                 }
                 keys.push(token.value)
               }
@@ -281,7 +290,7 @@ function* transpileDestructure(input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(`unexpected key ${token.kind}`)
+                  throw new Error(`unexpected key ${token.kind} ${posS(token)}`)
                 }
                 or[token.value] = [...transpileExpr(input)]
                 if (!keys.includes(token.value)) {
@@ -516,7 +525,7 @@ function* transpileExpr(input) {
       yield* transpileSymbol(token)
       break
     default:
-      throw new Error(`unhandled token: ${token.kind}`)
+      throw new Error(`unhandled token: ${token.kind} ${posS(token)}`)
   }
   return true
 }
