@@ -70,12 +70,20 @@ const cases = [
   ],
   ['special: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   [
-    'special: for',
+    'special: for with step',
     `
     (for [i 0 len step]
       (console.log i))
     `,
     `for(let i=0;i<len;i+=step){console.log(i,);}`,
+  ],
+  [
+    'special: for without step',
+    `
+    (for [i 0 len]
+      (console.log i))
+    `,
+    `for(let i=0;i<len;i++){console.log(i,);}`,
   ],
   [
     'special: case',
@@ -93,8 +101,8 @@ const cases = [
   //     (let [lines 0]
   //       (for [end start len]
   //         (case (. input end)
-  //           "\"" (return [(input.substring start end) (inc end) lines])
-  //           "\n" (set! lines (inc lines)))))
+  //           "a" (return [(input.substring start end) (inc end) lines])
+  //           "b" (set! lines (inc lines)))))
   //     (throw (Error. "unterminated string")))
   //   `,
   //   ``,

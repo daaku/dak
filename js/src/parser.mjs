@@ -416,15 +416,15 @@ function* transpileFor(input) {
   yield* transpileExpr(input)
   yield ';'
   yield* transpileSymbol(binding)
-  const { value, done } = input.next()
+  const { value: token, done } = input.next()
   if (done) {
     throw new Error('unfinished for')
   }
-  if (value === ']') {
+  if (token.kind === ']') {
     yield '++'
   } else {
     yield '+='
-    yield* transpileExpr(prepend(value, input))
+    yield* transpileExpr(prepend(token, input))
     discard(expect(input, ']'))
   }
   yield '){'
