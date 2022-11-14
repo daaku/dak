@@ -104,19 +104,6 @@ function* expect(input, ...expected) {
   throw new Error(`input ended while expecting ${expected[i].kind}`)
 }
 
-function discard(iterator) {
-  for (const _ of iterator) {
-  }
-}
-
-const prepend = (one, rest) =>
-  uninterrupt(
-    (function* () {
-      yield one
-      yield* rest
-    })(),
-  )
-
 // generators have cleanup logic which makes early returns void the rest of
 // the generator run. this creates a custom iterator that disables
 // that behavior. see:
@@ -131,6 +118,19 @@ const uninterrupt = it => {
     },
   }
 }
+
+function discard(iterator) {
+  for (const _ of iterator) {
+  }
+}
+
+const prepend = (one, rest) =>
+  uninterrupt(
+    (function* () {
+      yield one
+      yield* rest
+    })(),
+  )
 
 function* transpileMap(input) {
   yield '{'
