@@ -2,8 +2,6 @@
 
 ## TODO
 
-- make prepent uninterrupt automatically
-
 ## Notes
 
 {}

@@ -109,10 +109,13 @@ function discard(iterator) {
   }
 }
 
-function* prepend(one, rest) {
-  yield one
-  yield* rest
-}
+const prepend = (one, rest) =>
+  uninterrupt(
+    (function* () {
+      yield one
+      yield* rest
+    })(),
+  )
 
 // generators have cleanup logic which makes early returns void the rest of
 // the generator run. this creates a custom iterator that disables
@@ -137,7 +140,7 @@ function* transpileMap(input) {
       return
     }
     yield '['
-    yield* transpileExpr(uninterrupt(prepend(token, input)))
+    yield* transpileExpr(prepend(token, input))
     yield ']:'
     yield* transpileExpr(input)
     yield ','
@@ -152,7 +155,7 @@ function* transpileArray(input) {
       yield ']'
       return
     }
-    yield* transpileExpr(uninterrupt(prepend(token, input)))
+    yield* transpileExpr(prepend(token, input))
     yield ','
   }
   throw new Error('unterminated array')
@@ -210,7 +213,7 @@ function* transpileDo(input) {
       yield* prev
       yield ';'
     }
-    prev = [...transpileExpr(uninterrupt(prepend(token, input)))]
+    prev = [...transpileExpr(prepend(token, input))]
   }
   throw new Error('unterminated list')
 }
@@ -230,7 +233,7 @@ function* transpileDestructure(input) {
             yield ']'
             return
           }
-          yield* transpileDestructure(uninterrupt(prepend(inner, input)))
+          yield* transpileDestructure(prepend(inner, input))
           yield ','
         }
         return
@@ -323,7 +326,7 @@ function* transpileFn(input) {
       yield ')'
       break
     }
-    yield* transpileDestructure(uninterrupt(prepend(token, input)))
+    yield* transpileDestructure(prepend(token, input))
     yield ','
   }
   yield '=>{'
@@ -341,7 +344,7 @@ function* transpileStr(input) {
       yield '+'
     }
     first = false
-    yield* transpileExpr(uninterrupt(prepend(token, input)))
+    yield* transpileExpr(prepend(token, input))
   }
 }
 
@@ -359,7 +362,7 @@ function* transpileLet(input) {
     } else {
       yield ','
     }
-    yield* transpileDestructure(uninterrupt(prepend(token, input)))
+    yield* transpileDestructure(prepend(token, input))
     yield '='
     yield* transpileExpr(input)
   }
@@ -405,7 +408,7 @@ function* transpileList(input) {
       yield ')'
       return
     }
-    yield* transpileExpr(uninterrupt(prepend(token, input)))
+    yield* transpileExpr(prepend(token, input))
     yield ','
   }
   throw new Error('unterminated list')
