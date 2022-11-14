@@ -92,14 +92,8 @@ export function* tokens(input) {
 function* expect(input, ...expected) {
   let i = 0
   for (const actual of input) {
-    const expect = expected[i]
-    if (actual.kind !== expect.kind) {
-      throw new Error(`expected ${expect.kind} but got ${actual.kind}`)
-    }
-    if ('value' in expect) {
-      if (actual.value !== expect.value) {
-        throw new Error(`expected ${expect.value} but got ${actual.value}`)
-      }
+    if (actual.kind !== expected[i]) {
+      throw new Error(`expected ${expected[i]} but got ${actual.kind}`)
     }
     yield actual
     i++
@@ -173,8 +167,8 @@ function* transpileImport(input) {
       throw new Error('expected [')
     }
     yield 'import {'
-    const [importPath] = expect(input, { kind: 'string' })
-    discard(expect(input, { kind: '[' }))
+    const [importPath] = expect(input, 'string')
+    discard(expect(input, '['))
     for (let name of input) {
       if (name.kind === ']') {
         break
@@ -185,7 +179,7 @@ function* transpileImport(input) {
       yield* transpileSymbol(name)
       yield ','
     }
-    discard(expect(input, { kind: ']' }))
+    discard(expect(input, ']'))
     yield '} from '
     yield* transpileString(importPath)
     yield ';'
@@ -195,12 +189,12 @@ function* transpileImport(input) {
 
 function* transpileDef(input) {
   yield 'let '
-  const [name] = expect(input, { kind: 'symbol' })
+  const [name] = expect(input, 'symbol')
   yield* transpileSymbol(name)
   yield '='
   yield* transpileExpr(input)
   yield ';'
-  discard(expect(input, { kind: ')' }))
+  discard(expect(input, ')'))
 }
 
 function* transpileDo(input) {
@@ -249,11 +243,7 @@ function* transpileDestructure(input) {
             break
           }
           if (token.kind === 'symbol') {
-            const [, { value: source }] = expect(
-              input,
-              { kind: ':' },
-              { kind: 'symbol' },
-            )
+            const [, { value: source }] = expect(input, ':', 'symbol')
             if (source !== token.value) {
               rename[source] = token.value
             }
@@ -265,12 +255,12 @@ function* transpileDestructure(input) {
           if (token.kind !== ':') {
             throw new Error(`unexpected ${token}`)
           }
-          const [{ value: op }] = expect(input, { kind: 'symbol' })
+          const [{ value: op }] = expect(input, 'symbol')
           switch (op) {
             default:
               throw new Error(`unexpected destructing op ${op}`)
             case 'keys':
-              discard(expect(input, { kind: '[' }))
+              discard(expect(input, '['))
               for (const token of input) {
                 if (token.kind === ']') {
                   break
@@ -282,7 +272,7 @@ function* transpileDestructure(input) {
               }
               break
             case 'or':
-              discard(expect(input, { kind: '{' }))
+              discard(expect(input, '{'))
               for (const token of input) {
                 if (token.kind === '}') {
                   break
@@ -324,10 +314,10 @@ function* transpileDestructure(input) {
 
 function* transpileFn(input) {
   yield 'const '
-  const [name] = expect(input, { kind: 'symbol' })
+  const [name] = expect(input, 'symbol')
   yield* transpileSymbol(name)
   yield '=('
-  discard(expect(input, { kind: '[' }))
+  discard(expect(input, '['))
   for (const token of input) {
     if (token.kind === ']') {
       yield ')'
@@ -356,7 +346,7 @@ function* transpileStr(input) {
 }
 
 function* transpileLet(input) {
-  discard(expect(input, { kind: '[' }))
+  discard(expect(input, '['))
   let first = true
   yield '(() => {let '
   for (const token of input) {
@@ -422,7 +412,7 @@ function* transpileList(input) {
 }
 
 function* transpileKeyword(input) {
-  const [token] = expect(input, { kind: 'symbol' })
+  const [token] = expect(input, 'symbol')
   yield* transpileString(token)
 }
 

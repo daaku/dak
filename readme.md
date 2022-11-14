@@ -2,7 +2,6 @@
 
 ## TODO
 
-- expect should take string kind for common case
 - discard should proxy to expect
 - use prepend instead of transpileExpr accepting extra token
 - make prepent uninterrupt automatically
