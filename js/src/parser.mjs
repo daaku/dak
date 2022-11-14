@@ -1,4 +1,4 @@
-const single = ['(', ')', '[', ']', '{', '}', '@', '#', ':']
+const single = ['(', ')', '[', ']', '{', '}', '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
 
 const err = (expected, offset) => `expected ${expected} at position ${offset}`
