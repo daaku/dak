@@ -6,49 +6,66 @@ const err = (expected, offset) => `expected ${expected} at position ${offset}`
 const posS = pos =>
   `on line ${pos.line} column ${pos.column} with offset ${pos.offset}`
 
-const readString = (input, len, start) => {
+const readString = (input, len, pos) => {
   // TODO: handle escapes
-  let lines = 0
+  let start = pos.offset + 1
   for (let end = start; end < len; end++) {
+    pos.offset++
+    pos.column++
     switch (input[end]) {
       case '"':
-        return [input.substring(start, end), end + 1, lines]
+        pos.offset++
+        pos.column++
+        return input.substring(start, end)
       case '\n':
-        lines++
+        pos.line++
+        pos.column = 0
         break
     }
   }
   throw new Error('unterminated string')
 }
 
-const readSymbol = (input, len, start) => {
+const readSymbol = (input, len, pos) => {
+  let start = pos.offset
   if (start === len) {
     throw new Error(err('symbol', start))
   }
   let end
   for (end = start; end < len; end++) {
     const c = input[end]
+    if (c === '\n') {
+      pos.line++
+      pos.column = 0
+    }
     if (single.includes(c) || whitespace.includes(c)) {
       break
     }
+    pos.offset++
+    pos.column++
   }
-  return [input.substring(start, end), end]
+  return input.substring(start, end)
 }
 
-const readEOL = (input, len, start) => {
+const readEOL = (input, len, pos) => {
+  let start = pos.offset + 1
   let end
   for (end = start; end < len; end++) {
+    pos.offset++
+    pos.column++
     if (input[end] === '\n') {
+      pos.line++
+      pos.column = 0
       break
     }
   }
-  return [input.substring(start, end), end]
+  return input.substring(start, end)
 }
 
 export function* tokens(input) {
   let pos = { offset: 0, line: 0, column: 0 }
   let len = input.length
-  let value, end, deltaLines
+  let value, start
   while (pos.offset < len) {
     let c = input[pos.offset]
     if (c === '\n') {
@@ -70,21 +87,19 @@ export function* tokens(input) {
     }
     switch (c) {
       case '"':
-        ;[value, end, deltaLines] = readString(input, len, pos.offset + 1)
-        yield { kind: 'string', value, pos }
-        pos.offset = end
-        pos.line += deltaLines
+        start = { ...pos }
+        value = readString(input, len, pos)
+        yield { kind: 'string', value, pos: start }
         break
       case ';':
-        ;[value, end] = readEOL(input, len, pos.offset + 1)
-        yield { kind: 'comment', value, pos }
-        pos.line++
-        pos.offset = end
+        start = { ...pos }
+        value = readEOL(input, len, pos)
+        yield { kind: 'comment', value, pos: start }
         break
       default:
-        ;[value, end] = readSymbol(input, len, pos.offset)
-        yield { kind: 'symbol', value, pos }
-        pos.offset = end
+        start = { ...pos }
+        value = readSymbol(input, len, pos)
+        yield { kind: 'symbol', value, pos: start }
         break
     }
   }
