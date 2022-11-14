@@ -137,7 +137,7 @@ function* transpileMap(input) {
       return
     }
     yield '['
-    yield* transpileExpr(input, token)
+    yield* transpileExpr(uninterrupt(prepend(token, input)))
     yield ']:'
     yield* transpileExpr(input)
     yield ','
@@ -152,7 +152,7 @@ function* transpileArray(input) {
       yield ']'
       return
     }
-    yield* transpileExpr(input, token)
+    yield* transpileExpr(uninterrupt(prepend(token, input)))
     yield ','
   }
   throw new Error('unterminated array')
@@ -210,7 +210,7 @@ function* transpileDo(input) {
       yield* prev
       yield ';'
     }
-    prev = [...transpileExpr(input, token)]
+    prev = [...transpileExpr(uninterrupt(prepend(token, input)))]
   }
   throw new Error('unterminated list')
 }
@@ -341,7 +341,7 @@ function* transpileStr(input) {
       yield '+'
     }
     first = false
-    yield* transpileExpr(input, token)
+    yield* transpileExpr(uninterrupt(prepend(token, input)))
   }
 }
 
@@ -405,7 +405,7 @@ function* transpileList(input) {
       yield ')'
       return
     }
-    yield* transpileExpr(input, token)
+    yield* transpileExpr(uninterrupt(prepend(token, input)))
     yield ','
   }
   throw new Error('unterminated list')
@@ -426,13 +426,10 @@ function* transpileSymbol(token) {
   yield token.value
 }
 
-function* transpileExpr(input, token) {
-  if (!token) {
-    let next = input.next()
-    if (next.done) {
-      return false
-    }
-    token = next.value
+function* transpileExpr(input) {
+  const { value: token, done } = input.next()
+  if (done) {
+    return false
   }
   switch (token.kind) {
     case '(':

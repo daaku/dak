@@ -2,8 +2,6 @@
 
 ## TODO
 
-- discard should proxy to expect
-- use prepend instead of transpileExpr accepting extra token
 - make prepent uninterrupt automatically
 
 ## Notes
