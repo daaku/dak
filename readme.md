@@ -2,6 +2,11 @@
 
 ## TODO
 
+- (do ) needs final assignment
+- (let )
+- (case )
+- (try )
+
 ## Notes
 
 {}

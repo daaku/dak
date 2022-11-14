@@ -413,6 +413,35 @@ function* transpileFor(input) {
   throw new Error('unfinished for')
 }
 
+function* transpileCase(input) {
+  yield 'switch ('
+  yield* transpileExpr(input)
+  yield '){'
+  for (const token of input) {
+    if (token.kind === ')') {
+      yield '}'
+      return
+    }
+    const cond = [...transpileExpr(prepend(token, input))]
+    const { value: expr, done } = input.next()
+    if (done) {
+      throw new Error('unterminated list')
+    }
+    // path for final default clause
+    if (expr.kind === ')') {
+      yield 'default:'
+      yield* cond
+      yield ';break}'
+      return
+    }
+    yield 'case '
+    yield* cond
+    yield ':'
+    yield* transpileExpr(prepend(expr, input))
+    yield ';break;'
+  }
+}
+
 const builtins = {
   import: transpileImport,
   def: transpileDef,
@@ -421,6 +450,7 @@ const builtins = {
   let: transpileLet,
   throw: transpileThrow,
   for: transpileFor,
+  case: transpileCase,
 }
 
 function* transpileList(input) {

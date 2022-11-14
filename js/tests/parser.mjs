@@ -72,6 +72,15 @@ test('transpile', () => {
     `),
     `for(let i=0;i<len;i+=step){console.log(i,);}`,
   )
+  assert.equal(
+    tostr(`
+    (case (inc 1)
+      "foo" :bar
+      "baz" :boo
+      :otherwise)
+    `),
+    `switch (inc(1,)){case "foo":"bar";break;case "baz":"boo";break;default:"otherwise";break}`,
+  )
 })
 
 test.run()
