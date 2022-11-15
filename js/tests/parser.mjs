@@ -66,7 +66,7 @@ const cases = [
         (console.log a)
         b))
     `,
-    `const run=()=>{return (() => {let a=0,b=inc(a,);console.log(a,);return b;})();}`,
+    `const run=()=>{{let a;a=0;let b;b=inc(a,);console.log(a,);return b;};}`,
   ],
   ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   [
@@ -102,7 +102,7 @@ const cases = [
       (add 1 1)
       42)
     `,
-    `add(1,1,);return 42;`,
+    `add(1,1,);42;`,
   ],
   // [
   //   'compound: read-string',
