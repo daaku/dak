@@ -24,6 +24,19 @@
 
 ## Notes
 
+(fn pathological []
+(.call (let [foo 1
+bar 2]
+(+ foo bar)
+32)))
+
+         const pathological = () => {
+          let foo = 1;
+          let bar = 2;
+          let gen_1 = 32;
+          return gen_1.call()
+         }
+
 {}
 []
 #{} Set
