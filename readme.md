@@ -2,6 +2,9 @@
 
 ## TODO
 
+- hoist statements in expression positions (arguments etc)
+- add assign/return operations in final positions
+
 - new: (Error. "foo")
 - return
 - break
