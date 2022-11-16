@@ -86,14 +86,27 @@ const cases = [
     `for(let i=0;i<len;i++){console.log(i,);}`,
   ],
   [
-    'builtin: case',
+    'builtin: case return position',
     `
-    (case (inc 1)
+    (fn run []
+      (case (inc 1)
       "foo" :bar
       "baz" :boo
-      :otherwise)
+      :otherwise))
     `,
-    `switch (inc(1,)){case "foo":"bar";break;case "baz":"boo";break;default:"otherwise";break}`,
+    `const run=()=>{switch (inc(1,)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};}`,
+  ],
+  [
+    'builtin: case assign',
+    `
+    (fn run []
+      (let [v (case (inc 1)
+                "foo" :bar
+                "baz" :boo
+                :otherwise)]
+        v))
+    `,
+    `const run=()=>{{let v;switch (inc(1,)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};}`,
   ],
   [
     'builtin: do',

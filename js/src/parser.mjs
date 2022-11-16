@@ -529,7 +529,11 @@ function* transpileBuiltinCase(input, assign) {
     if (expr.kind === ')') {
       yield 'default:'
       yield* cond
-      yield ';break}'
+      yield ';'
+      if (assign !== 'return ') {
+        yield 'break'
+      }
+      yield '}'
       return
     }
 
@@ -537,7 +541,10 @@ function* transpileBuiltinCase(input, assign) {
     yield* dropAssign(cond, assign)
     yield ':'
     yield* transpileExpr(prepend(expr, input), assign)
-    yield ';break;'
+    yield ';'
+    if (assign !== 'return ') {
+      yield 'break;'
+    }
   }
 }
 
