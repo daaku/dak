@@ -218,7 +218,7 @@ function* transpileBuiltinDef(input) {
   discard(expect(input, ')'))
 }
 
-function* transpileDo(input) {
+function* transpileBuiltinDo(input) {
   let prev
   for (const token of input) {
     if (token.kind === ')') {
@@ -356,7 +356,7 @@ function* transpileBuiltinFn(input) {
     yield ','
   }
   yield '=>{'
-  yield* transpileDo(input)
+  yield* transpileBuiltinDo(input)
   yield '}'
 }
 
@@ -392,7 +392,7 @@ function* transpileBuiltinLet(input) {
     yield '='
     yield* transpileExpr(input)
   }
-  yield* transpileDo(input)
+  yield* transpileBuiltinDo(input)
   yield '})()'
 }
 
@@ -477,6 +477,7 @@ const builtins = {
   throw: transpileBuiltinThrow,
   for: transpileBuiltinFor,
   case: transpileBuiltinCase,
+  do: transpileBuiltinDo,
 }
 
 function* transpileList(input) {

@@ -95,6 +95,15 @@ const cases = [
     `,
     `switch (inc(1,)){case "foo":"bar";break;case "baz":"boo";break;default:"otherwise";break}`,
   ],
+  [
+    'special: do',
+    `
+    (do
+      (add 1 1)
+      42)
+    `,
+    `add(1,1,);return 42;`,
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]
