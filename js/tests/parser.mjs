@@ -27,16 +27,16 @@ const cases = [
   ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
   [
-    'special: import',
+    'builtin: import',
     `
     (import ["./a.js" [A B c-d]]
             ["./b/c.js" [E]])
     `,
     `import {A,B,c-d,} from "./a.js";import {E,} from "./b/c.js";`,
   ],
-  ['special: def', '(def a 42)', 'let a=42;'],
+  ['builtin: def', '(def a 42)', 'let a=42;'],
   [
-    'special: fn',
+    'builtin: fn',
     `
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
@@ -59,7 +59,7 @@ const cases = [
     `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;}`,
   ],
   [
-    'special: let',
+    'builtin: let',
     `(fn run []
       (let [a 0
             b (inc a)]
@@ -68,9 +68,9 @@ const cases = [
     `,
     `const run=()=>{return (() => {let a=0,b=inc(a,);console.log(a,);return b;})();}`,
   ],
-  ['special: throw', '(throw (error "foo"))', 'throw error("foo",);'],
+  ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   [
-    'special: for with step',
+    'builtin: for with step',
     `
     (for [i 0 len step]
       (console.log i))
@@ -78,7 +78,7 @@ const cases = [
     `for(let i=0;i<len;i+=step){console.log(i,);}`,
   ],
   [
-    'special: for without step',
+    'builtin: for without step',
     `
     (for [i 0 len]
       (console.log i))
@@ -86,7 +86,7 @@ const cases = [
     `for(let i=0;i<len;i++){console.log(i,);}`,
   ],
   [
-    'special: case',
+    'builtin: case',
     `
     (case (inc 1)
       "foo" :bar
@@ -96,7 +96,7 @@ const cases = [
     `switch (inc(1,)){case "foo":"bar";break;case "baz":"boo";break;default:"otherwise";break}`,
   ],
   [
-    'special: do',
+    'builtin: do',
     `
     (do
       (add 1 1)
