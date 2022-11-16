@@ -179,7 +179,7 @@ function* transpileArray(input) {
   throw new Error('unterminated array')
 }
 
-function* transpileImport(input) {
+function* transpileBuiltinImport(input) {
   for (let token of input) {
     if (token.kind === ')') {
       return
@@ -208,7 +208,7 @@ function* transpileImport(input) {
   throw new Error('unterminated import')
 }
 
-function* transpileDef(input) {
+function* transpileBuiltinDef(input) {
   yield 'let '
   const [name] = expect(input, 'symbol')
   yield* transpileSymbol(name)
@@ -341,7 +341,7 @@ function* transpileDestructure(input) {
   }
 }
 
-function* transpileFn(input) {
+function* transpileBuiltinFn(input) {
   yield 'const '
   const [name] = expect(input, 'symbol')
   yield* transpileSymbol(name)
@@ -360,7 +360,7 @@ function* transpileFn(input) {
   yield '}'
 }
 
-function* transpileStr(input) {
+function* transpileBuiltinStr(input) {
   let first = true
   for (const token of input) {
     if (token.kind === ')') {
@@ -374,7 +374,7 @@ function* transpileStr(input) {
   }
 }
 
-function* transpileLet(input) {
+function* transpileBuiltinLet(input) {
   discard(expect(input, '['))
   let first = true
   yield '(() => {let '
@@ -396,14 +396,14 @@ function* transpileLet(input) {
   yield '})()'
 }
 
-function* transpileThrow(input) {
+function* transpileBuiltinThrow(input) {
   yield 'throw '
   yield* transpileExpr(input)
   discard(expect(input, ')'))
   yield ';'
 }
 
-function* transpileFor(input) {
+function* transpileBuiltinFor(input) {
   discard(expect(input, '['))
   const [binding] = expect(input, 'symbol')
   yield 'for(let '
@@ -439,7 +439,7 @@ function* transpileFor(input) {
   throw new Error('unfinished for')
 }
 
-function* transpileCase(input) {
+function* transpileBuiltinCase(input) {
   yield 'switch ('
   yield* transpileExpr(input)
   yield '){'
@@ -469,14 +469,14 @@ function* transpileCase(input) {
 }
 
 const builtins = {
-  import: transpileImport,
-  def: transpileDef,
-  fn: transpileFn,
-  str: transpileStr,
-  let: transpileLet,
-  throw: transpileThrow,
-  for: transpileFor,
-  case: transpileCase,
+  import: transpileBuiltinImport,
+  def: transpileBuiltinDef,
+  fn: transpileBuiltinFn,
+  str: transpileBuiltinStr,
+  let: transpileBuiltinLet,
+  throw: transpileBuiltinThrow,
+  for: transpileBuiltinFor,
+  case: transpileBuiltinCase,
 }
 
 function* transpileList(input) {
