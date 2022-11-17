@@ -6,9 +6,11 @@ const err = (expected, offset) => `expected ${expected} at position ${offset}`
 const posS = pos =>
   `on line ${pos.line + 1} column ${pos.column + 1} at offset ${pos.offset + 1}`
 
-let _gensym = 0
-const gensym = () => {
-  return { kind: 'symbol', value: `gensym__${_gensym++}`, pos: {} }
+const newGensym = () => {
+  let _gensym = 0
+  return () => {
+    return { kind: 'symbol', value: `gensym__${_gensym++}`, pos: {} }
+  }
 }
 
 const readString = (input, len, pos) => {
@@ -187,7 +189,7 @@ const collectForm = input => {
   return collected
 }
 
-function* transpileMap(input, hoist) {
+function* transpileMap(gensym, input, hoist) {
   yield '{'
   for (let token of input) {
     if (token.kind === '}') {
@@ -195,28 +197,28 @@ function* transpileMap(input, hoist) {
       return
     }
     yield '['
-    yield* transpileExpr(prepend(token, input), null, hoist)
+    yield* transpileExpr(gensym, prepend(token, input), null, hoist)
     yield ']:'
-    yield* transpileExpr(input, null, hoist)
+    yield* transpileExpr(gensym, input, null, hoist)
     yield ','
   }
   throw new Error('unterminated map')
 }
 
-function* transpileArray(input, hoist) {
+function* transpileArray(gensym, input, hoist) {
   yield '['
   for (let token of input) {
     if (token.kind === ']') {
       yield ']'
       return
     }
-    yield* transpileExpr(prepend(token, input), null, hoist)
+    yield* transpileExpr(gensym, prepend(token, input), null, hoist)
     yield ','
   }
   throw new Error('unterminated array')
 }
 
-function* transpileBuiltinImport(input) {
+function* transpileBuiltinImport(gensym, input) {
   for (let token of input) {
     if (token.kind === ')') {
       return
@@ -234,38 +236,43 @@ function* transpileBuiltinImport(input) {
       if (name.kind !== 'symbol') {
         throw new Error(`expecting a symbol ${posS(token.pos)}`)
       }
-      yield* transpileSymbol(name)
+      yield* transpileSymbol(gensym, name)
       yield ','
     }
     discard(expect(input, ']'))
     yield '} from '
-    yield* transpileString(importPath)
+    yield* transpileString(gensym, importPath)
     yield ';'
   }
   throw new Error('unterminated import')
 }
 
-const hoister = () => {
+const hoister = gensym => {
   const collected = []
   return [
     (transpile, input, hoist) => {
-      const sym = [...transpileSymbol(gensym())]
+      const sym = [...transpileSymbol(gensym, gensym())]
       const assign = [...sym, '=']
-      collected.push('let ', ...sym, ';', ...transpile(input, assign, hoist))
+      collected.push(
+        'let ',
+        ...sym,
+        ';',
+        ...transpile(gensym, input, assign, hoist),
+      )
       return sym
     },
     uninterrupt(iter(collected)),
   ]
 }
 
-function* transpileBuiltinDef(input) {
-  const [hoist, hoisted] = hoister()
+function* transpileBuiltinDef(gensym, input) {
+  const [hoist, hoisted] = hoister(gensym)
   const [name] = expect(input, 'symbol')
   const postHoist = [
     'let ',
-    ...transpileSymbol(name),
+    ...transpileSymbol(gensym, name),
     '=',
-    ...transpileExpr(input, null, hoist),
+    ...transpileExpr(gensym, input, null, hoist),
     ';',
   ]
   yield* hoisted
@@ -273,19 +280,19 @@ function* transpileBuiltinDef(input) {
   discard(expect(input, ')'))
 }
 
-function* transpileBuiltinDo(input, assign) {
+function* transpileBuiltinDo(gensym, input, assign) {
   let buf
   for (const token of input) {
     if (token.kind === ')') {
       if (buf) {
         // final expression gets the assign
-        yield* transpileExpr(buf, assign)
+        yield* transpileExpr(gensym, buf, assign)
         yield ';'
       }
       return
     }
     if (buf) {
-      yield* transpileExpr(buf)
+      yield* transpileExpr(gensym, buf)
       yield ';'
     }
     buf = iter(collectForm(prepend(token, input)))
@@ -293,7 +300,7 @@ function* transpileBuiltinDo(input, assign) {
   throw new Error('unterminated list')
 }
 
-function* transpileDestructure(input) {
+function* transpileDestructure(gensym, input) {
   for (const token of input) {
     switch (token.kind) {
       default:
@@ -301,7 +308,7 @@ function* transpileDestructure(input) {
           `unexpected ${token.kind} ${token.value} ${posS(token.pos)}`,
         )
       case 'symbol':
-        yield* transpileSymbol(token)
+        yield* transpileSymbol(gensym, token)
         return
       case '[':
         yield '['
@@ -310,7 +317,7 @@ function* transpileDestructure(input) {
             yield ']'
             return
           }
-          yield* transpileDestructure(prepend(inner, input))
+          yield* transpileDestructure(gensym, prepend(inner, input))
           yield ','
         }
         return
@@ -366,7 +373,7 @@ function* transpileDestructure(input) {
                     `unexpected key ${token.kind} ${posS(token.pos)}`,
                   )
                 }
-                or[token.value] = [...transpileExpr(input)]
+                or[token.value] = [...transpileExpr(gensym, input)]
                 if (!keys.includes(token.value)) {
                   keys.push(token.value)
                 }
@@ -382,10 +389,10 @@ function* transpileDestructure(input) {
           } else {
             yield ','
           }
-          yield* transpileSymbol({ value: key })
+          yield* transpileSymbol(gensym, { value: key })
           if (Object.hasOwn(rename, key)) {
             yield ':'
-            yield* transpileSymbol({ value: rename[key] })
+            yield* transpileSymbol(gensym, { value: rename[key] })
           }
           if (Object.hasOwn(or, key)) {
             yield '='
@@ -398,10 +405,10 @@ function* transpileDestructure(input) {
   }
 }
 
-function* transpileBuiltinFn(input) {
+function* transpileBuiltinFn(gensym, input) {
   yield 'const '
   const [name] = expect(input, 'symbol')
-  yield* transpileSymbol(name)
+  yield* transpileSymbol(gensym, name)
   yield '=('
   discard(expect(input, '['))
   for (const token of input) {
@@ -409,16 +416,16 @@ function* transpileBuiltinFn(input) {
       yield ')'
       break
     }
-    yield* transpileDestructure(prepend(token, input))
+    yield* transpileDestructure(gensym, prepend(token, input))
     yield ','
   }
   yield '=>{'
-  yield* transpileBuiltinDo(input, 'return ')
+  yield* transpileBuiltinDo(gensym, input, 'return ')
   yield '}'
 }
 
-function* transpileBuiltinStr(input, assign, hoist) {
-  yield* transpileAssign(assign)
+function* transpileBuiltinStr(gensym, input, assign, hoist) {
+  yield* transpileAssign(gensym, assign)
   let first = true
   for (const token of input) {
     if (token.kind === ')') {
@@ -428,17 +435,17 @@ function* transpileBuiltinStr(input, assign, hoist) {
       yield '+'
     }
     first = false
-    yield* transpileExpr(prepend(token, input), null, hoist)
+    yield* transpileExpr(gensym, prepend(token, input), null, hoist)
   }
 }
 
-function* transpileBuiltinLet(input, assign, hoist) {
+function* transpileBuiltinLet(gensym, input, assign, hoist) {
   if (!assign && hoist) {
     yield* hoist(transpileBuiltinLet, input)
     return
   }
 
-  const [hoistChild, hoisted] = hoister()
+  const [hoistChild, hoisted] = hoister(gensym)
   discard(expect(input, '['))
   const postHoist = ['{']
   for (const token of input) {
@@ -451,10 +458,10 @@ function* transpileBuiltinLet(input, assign, hoist) {
     let sym
     let destructing
     if (token.kind === 'symbol') {
-      sym = [...transpileSymbol(token)]
+      sym = [...transpileSymbol(gensym, token)]
     } else {
-      sym = [...transpileSymbol(gensym())]
-      destructing = [...transpileDestructure(prepend(token, input))]
+      sym = [...transpileSymbol(gensym, gensym())]
+      destructing = [...transpileDestructure(gensym, prepend(token, input))]
     }
 
     // declare the simple symbol
@@ -462,7 +469,7 @@ function* transpileBuiltinLet(input, assign, hoist) {
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    postHoist.push(...transpileExpr(input, assign, hoistChild), ';')
+    postHoist.push(...transpileExpr(gensym, input, assign, hoistChild), ';')
 
     // if destructuring, then we need to assign our generated symbol now
     if (destructing) {
@@ -471,30 +478,30 @@ function* transpileBuiltinLet(input, assign, hoist) {
   }
   yield* hoisted
   yield* postHoist
-  yield* transpileBuiltinDo(input, assign)
+  yield* transpileBuiltinDo(gensym, input, assign)
   yield '}'
 }
 
-function* transpileBuiltinThrow(input, _assign, hoist) {
+function* transpileBuiltinThrow(gensym, input, _assign, hoist) {
   yield 'throw '
-  yield* transpileExpr(input, null, hoist)
+  yield* transpileExpr(gensym, input, null, hoist)
   discard(expect(input, ')'))
   yield ';'
 }
 
-function* transpileBuiltinFor(input, _assign, hoist) {
+function* transpileBuiltinFor(gensym, input, _assign, hoist) {
   discard(expect(input, '['))
   const [binding] = expect(input, 'symbol')
   yield 'for(let '
-  yield* transpileSymbol(binding)
+  yield* transpileSymbol(gensym, binding)
   yield '='
-  yield* transpileExpr(input, null, hoist)
+  yield* transpileExpr(gensym, input, null, hoist)
   yield ';'
-  yield* transpileSymbol(binding)
+  yield* transpileSymbol(gensym, binding)
   yield '<'
-  yield* transpileExpr(input, null, hoist)
+  yield* transpileExpr(gensym, input, null, hoist)
   yield ';'
-  yield* transpileSymbol(binding)
+  yield* transpileSymbol(gensym, binding)
   const { value: token, done } = input.next()
   if (done) {
     throw new Error('unfinished for')
@@ -503,7 +510,7 @@ function* transpileBuiltinFor(input, _assign, hoist) {
     yield '++'
   } else {
     yield '+='
-    yield* transpileExpr(prepend(token, input), null, hoist)
+    yield* transpileExpr(gensym, prepend(token, input), null, hoist)
     discard(expect(input, ']'))
   }
   yield '){'
@@ -512,13 +519,13 @@ function* transpileBuiltinFor(input, _assign, hoist) {
       yield '}'
       return
     }
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(gensym, prepend(token, input))
     yield ';'
   }
   throw new Error('unfinished for')
 }
 
-function* transpileBuiltinIf(input, assign, hoist) {
+function* transpileBuiltinIf(gensym, input, assign, hoist) {
   if (!assign && hoist) {
     yield* hoist(transpileBuiltinIf, input, hoist)
     return
@@ -543,7 +550,7 @@ function* transpileBuiltinIf(input, assign, hoist) {
     // path for final else clause
     if (expr.kind === ')') {
       yield 'else{'
-      yield* transpileExpr(buf, assign)
+      yield* transpileExpr(gensym, buf, assign)
       yield '}'
       return
     }
@@ -554,21 +561,21 @@ function* transpileBuiltinIf(input, assign, hoist) {
       yield 'else '
     }
     yield 'if('
-    yield* transpileExpr(buf, null, hoist)
+    yield* transpileExpr(gensym, buf, null, hoist)
     yield '){'
-    yield* transpileExpr(prepend(expr, input), assign)
+    yield* transpileExpr(gensym, prepend(expr, input), assign)
     yield '}'
   }
 }
 
-function* transpileBuiltinCase(input, assign, hoist) {
+function* transpileBuiltinCase(gensym, input, assign, hoist) {
   if (!assign && hoist) {
     yield* hoist(transpileBuiltinCase, input)
     return
   }
 
   yield 'switch ('
-  yield* transpileExpr(input)
+  yield* transpileExpr(gensym, input)
   yield '){'
   for (const token of input) {
     if (token.kind === ')') {
@@ -588,7 +595,7 @@ function* transpileBuiltinCase(input, assign, hoist) {
     // path for final default clause
     if (expr.kind === ')') {
       yield 'default:'
-      yield* transpileExpr(buf, assign)
+      yield* transpileExpr(gensym, buf, assign)
       yield ';'
       if (assign !== 'return ') {
         yield 'break'
@@ -598,9 +605,9 @@ function* transpileBuiltinCase(input, assign, hoist) {
     }
 
     yield 'case '
-    yield* transpileExpr(buf)
+    yield* transpileExpr(gensym, buf)
     yield ':'
-    yield* transpileExpr(prepend(expr, input), assign)
+    yield* transpileExpr(gensym, prepend(expr, input), assign)
     yield ';'
     if (assign !== 'return ') {
       yield 'break;'
@@ -621,21 +628,21 @@ const builtins = {
   if: transpileBuiltinIf,
 }
 
-function* transpileList(input, assign, hoist) {
+function* transpileList(gensym, input, assign, hoist) {
   const [token] = expect(input, 'symbol')
   const builtin = builtins[token.value]
   if (builtin) {
-    yield* builtin(input, assign, hoist)
+    yield* builtin(gensym, input, assign, hoist)
     return
   }
 
   // function or method call
-  const [hoistChild, hoisted] = hoister()
-  const postHoist = [...transpileAssign(assign)]
+  const [hoistChild, hoisted] = hoister(gensym)
+  const postHoist = [...transpileAssign(gensym, assign)]
   if (token.value.startsWith('.')) {
-    postHoist.push(...transpileExpr(input, null, hoistChild))
+    postHoist.push(...transpileExpr(gensym, input, null, hoistChild))
   }
-  postHoist.push(...transpileSymbol(token), '(')
+  postHoist.push(...transpileSymbol(gensym, token), '(')
   for (let token of input) {
     if (token.kind === ')') {
       yield* hoisted
@@ -644,35 +651,35 @@ function* transpileList(input, assign, hoist) {
       return
     }
     postHoist.push(
-      ...transpileExpr(prepend(token, input), null, hoistChild),
+      ...transpileExpr(gensym, prepend(token, input), null, hoistChild),
       ',',
     )
   }
   throw new Error('unterminated list')
 }
 
-function* transpileKeyword(input) {
+function* transpileKeyword(gensym, input) {
   const [token] = expect(input, 'symbol')
-  yield* transpileString(token)
+  yield* transpileString(gensym, token)
 }
 
-function* transpileString(token) {
+function* transpileString(gensym, token) {
   yield '"'
   yield token.value
   yield '"'
 }
 
-function* transpileSymbol(token) {
+function* transpileSymbol(gensym, token) {
   yield token.value
 }
 
-function* transpileAssign(assign) {
+function* transpileAssign(gensym, assign) {
   if (assign) {
     yield* assign
   }
 }
 
-function* transpileExpr(input, assign, hoist) {
+function* transpileExpr(gensym, input, assign, hoist) {
   const { value: token, done } = input.next()
   if (done) {
     return false
@@ -680,26 +687,26 @@ function* transpileExpr(input, assign, hoist) {
 
   // list will handle it's own assign, all others are expressions
   if (token.kind === '(') {
-    yield* transpileList(input, assign, hoist)
+    yield* transpileList(gensym, input, assign, hoist)
     return
   }
 
-  yield* transpileAssign(assign)
+  yield* transpileAssign(gensym, assign)
   switch (token.kind) {
     case '{':
-      yield* transpileMap(input, hoist)
+      yield* transpileMap(gensym, input, hoist)
       break
     case '[':
-      yield* transpileArray(input, hoist)
+      yield* transpileArray(gensym, input, hoist)
       break
     case ':':
-      yield* transpileKeyword(input)
+      yield* transpileKeyword(gensym, input)
       break
     case 'string':
-      yield* transpileString(token)
+      yield* transpileString(gensym, token)
       break
     case 'symbol':
-      yield* transpileSymbol(token)
+      yield* transpileSymbol(gensym, token)
       break
     default:
       throw new Error(`unhandled token: ${token.kind} ${posS(token.pos)}`)
@@ -709,8 +716,9 @@ function* transpileExpr(input, assign, hoist) {
 
 export function* transpile(code) {
   const input = uninterrupt(tokens(code))
+  const gensym = newGensym()
   // yield* each expression, and use the final return (from transpileExpr) to
   // decide if we should continue. this return is setup to return false when the
   // input iterator stops producing tokens.
-  while (yield* transpileExpr(input)) {}
+  while (yield* transpileExpr(gensym, input)) {}
 }

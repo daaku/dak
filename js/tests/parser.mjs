@@ -130,7 +130,7 @@ const cases = [
     'builtin: if hoisted',
     `
     (def a (if true 42 43))`,
-    'let gensym__1;if(true){gensym__1=42}else{gensym__1=43}let a=gensym__1;',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}let a=gensym__0;',
   ],
   [
     'builtin: if return',
@@ -142,13 +142,13 @@ const cases = [
     'builtin: if let',
     `
     (.foo (let [a (if true 42 43)] a) :bar)`,
-    'let gensym__2;{let a;if(true){a=42}else{a=43};gensym__2=a;}gensym__2.foo("bar",)',
+    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar",)',
   ],
   [
     'builtin: double if hoisting',
     `
     (.foo (if (if true 40 41) 42 43) :bar)`,
-    'let gensym__4;if(true){gensym__4=40}else{gensym__4=41}let gensym__3;if(gensym__4){gensym__3=42}else{gensym__3=43}gensym__3.foo("bar",)',
+    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar",)',
   ],
   // [
   //   'compound: read-string',
