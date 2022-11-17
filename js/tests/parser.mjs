@@ -9,7 +9,7 @@ const tostr = code => {
       pieces.push(p)
     }
   } catch (e) {
-    console.log([...tokens(code)])
+    //console.log([...tokens(code)])
     console.error(pieces.join(''))
     throw e
   }

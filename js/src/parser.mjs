@@ -131,7 +131,7 @@ function* expect(input, ...expected) {
       return
     }
   }
-  throw new Error(`input ended while expecting ${expected[i].kind}`)
+  throw new Error(`input ended while expecting ${expected[i]}`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
@@ -167,7 +167,9 @@ const pairs = {
   '[': ']',
   '{': '}',
 }
+const plusOnes = ['@', '#', ':', "'", '~', '`', ',']
 
+// finished input returns an empty array.
 const collectForm = input => {
   const collected = []
   const closers = []
@@ -178,7 +180,7 @@ const collectForm = input => {
     } else if (Object.hasOwn(pairs, token.kind)) {
       closers.push(pairs[token.kind])
     }
-    if (closers.length === 0) {
+    if (!plusOnes.includes(token.kind) && closers.length === 0) {
       break
     }
   }
@@ -500,11 +502,6 @@ function* transpileBuiltinFor(input) {
   throw new Error('unfinished for')
 }
 
-// drop the leading components that are expected to form the given assignment.
-// assumes the assign is there, does no comparisons.
-const dropAssign = (code, assign) =>
-  code.slice([...transpileAssign(assign)].length)
-
 function* transpileBuiltinCase(input, assign) {
   yield 'switch ('
   yield* transpileExpr(input)
@@ -515,11 +512,10 @@ function* transpileBuiltinCase(input, assign) {
       return
     }
 
-    // literals could be the default clause, or a case condition.
-    // else it must be default clause. in the case of literals, we dropAssign
-    // after we know if it's a cond value or final clause.
+    // could be the final default clause, or another case to match. buffer the
+    // form and decide based on the next token.
+    const buf = iter(collectForm(prepend(token, input)))
 
-    const cond = [...transpileExpr(prepend(token, input), assign)]
     const { value: expr, done } = input.next()
     if (done) {
       throw new Error('unterminated list')
@@ -528,7 +524,7 @@ function* transpileBuiltinCase(input, assign) {
     // path for final default clause
     if (expr.kind === ')') {
       yield 'default:'
-      yield* cond
+      yield* transpileExpr(buf, assign)
       yield ';'
       if (assign !== 'return ') {
         yield 'break'
@@ -538,7 +534,7 @@ function* transpileBuiltinCase(input, assign) {
     }
 
     yield 'case '
-    yield* dropAssign(cond, assign)
+    yield* transpileExpr(buf)
     yield ':'
     yield* transpileExpr(prepend(expr, input), assign)
     yield ';'
