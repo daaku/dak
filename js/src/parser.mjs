@@ -248,10 +248,10 @@ function* transpileBuiltinImport(input) {
 const hoister = () => {
   const collected = []
   return [
-    (transpile, input) => {
+    (transpile, input, hoist) => {
       const sym = [...transpileSymbol(gensym())]
       const assign = [...sym, '=']
-      collected.push('let ', ...sym, ';', ...transpile(input, assign))
+      collected.push('let ', ...sym, ';', ...transpile(input, assign, hoist))
       return sym
     },
     uninterrupt(iter(collected)),
@@ -432,12 +432,15 @@ function* transpileBuiltinStr(input, assign, hoist) {
   }
 }
 
-function* transpileBuiltinLet(input, assign) {
-  if (!assign) {
-    throw new Error(`let requires assign ${posS(input.pos)}`)
+function* transpileBuiltinLet(input, assign, hoist) {
+  if (!assign && hoist) {
+    yield* hoist(transpileBuiltinLet, input)
+    return
   }
+
+  const [hoistChild, hoisted] = hoister()
   discard(expect(input, '['))
-  yield '{'
+  const postHoist = ['{']
   for (const token of input) {
     if (token.kind === ']') {
       break
@@ -455,24 +458,19 @@ function* transpileBuiltinLet(input, assign) {
     }
 
     // declare the simple symbol
-    yield 'let '
-    yield* sym
-    yield ';'
+    postHoist.push('let ', ...sym, ';')
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    yield* transpileExpr(input, assign)
-    yield ';'
+    postHoist.push(...transpileExpr(input, assign, hoistChild), ';')
 
     // if destructuring, then we need to assign our generated symbol now
     if (destructing) {
-      yield 'let '
-      yield* destructing
-      yield '='
-      yield* sym
-      yield ';'
+      postHoist.push('let ', ...destructing, '=', ...sym, ';')
     }
   }
+  yield* hoisted
+  yield* postHoist
   yield* transpileBuiltinDo(input, assign)
   yield '}'
 }
@@ -520,12 +518,51 @@ function* transpileBuiltinFor(input, _assign, hoist) {
   throw new Error('unfinished for')
 }
 
-function* transpileBuiltinCase(input, assign, hoist) {
-  if (assign && hoist) {
-    throw new Error('assign and hoist are mutually exclusive')
+function* transpileBuiltinIf(input, assign, hoist) {
+  if (!assign && hoist) {
+    yield* hoist(transpileBuiltinIf, input, hoist)
+    return
   }
 
-  if (hoist) {
+  let first = true
+  for (const token of input) {
+    if (token.kind === ')') {
+      yield '}'
+      return
+    }
+
+    // could be the final default clause, or another condition to match. buffer
+    // the form and decide based on the next token.
+    const buf = iter(collectForm(prepend(token, input)))
+
+    const { value: expr, done } = input.next()
+    if (done) {
+      throw new Error('unterminated list')
+    }
+
+    // path for final else clause
+    if (expr.kind === ')') {
+      yield 'else{'
+      yield* transpileExpr(buf, assign)
+      yield '}'
+      return
+    }
+
+    if (first) {
+      first = false
+    } else {
+      yield 'else '
+    }
+    yield 'if('
+    yield* transpileExpr(buf, null, hoist)
+    yield '){'
+    yield* transpileExpr(prepend(expr, input), assign)
+    yield '}'
+  }
+}
+
+function* transpileBuiltinCase(input, assign, hoist) {
+  if (!assign && hoist) {
     yield* hoist(transpileBuiltinCase, input)
     return
   }
@@ -581,6 +618,7 @@ const builtins = {
   for: transpileBuiltinFor,
   case: transpileBuiltinCase,
   do: transpileBuiltinDo,
+  if: transpileBuiltinIf,
 }
 
 function* transpileList(input, assign, hoist) {
@@ -592,19 +630,23 @@ function* transpileList(input, assign, hoist) {
   }
 
   // function or method call
-  yield* transpileAssign(assign)
+  const [hoistChild, hoisted] = hoister()
+  const postHoist = [...transpileAssign(assign)]
   if (token.value.startsWith('.')) {
-    yield* transpileExpr(input, null, hoist)
+    postHoist.push(...transpileExpr(input, null, hoistChild))
   }
-  yield* transpileSymbol(token)
-  yield '('
+  postHoist.push(...transpileSymbol(token), '(')
   for (let token of input) {
     if (token.kind === ')') {
+      yield* hoisted
+      yield* postHoist
       yield ')'
       return
     }
-    yield* transpileExpr(prepend(token, input), null, hoist)
-    yield ','
+    postHoist.push(
+      ...transpileExpr(prepend(token, input), null, hoistChild),
+      ',',
+    )
   }
   throw new Error('unterminated list')
 }
