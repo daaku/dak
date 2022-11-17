@@ -2,26 +2,7 @@
 
 ## TODO
 
-- hoist statements in expression positions
-
-  - map key, value
-  - array value
-  - str arguments
-  - throw argument
-  - for bindings
-  - function call arguments
-  - def binding
-  - let bindings
-
-- hoist targets:
-
-  - let
-  - do
-  - def
-  - try/catch/finally
-
-- add assign/return operations in final positions
-
+- try/catch/finally
 - new: (Error. "foo")
 - return
 - break
