@@ -36,6 +36,15 @@ const cases = [
   ],
   ['builtin: def', '(def a 42)', 'let a=42;'],
   [
+    'builtin: def with hoist',
+    `
+    (def a (case v
+             42 :answer
+             43 :not))
+  `,
+    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}let a=gensym__0;',
+  ],
+  [
     'builtin: fn',
     `
     (fn err [expected offset]

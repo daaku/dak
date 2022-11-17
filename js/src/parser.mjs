@@ -245,13 +245,31 @@ function* transpileBuiltinImport(input) {
   throw new Error('unterminated import')
 }
 
+const hoister = () => {
+  const collected = []
+  return [
+    (transpile, input) => {
+      const sym = [...transpileSymbol(gensym())]
+      const assign = [...sym, '=']
+      collected.push('let ', ...sym, ';', ...transpile(input, assign))
+      return sym
+    },
+    uninterrupt(iter(collected)),
+  ]
+}
+
 function* transpileBuiltinDef(input) {
-  yield 'let '
+  const [hoist, hoisted] = hoister()
   const [name] = expect(input, 'symbol')
-  yield* transpileSymbol(name)
-  yield '='
-  yield* transpileExpr(input)
-  yield ';'
+  const postHoist = [
+    'let ',
+    ...transpileSymbol(name),
+    '=',
+    ...transpileExpr(input, null, hoist),
+    ';',
+  ]
+  yield* hoisted
+  yield* postHoist
   discard(expect(input, ')'))
 }
 
@@ -502,7 +520,16 @@ function* transpileBuiltinFor(input, _assign, hoist) {
   throw new Error('unfinished for')
 }
 
-function* transpileBuiltinCase(input, assign) {
+function* transpileBuiltinCase(input, assign, hoist) {
+  if (assign && hoist) {
+    throw new Error('assign and hoist are mutually exclusive')
+  }
+
+  if (hoist) {
+    yield* hoist(transpileBuiltinCase, input)
+    return
+  }
+
   yield 'switch ('
   yield* transpileExpr(input)
   yield '){'
