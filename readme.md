@@ -2,7 +2,18 @@
 
 ## TODO
 
-- hoist statements in expression positions (arguments etc)
+- hoist statements in expression positions
+
+  - map key, value
+  - array value
+  - function call arguments
+  - def binding
+  - str arguments
+  - let bindings
+  - throw argument
+  - for bindings
+  -
+
 - add assign/return operations in final positions
 
 - new: (Error. "foo")
@@ -14,7 +25,7 @@
 - ?.
 - .
 - symbol name mangling
-- binding context
+- binding context (allow shadowing any symbol)
 
 - (do ) needs final assignment
 - (let )
