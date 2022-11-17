@@ -6,13 +6,19 @@
 
   - map key, value
   - array value
-  - function call arguments
-  - def binding
   - str arguments
-  - let bindings
   - throw argument
   - for bindings
-  -
+  - function call arguments
+  - def binding
+  - let bindings
+
+- hoist targets:
+
+  - let
+  - do
+  - def
+  - try/catch/finally
 
 - add assign/return operations in final positions
 

@@ -187,7 +187,7 @@ const collectForm = input => {
   return collected
 }
 
-function* transpileMap(input) {
+function* transpileMap(input, hoist) {
   yield '{'
   for (let token of input) {
     if (token.kind === '}') {
@@ -195,22 +195,22 @@ function* transpileMap(input) {
       return
     }
     yield '['
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(prepend(token, input), null, hoist)
     yield ']:'
-    yield* transpileExpr(input)
+    yield* transpileExpr(input, null, hoist)
     yield ','
   }
   throw new Error('unterminated map')
 }
 
-function* transpileArray(input) {
+function* transpileArray(input, hoist) {
   yield '['
   for (let token of input) {
     if (token.kind === ']') {
       yield ']'
       return
     }
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(prepend(token, input), null, hoist)
     yield ','
   }
   throw new Error('unterminated array')
@@ -399,7 +399,7 @@ function* transpileBuiltinFn(input) {
   yield '}'
 }
 
-function* transpileBuiltinStr(input, assign) {
+function* transpileBuiltinStr(input, assign, hoist) {
   yield* transpileAssign(assign)
   let first = true
   for (const token of input) {
@@ -410,7 +410,7 @@ function* transpileBuiltinStr(input, assign) {
       yield '+'
     }
     first = false
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(prepend(token, input), null, hoist)
   }
 }
 
@@ -459,24 +459,24 @@ function* transpileBuiltinLet(input, assign) {
   yield '}'
 }
 
-function* transpileBuiltinThrow(input) {
+function* transpileBuiltinThrow(input, _assign, hoist) {
   yield 'throw '
-  yield* transpileExpr(input)
+  yield* transpileExpr(input, null, hoist)
   discard(expect(input, ')'))
   yield ';'
 }
 
-function* transpileBuiltinFor(input) {
+function* transpileBuiltinFor(input, _assign, hoist) {
   discard(expect(input, '['))
   const [binding] = expect(input, 'symbol')
   yield 'for(let '
   yield* transpileSymbol(binding)
   yield '='
-  yield* transpileExpr(input)
+  yield* transpileExpr(input, null, hoist)
   yield ';'
   yield* transpileSymbol(binding)
   yield '<'
-  yield* transpileExpr(input)
+  yield* transpileExpr(input, null, hoist)
   yield ';'
   yield* transpileSymbol(binding)
   const { value: token, done } = input.next()
@@ -487,7 +487,7 @@ function* transpileBuiltinFor(input) {
     yield '++'
   } else {
     yield '+='
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(prepend(token, input), null, hoist)
     discard(expect(input, ']'))
   }
   yield '){'
@@ -556,18 +556,18 @@ const builtins = {
   do: transpileBuiltinDo,
 }
 
-function* transpileList(input, assign) {
+function* transpileList(input, assign, hoist) {
   const [token] = expect(input, 'symbol')
   const builtin = builtins[token.value]
   if (builtin) {
-    yield* builtin(input, assign)
+    yield* builtin(input, assign, hoist)
     return
   }
 
   // function or method call
   yield* transpileAssign(assign)
   if (token.value.startsWith('.')) {
-    yield* transpileExpr(input)
+    yield* transpileExpr(input, null, hoist)
   }
   yield* transpileSymbol(token)
   yield '('
@@ -576,7 +576,7 @@ function* transpileList(input, assign) {
       yield ')'
       return
     }
-    yield* transpileExpr(prepend(token, input))
+    yield* transpileExpr(prepend(token, input), null, hoist)
     yield ','
   }
   throw new Error('unterminated list')
@@ -603,7 +603,7 @@ function* transpileAssign(assign) {
   }
 }
 
-function* transpileExpr(input, assign) {
+function* transpileExpr(input, assign, hoist) {
   const { value: token, done } = input.next()
   if (done) {
     return false
@@ -611,17 +611,17 @@ function* transpileExpr(input, assign) {
 
   // list will handle it's own assign, all others are expressions
   if (token.kind === '(') {
-    yield* transpileList(input, assign)
+    yield* transpileList(input, assign, hoist)
     return
   }
 
   yield* transpileAssign(assign)
   switch (token.kind) {
     case '{':
-      yield* transpileMap(input)
+      yield* transpileMap(input, hoist)
       break
     case '[':
-      yield* transpileArray(input)
+      yield* transpileArray(input, hoist)
       break
     case ':':
       yield* transpileKeyword(input)
