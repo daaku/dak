@@ -147,8 +147,8 @@ const cases = [
   [
     'builtin: double if hoisting',
     `
-    (.foo (let [a (if (if true 40 41) 42 43)] a) :bar)`,
-    'let gensym__3;let gensym__4;if(true){gensym__4=40}else{gensym__4=41}{let a;if(gensym__4){a=42}else{a=43};gensym__3=a;}gensym__3.foo("bar",)',
+    (.foo (if (if true 40 41) 42 43) :bar)`,
+    'let gensym__4;if(true){gensym__4=40}else{gensym__4=41}let gensym__3;if(gensym__4){gensym__3=42}else{gensym__3=43}gensym__3.foo("bar",)',
   ],
   // [
   //   'compound: read-string',
