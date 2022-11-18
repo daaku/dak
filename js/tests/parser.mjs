@@ -18,6 +18,14 @@ const tostr = code => {
 
 const cases = [
   ['string escape', '"\\t"', '"\\t"'],
+  ['symbol: dash special case', 'foo-bar', 'fooBar'],
+  ['symbol: bang', 'foo!', 'foo_BANG_'],
+  ['symbol: qmark', 'foo?', 'foo_QMARK_'],
+  ['symbol: star', 'foo*', 'foo_STAR_'],
+  ['symbol: plus', 'foo+', 'foo_PLUS_'],
+  ['symbol: gt', '>', '_GT_'],
+  ['symbol: lt', '<', '_LT_'],
+  ['symbol: eq', '=', '_EQ_'],
   ['plain keyword', ':foo', '"foo"'],
   [
     'data structures',
@@ -33,7 +41,7 @@ const cases = [
     (import ["./a.js" [A B c-d]]
             ["./b/c.js" [E]])
     `,
-    `import {A,B,c-d,} from "./a.js";import {E,} from "./b/c.js";`,
+    `import {A,B,cD,} from "./a.js";import {E,} from "./b/c.js";`,
   ],
   ['builtin: def', '(def a 42)', 'let a=42;'],
   [

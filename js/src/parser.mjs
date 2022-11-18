@@ -682,6 +682,14 @@ function* transpileString(ctx, token) {
 
 function* transpileSymbol(ctx, token) {
   yield token.value
+    .replace('!', '_BANG_')
+    .replace('?', '_QMARK_')
+    .replace('*', '_STAR_')
+    .replace('+', '_PLUS_')
+    .replace('>', '_GT_')
+    .replace('<', '_LT_')
+    .replace('=', '_EQ_')
+    .replace(/-(.)/, (_match, c) => c.toUpperCase())
 }
 
 function* transpileAssign(ctx, assign) {

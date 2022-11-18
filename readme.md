@@ -4,7 +4,6 @@
 
 ### Features
 
-- symbol name mangling
 - source maps
 - browser ui
 - binding context (allow shadowing any symbol)
