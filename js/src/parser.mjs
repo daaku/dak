@@ -722,6 +722,8 @@ function* transpileExpr(ctx, input, assign, hoist) {
 
   yield* transpileAssign(ctx, assign)
   switch (token.kind) {
+    case 'comment':
+      break
     case '{':
       yield* transpileMap(ctx, input, hoist)
       break

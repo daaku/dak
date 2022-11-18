@@ -39,6 +39,14 @@ const cases = [
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
   ['constructor call', '(String. 42)', 'new String(42,)'],
   [
+    'comments',
+    `
+    ; this is the truth
+    "use strict" ; really sure
+    `,
+    `"use strict"`,
+  ],
+  [
     'builtin: import',
     `
     (import ["./a.js" [A B c-d]]
