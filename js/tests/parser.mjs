@@ -87,6 +87,14 @@ const cases = [
     `,
     `const run=()=>{{let a;a=0;let b;b=inc(a,);console.log(a,);return b;};}`,
   ],
+  [
+    'builtin: let with destructuring',
+    `(fn run []
+      (let [{:keys [a b]} (foo)]
+        [a b]))
+    `,
+    `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};}`,
+  ],
   ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   [
     'builtin: for with step',
