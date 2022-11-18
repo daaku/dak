@@ -714,6 +714,11 @@ function* transpileExpr(ctx, input, assign, hoist) {
     return false
   }
 
+  // completely ignore comments
+  if (token.kind === 'comment') {
+    return true
+  }
+
   // list will handle it's own assign, all others are expressions
   if (token.kind === '(') {
     yield* transpileList(ctx, input, assign, hoist)
@@ -722,8 +727,6 @@ function* transpileExpr(ctx, input, assign, hoist) {
 
   yield* transpileAssign(ctx, assign)
   switch (token.kind) {
-    case 'comment':
-      break
     case '{':
       yield* transpileMap(ctx, input, hoist)
       break
