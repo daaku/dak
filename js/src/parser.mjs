@@ -553,7 +553,6 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
   let first = true
   for (const token of input) {
     if (token.kind === ')') {
-      yield '}'
       return
     }
 

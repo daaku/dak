@@ -153,6 +153,12 @@ const cases = [
     'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}let a=gensym__0;',
   ],
   [
+    'builtin: if without else',
+    `
+    (fn run [] (if true 42))`,
+    'const run=()=>{if(true){return 42};}',
+  ],
+  [
     'builtin: if return',
     `
     (fn run [] (if true 42 43))`,
