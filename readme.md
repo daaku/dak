@@ -5,7 +5,6 @@
 ### Features
 
 - symbol name mangling
-- string escaping
 - source maps
 - browser ui
 - binding context (allow shadowing any symbol)

@@ -17,6 +17,7 @@ const tostr = code => {
 }
 
 const cases = [
+  ['string escape', '"\\t"', '"\\t"'],
   ['plain keyword', ':foo', '"foo"'],
   [
     'data structures',

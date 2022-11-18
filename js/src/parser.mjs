@@ -29,6 +29,16 @@ const readString = (input, len, pos) => {
         pos.line++
         pos.column = 0
         break
+      case '\\':
+        end++
+        pos.offset += 2
+        if (input[end] === '\n') {
+          pos.line++
+          pos.column = 0
+        } else {
+          pos.column += 2
+        }
+        break
     }
   }
   throw new Error('unterminated string')
