@@ -18,6 +18,8 @@ const tostr = code => {
 
 const cases = [
   ['string escape', '"\\t"', '"\\t"'],
+  ['string with escaped newline', '"\\\n"', '"\\\n"'],
+  ['string with unescaped newline', '"hello\nworld"', '"hello\\\nworld"'],
   ['symbol: dash special case', 'foo-bar', 'fooBar'],
   ['symbol: bang', 'foo!', 'foo_BANG_'],
   ['symbol: qmark', 'foo?', 'foo_QMARK_'],

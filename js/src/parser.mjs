@@ -16,6 +16,7 @@ const newCtx = () => {
 }
 
 const readString = (input, len, pos) => {
+  let buf = []
   let start = pos.offset + 1
   for (let end = start; end < len; end++) {
     pos.offset++
@@ -24,14 +25,21 @@ const readString = (input, len, pos) => {
       case '"':
         pos.offset++
         pos.column++
-        return input.substring(start, end)
+        if (buf.length === 0) {
+          return input.substring(start, end)
+        } else {
+          buf.push(input.substring(start, end))
+          return buf.join('')
+        }
       case '\n':
         pos.line++
         pos.column = 0
+        buf.push(input.substring(start, end), '\\\n')
+        start = end + 1
         break
       case '\\':
         end++
-        pos.offset += 2
+        pos.offset++
         if (input[end] === '\n') {
           pos.line++
           pos.column = 0
