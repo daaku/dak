@@ -16,7 +16,6 @@ const newCtx = () => {
 }
 
 const readString = (input, len, pos) => {
-  // TODO: handle escapes
   let start = pos.offset + 1
   for (let end = start; end < len; end++) {
     pos.offset++
