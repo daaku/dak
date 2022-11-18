@@ -35,6 +35,7 @@ const cases = [
   ['nested arrays', '[[1 2 3] [4 5 6]]', '[[1,2,3,],[4,5,6,],]'],
   ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
+  ['constructor call', '(String. 42)', 'new String(42,)'],
   [
     'builtin: import',
     `

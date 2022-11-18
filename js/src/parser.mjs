@@ -650,7 +650,10 @@ function* transpileList(ctx, input, assign, hoist) {
   // function or method call
   const [hoistChild, hoisted] = hoister(ctx)
   const postHoist = [...transpileAssign(ctx, assign)]
-  if (token.value.startsWith('.')) {
+  if (token.value.endsWith('.')) {
+    postHoist.push('new ')
+    token.value = token.value.slice(0, -1) // drop the tailing .
+  } else if (token.value.startsWith('.')) {
     postHoist.push(...transpileExpr(ctx, input, null, hoistChild))
   }
   postHoist.push(...transpileSymbol(ctx, token), '(')

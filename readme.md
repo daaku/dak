@@ -14,7 +14,6 @@
 ### Forms
 
 - try/catch/finally
-- new: (Error. "foo")
 - return
 - break
 - yield
