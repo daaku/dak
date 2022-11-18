@@ -159,6 +159,12 @@ const cases = [
     'const run=()=>{if(true){return 42};}',
   ],
   [
+    'builtin: if and else if',
+    `
+    (fn run [a b] (if a 42 b 43))`,
+    'const run=(a,b,)=>{if(a){return 42}else if(b){return 43};}',
+  ],
+  [
     'builtin: if return',
     `
     (fn run [] (if true 42 43))`,
