@@ -693,15 +693,9 @@ const builtins = {
   '.': transpileBuiltinDot,
 }
 
-function* transpileList(ctx, input, assign, hoist) {
+// function, method or constructor call
+function* transpileCall(ctx, input, assign, hoist) {
   const [token] = expect(input, 'symbol')
-  const builtin = builtins[token.value]
-  if (builtin) {
-    yield* builtin(ctx, input, assign, hoist)
-    return
-  }
-
-  // function or method call
   const [hoistChild, hoisted] = hoister(ctx)
   const postHoist = [...transpileAssign(ctx, assign)]
   if (token.value.endsWith('.')) {
@@ -724,6 +718,16 @@ function* transpileList(ctx, input, assign, hoist) {
     )
   }
   throw new Error('unterminated list')
+}
+
+function* transpileList(ctx, input, assign, hoist) {
+  const [token] = expect(input, 'symbol')
+  const builtin = builtins[token.value]
+  if (builtin) {
+    yield* builtin(ctx, input, assign, hoist)
+    return
+  }
+  yield* transpileCall(ctx, prepend(token, input), assign, hoist)
 }
 
 function* transpileKeyword(ctx, input) {
