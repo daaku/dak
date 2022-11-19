@@ -12,6 +12,9 @@
 - metadata
 - lambda
 - this
+- while
+- fn\*
+- fn async
 
 ### Forms
 

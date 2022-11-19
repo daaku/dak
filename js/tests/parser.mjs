@@ -217,6 +217,12 @@ const cases = [
     `,
     `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];}`,
   ],
+  ['builtin: await', `@42`, `await (42)`],
+  [
+    'builtin: await method call',
+    `@(make :promise)`,
+    `await (make("promise",))`,
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]

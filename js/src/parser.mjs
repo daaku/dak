@@ -739,6 +739,12 @@ function* transpileList(ctx, input, assign, hoist) {
   yield* transpileCall(ctx, prepend(token, input), assign, hoist)
 }
 
+function* transpileAwait(ctx, input, assign, hoist) {
+  yield 'await ('
+  yield* transpileExpr(ctx, input, assign, hoist)
+  yield ')'
+}
+
 function* transpileKeyword(ctx, input) {
   const [token] = expect(input, 'symbol')
   yield* transpileString(ctx, token)
@@ -795,6 +801,9 @@ function* transpileExpr(ctx, input, assign, hoist) {
       break
     case ':':
       yield* transpileKeyword(ctx, input)
+      break
+    case '@':
+      yield* transpileAwait(ctx, input)
       break
     case 'string':
       yield* transpileString(ctx, token)
