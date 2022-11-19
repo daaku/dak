@@ -284,42 +284,54 @@ const hoister = ctx => {
   ]
 }
 
-function* transpileBuiltinDef(ctx, input) {
-  const [hoist, hoisted] = hoister(ctx)
-  const [name] = expect(input, 'symbol')
-  const postHoist = [
-    'let ',
-    ...transpileSymbol(ctx, name),
-    '=',
-    ...transpileExpr(ctx, input, null, hoist),
-    ';',
-  ]
-  yield* hoisted
-  yield* postHoist
-  discard(expect(input, ')'))
+const hoistable = transpile => {
+  return function* transpileHoistable(ctx, input, assign) {
+    const [hoist, hoisted] = hoister(ctx)
+    const postHoist = [...transpile(ctx, input, assign, hoist)]
+    yield* hoisted
+    yield* postHoist
+  }
 }
 
-function* transpileBuiltinDo(ctx, input, assign) {
-  const [hoistChild, hoisted] = hoister(ctx)
-  const postHoist = []
+const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
+  ctx,
+  input,
+  assign,
+  hoist,
+) {
+  const [name] = expect(input, 'symbol')
+  yield 'let '
+  yield* transpileSymbol(ctx, name)
+  yield '='
+  yield* transpileExpr(ctx, input, null, hoist)
+  yield ';'
+  discard(expect(input, ')'))
+})
+
+const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
+  ctx,
+  input,
+  assign,
+  hoist,
+) {
   let buf
   for (const token of input) {
     if (token.kind === ')') {
       if (buf) {
         // final expression gets the assign
-        postHoist.push(...transpileExpr(ctx, buf, assign, hoistChild), ';')
+        yield* transpileExpr(ctx, buf, assign, hoist)
+        yield ';'
       }
-      yield* hoisted
-      yield* postHoist
       return
     }
     if (buf) {
-      postHoist.push(...transpileExpr(ctx, buf, null, hoistChild), ';')
+      yield* transpileExpr(ctx, buf, null, hoist)
+      yield ';'
     }
     buf = iter(collectForm(prepend(token, input)))
   }
   throw new Error('unterminated list')
-}
+})
 
 function* transpileDestructure(ctx, input) {
   for (const token of input) {
@@ -460,15 +472,19 @@ function* transpileBuiltinStr(ctx, input, assign, hoist) {
   }
 }
 
-function* transpileBuiltinLet(ctx, input, assign, hoist) {
+const transpileBuiltinLet = hoistable(function* transpileBuiltinLet(
+  ctx,
+  input,
+  assign,
+  hoist,
+) {
   if (!assign && hoist) {
     yield* hoist(transpileBuiltinLet, input)
     return
   }
 
-  const [hoistChild, hoisted] = hoister(ctx)
   discard(expect(input, '['))
-  const postHoist = ['{']
+  yield '{'
   for (const token of input) {
     if (token.kind === ']') {
       break
@@ -486,47 +502,45 @@ function* transpileBuiltinLet(ctx, input, assign, hoist) {
     }
 
     // declare the simple symbol
-    postHoist.push('let ', ...sym, ';')
+    yield 'let '
+    yield* sym
+    yield ';'
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    postHoist.push(...transpileExpr(ctx, input, assign, hoistChild), ';')
+    yield* transpileExpr(ctx, input, assign, hoist)
+    yield ';'
 
     // if destructuring, then we need to assign our generated symbol now
     if (destructing) {
-      postHoist.push('let ', ...destructing, '=', ...sym, ';')
+      yield 'let '
+      yield* destructing
+      yield '='
+      yield* sym
+      yield ';'
     }
   }
-  yield* hoisted
-  yield* postHoist
   yield* transpileBuiltinDo(ctx, input, assign)
   yield '}'
-}
+})
 
-const makeKeywordExprTranspile = keyword => {
-  return function* transpileKeywordExpr(ctx, input, _assign, hoist) {
+const makeKeywordExprTranspile = keyword =>
+  hoistable(function* transpileKeywordExpr(ctx, input, _assign, hoist) {
+    yield keyword
     const { value: token, done } = input.next()
     if (done) {
       throw new Error('unfinished ' + keyword)
     }
     // keyword only statement, like a bare 'return', 'yield' or 'break'
     if (token.kind === ')') {
-      yield keyword
       yield ';'
       return
     }
-    const [hoistChild, hoisted] = hoister(ctx)
-    const postHoist = [
-      keyword,
-      ' ',
-      ...transpileExpr(ctx, prepend(token, input), null, hoistChild),
-      ';',
-    ]
+    yield ' '
+    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    yield ';'
     discard(expect(input, ')'))
-    yield* hoisted
-    yield* postHoist
-  }
-}
+  })
 
 const transpileBuiltinThrow = makeKeywordExprTranspile('throw')
 const transpileBuiltinReturn = makeKeywordExprTranspile('return')
@@ -694,31 +708,32 @@ const builtins = {
 }
 
 // function, method or constructor call
-function* transpileCall(ctx, input, assign, hoist) {
+const transpileCall = hoistable(function* transpileCall(
+  ctx,
+  input,
+  assign,
+  hoist,
+) {
   const [token] = expect(input, 'symbol')
-  const [hoistChild, hoisted] = hoister(ctx)
-  const postHoist = [...transpileAssign(ctx, assign)]
+  yield* transpileAssign(ctx, assign)
   if (token.value.endsWith('.')) {
-    postHoist.push('new ')
+    yield 'new '
     token.value = token.value.slice(0, -1) // drop the tailing .
   } else if (token.value.startsWith('.')) {
-    postHoist.push(...transpileExpr(ctx, input, null, hoistChild))
+    yield* transpileExpr(ctx, input, null, hoist)
   }
-  postHoist.push(...transpileSymbol(ctx, token), '(')
+  yield* transpileSymbol(ctx, token)
+  yield '('
   for (let token of input) {
     if (token.kind === ')') {
-      yield* hoisted
-      yield* postHoist
       yield ')'
       return
     }
-    postHoist.push(
-      ...transpileExpr(ctx, prepend(token, input), null, hoistChild),
-      ',',
-    )
+    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    yield ','
   }
   throw new Error('unterminated list')
-}
+})
 
 function* transpileList(ctx, input, assign, hoist) {
   const [token] = expect(input, 'symbol')
