@@ -209,7 +209,7 @@ const collectForm = input => {
 
 function* transpileMap(ctx, input, hoist) {
   yield '{'
-  for (let token of input) {
+  for (const token of input) {
     if (token.kind === '}') {
       yield '}'
       return
@@ -225,7 +225,7 @@ function* transpileMap(ctx, input, hoist) {
 
 function* transpileArray(ctx, input, hoist) {
   yield '['
-  for (let token of input) {
+  for (const token of input) {
     if (token.kind === ']') {
       yield ']'
       return
@@ -237,7 +237,7 @@ function* transpileArray(ctx, input, hoist) {
 }
 
 function* transpileBuiltinImport(ctx, input) {
-  for (let token of input) {
+  for (const token of input) {
     if (token.kind === ')') {
       return
     }
@@ -247,7 +247,7 @@ function* transpileBuiltinImport(ctx, input) {
     yield 'import {'
     const [importPath] = expect(input, 'string')
     discard(expect(input, '['))
-    for (let name of input) {
+    for (const name of input) {
       if (name.kind === ']') {
         break
       }
@@ -718,7 +718,7 @@ function* transpileCall(ctx, input, assign, hoist) {
   }
   yield* transpileSymbol(ctx, token)
   yield '('
-  for (let token of input) {
+  for (const token of input) {
     if (token.kind === ')') {
       yield ')'
       return

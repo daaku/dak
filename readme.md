@@ -10,6 +10,8 @@
 - macros
 - hiccup
 - metadata
+- lambda
+- this
 
 ### Forms
 
