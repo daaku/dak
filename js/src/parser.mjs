@@ -708,12 +708,7 @@ const builtins = {
 }
 
 // function, method or constructor call
-const transpileCall = hoistable(function* transpileCall(
-  ctx,
-  input,
-  assign,
-  hoist,
-) {
+function* transpileCall(ctx, input, assign, hoist) {
   const [token] = expect(input, 'symbol')
   yield* transpileAssign(ctx, assign)
   if (token.value.endsWith('.')) {
@@ -733,7 +728,7 @@ const transpileCall = hoistable(function* transpileCall(
     yield ','
   }
   throw new Error('unterminated list')
-})
+}
 
 function* transpileList(ctx, input, assign, hoist) {
   const [token] = expect(input, 'symbol')

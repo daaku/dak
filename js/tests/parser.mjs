@@ -39,6 +39,11 @@ const cases = [
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
   ['constructor call', '(String. 42)', 'new String(42,)'],
   [
+    'call nested hoisted',
+    '(do (String. (Number. (if true 42 43))))',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0,),);',
+  ],
+  [
     'comments',
     `
     ; this is the truth
@@ -200,8 +205,8 @@ const cases = [
   [
     'builtin: double if hoisting',
     `
-    (.foo (if (if true 40 41) 42 43) :bar)`,
-    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar",)',
+    (do (.foo (if (if true 40 41) 42 43) :bar))`,
+    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar",);',
   ],
   ['builtin: dot', '(. foo bar)', 'foo[bar]'],
   ['builtin: dot double', '(. foo bar baz)', 'foo[bar][baz]'],
