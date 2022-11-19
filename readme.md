@@ -5,7 +5,6 @@
 ### Features
 
 - source maps
-- browser ui
 - binding context (allow shadowing any symbol)
 - macros
 - hiccup
@@ -15,6 +14,12 @@
 - while
 - fn\*
 - fn async
+
+- browser ui: error messages
+- browser ui: make pretty optional
+- browser ui: make optional terser
+- browser ui: optional auto eval
+- browser ui: syntax highlighting
 
 ### Forms
 
