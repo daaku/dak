@@ -70,7 +70,6 @@
             (yield {:keyword :keyword :value value :pos pos})
             (pos-mv-end pos end 0))
 
-          :else
           (let [[value end] (read-symbol input len (inc offset) :symbol)]
             (yield {:keyword :symbol :value value :pos pos})
             (pos-mv-end pos end 0))))))
