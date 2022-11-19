@@ -207,6 +207,33 @@ const collectForm = input => {
   return collected
 }
 
+const hoister = ctx => {
+  const collected = []
+  return [
+    (transpile, input, hoist) => {
+      const sym = [...transpileSymbol(ctx, ctx.gensym())]
+      const assign = [...sym, '=']
+      collected.push(
+        'let ',
+        ...sym,
+        ';',
+        ...transpile(ctx, input, assign, hoist),
+      )
+      return sym
+    },
+    uninterrupt(iter(collected)),
+  ]
+}
+
+const hoistable = transpile => {
+  return function* transpileHoistable(ctx, input, assign) {
+    const [hoist, hoisted] = hoister(ctx)
+    const postHoist = [...transpile(ctx, input, assign, hoist)]
+    yield* hoisted
+    yield* postHoist
+  }
+}
+
 function* transpileMap(ctx, input, hoist) {
   yield '{'
   for (const token of input) {
@@ -263,33 +290,6 @@ function* transpileBuiltinImport(ctx, input) {
     yield ';'
   }
   throw new Error('unterminated import')
-}
-
-const hoister = ctx => {
-  const collected = []
-  return [
-    (transpile, input, hoist) => {
-      const sym = [...transpileSymbol(ctx, ctx.gensym())]
-      const assign = [...sym, '=']
-      collected.push(
-        'let ',
-        ...sym,
-        ';',
-        ...transpile(ctx, input, assign, hoist),
-      )
-      return sym
-    },
-    uninterrupt(iter(collected)),
-  ]
-}
-
-const hoistable = transpile => {
-  return function* transpileHoistable(ctx, input, assign) {
-    const [hoist, hoisted] = hoister(ctx)
-    const postHoist = [...transpile(ctx, input, assign, hoist)]
-    yield* hoisted
-    yield* postHoist
-  }
 }
 
 const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
