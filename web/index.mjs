@@ -5,7 +5,6 @@ import { transpile } from "../js/src/parser.mjs";
 const input = document.getElementById("input");
 const output = document.getElementById("output");
 input.oninput = (ev) => {
-  console.log(input.value);
   try {
     const js = [...transpile(input.value)].join("");
     const fmt = prettier.format(js, {
@@ -17,6 +16,3 @@ input.oninput = (ev) => {
     console.error(e);
   }
 };
-
-console.log(prettier);
-console.log(transpile);
