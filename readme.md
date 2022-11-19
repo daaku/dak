@@ -16,7 +16,6 @@
 - try/catch/finally
 - math ops
 - ?.
-- .
 
 ## Documentation
 

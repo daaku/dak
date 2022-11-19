@@ -203,6 +203,15 @@ const cases = [
     (.foo (if (if true 40 41) 42 43) :bar)`,
     'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar",)',
   ],
+  ['builtin: dot', '(. foo bar)', 'foo[bar]'],
+  ['builtin: dot double', '(. foo bar baz)', 'foo[bar][baz]'],
+  [
+    'builtin: dot hoist',
+    `(fn run []
+      (. foo (if true 42)))
+    `,
+    `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];}`,
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]

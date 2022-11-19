@@ -300,19 +300,21 @@ function* transpileBuiltinDef(ctx, input) {
 }
 
 function* transpileBuiltinDo(ctx, input, assign) {
+  const [hoistChild, hoisted] = hoister(ctx)
+  const postHoist = []
   let buf
   for (const token of input) {
     if (token.kind === ')') {
       if (buf) {
         // final expression gets the assign
-        yield* transpileExpr(ctx, buf, assign)
-        yield ';'
+        postHoist.push(...transpileExpr(ctx, buf, assign, hoistChild), ';')
       }
+      yield* hoisted
+      yield* postHoist
       return
     }
     if (buf) {
-      yield* transpileExpr(ctx, buf)
-      yield ';'
+      postHoist.push(...transpileExpr(ctx, buf, null, hoistChild), ';')
     }
     buf = iter(collectForm(prepend(token, input)))
   }
@@ -658,6 +660,20 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
   }
 }
 
+function* transpileBuiltinDot(ctx, input, assign, hoist) {
+  yield* transpileAssign(ctx, assign)
+  yield* transpileExpr(ctx, input)
+  for (const token of input) {
+    if (token.kind === ')') {
+      return
+    }
+    yield '['
+    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    yield ']'
+  }
+  throw new Error('unfinished list')
+}
+
 const builtins = {
   import: transpileBuiltinImport,
   def: transpileBuiltinDef,
@@ -674,6 +690,7 @@ const builtins = {
   case: transpileBuiltinCase,
   do: transpileBuiltinDo,
   if: transpileBuiltinIf,
+  '.': transpileBuiltinDot,
 }
 
 function* transpileList(ctx, input, assign, hoist) {
