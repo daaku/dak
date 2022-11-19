@@ -1,5 +1,11 @@
 const single = ['(', ')', '[', ']', '{', '}', '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
+const pairs = {
+  '(': ')',
+  '[': ']',
+  '{': '}',
+}
+const plusOnes = ['@', '#', ':', "'", '~', '`', ',']
 
 const err = (expected, offset) => `expected ${expected} at position ${offset}`
 
@@ -182,13 +188,6 @@ const prepend = (one, rest) =>
       yield* rest
     })(),
   )
-
-const pairs = {
-  '(': ')',
-  '[': ']',
-  '{': '}',
-}
-const plusOnes = ['@', '#', ':', "'", '~', '`', ',']
 
 // finished input returns an empty array.
 const collectForm = input => {
