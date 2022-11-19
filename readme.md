@@ -14,10 +14,6 @@
 ### Forms
 
 - try/catch/finally
-- return
-- break
-- yield
-- yield star
 - math ops
 - ?.
 - .

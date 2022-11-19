@@ -106,6 +106,19 @@ const cases = [
     `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};}`,
   ],
   ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
+  ['builtin: return with value', '(return 42)', 'return 42;'],
+  ['builtin: return bare', '(return)', 'return;'],
+  [
+    'builtin: return hoist',
+    `(fn run []
+      (return (if true 42)))
+    `,
+    `const run=()=>{let gensym__0;if(true){gensym__0=42}return gensym__0;;}`,
+  ],
+  ['builtin: yield', '(yield)', 'yield;'],
+  ['builtin: yield*', '(yield* [1 2])', 'yield* [1,2,];'],
+  ['builtin: break', '(break)', 'break;'],
+  ['builtin: continue', '(continue)', 'continue;'],
   [
     'builtin: for with step',
     `

@@ -501,12 +501,37 @@ function* transpileBuiltinLet(ctx, input, assign, hoist) {
   yield '}'
 }
 
-function* transpileBuiltinThrow(ctx, input, _assign, hoist) {
-  yield 'throw '
-  yield* transpileExpr(ctx, input, null, hoist)
-  discard(expect(input, ')'))
-  yield ';'
+const makeKeywordExprTranspile = keyword => {
+  return function* transpileKeywordExpr(ctx, input, _assign, hoist) {
+    const { value: token, done } = input.next()
+    if (done) {
+      throw new Error('unfinished ' + keyword)
+    }
+    // keyword only statement, like a bare 'return', 'yield' or 'break'
+    if (token.kind === ')') {
+      yield keyword
+      yield ';'
+      return
+    }
+    const [hoistChild, hoisted] = hoister(ctx)
+    const postHoist = [
+      keyword,
+      ' ',
+      ...transpileExpr(ctx, prepend(token, input), null, hoistChild),
+      ';',
+    ]
+    discard(expect(input, ')'))
+    yield* hoisted
+    yield* postHoist
+  }
 }
+
+const transpileBuiltinThrow = makeKeywordExprTranspile('throw')
+const transpileBuiltinReturn = makeKeywordExprTranspile('return')
+const transpileBuiltinYield = makeKeywordExprTranspile('yield')
+const transpileBuiltinYieldStar = makeKeywordExprTranspile('yield*')
+const transpileBuiltinBreak = makeKeywordExprTranspile('break')
+const transpileBuiltinContinue = makeKeywordExprTranspile('continue')
 
 function* transpileBuiltinFor(ctx, input, _assign, hoist) {
   discard(expect(input, '['))
@@ -640,6 +665,11 @@ const builtins = {
   str: transpileBuiltinStr,
   let: transpileBuiltinLet,
   throw: transpileBuiltinThrow,
+  return: transpileBuiltinReturn,
+  yield: transpileBuiltinYield,
+  'yield*': transpileBuiltinYieldStar,
+  break: transpileBuiltinBreak,
+  continue: transpileBuiltinContinue,
   for: transpileBuiltinFor,
   case: transpileBuiltinCase,
   do: transpileBuiltinDo,
