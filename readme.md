@@ -1,31 +1,12 @@
 # dak
 
-## TODO
+Dak or DakLang is a Lisp that transpiles to JavaScript.
 
-### Features
+Zen:
 
-- source maps
-- binding context (allow shadowing any symbol)
-- macros
-- hiccup
-- metadata
-- lambda
-- this
-- while
-- fn\*
-- fn async
-
-- browser ui: error messages
-- browser ui: make pretty optional
-- browser ui: make optional terser
-- browser ui: optional auto eval
-- browser ui: syntax highlighting
-
-### Forms
-
-- try/catch/finally
-- math ops
-- ?.
+1. Full access to JavaScript. No feature left behind.
+2. No runtime. Prefer libraries.
+3. Participate in the ecosystem.
 
 ## Documentation
 
