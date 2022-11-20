@@ -11,7 +11,7 @@ jobs:
           node-version: "19"
           cache: npm
           cache-dependency-path: js/package.json
-      - run: npm ci
+      - run: npm install
         working-directory: js
       - run: npm run cover
         working-directory: js
