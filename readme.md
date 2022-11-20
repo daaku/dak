@@ -8,6 +8,17 @@ Zen:
 2. No runtime. Prefer libraries.
 3. Participate in the ecosystem.
 
+JavaScript is ubiquitous. It's ecosystem is diverse and populated. Dak attempts
+to provide a path to leverage and participate in this ecosystem, as a modern
+lisp like language. It's not Common Lisp or Scheme, but more like Clojure or
+Fennel. It doesn't hide it's true nature, and aims to provide access to every
+feature JavaScript has.
+
+It has browser output as an important goal. Specifically, small bundle size and
+tree shaking for pay-as-you-go, are key considerations that determine the design
+choices. If you are making a browser based application in Dak, a [Vite based
+setup is the recommended choice](#12).
+
 ## Documentation
 
 ### Literals
