@@ -5,11 +5,11 @@ import * as assert from 'uvu/assert'
 const tostr = code => {
   const pieces = []
   try {
-    for (let p of transpile(code)) {
+    for (const p of transpile(code)) {
       pieces.push(p)
     }
   } catch (e) {
-    //console.log([...tokens(code)])
+    //console.log([...tokens({}, code)])
     console.error(pieces.join(''))
     throw e
   }
@@ -250,6 +250,29 @@ const cases = [
 cases.forEach(([name, input, output]) => {
   test(name, () => {
     assert.equal(tostr(input), output)
+  })
+})
+
+const errorCases = [
+  ['lone paren', '(', '<anonymous>:1:1: input ended while expecting symbol'],
+]
+
+errorCases.forEach(([name, input, msg]) => {
+  test(`error case: ${name}`, () => {
+    let output
+    try {
+      output = tostr(input)
+    } catch (err) {
+      assert.equal(err.message, msg)
+      return
+    }
+    throw Error(
+      `was expecting error: "${msg}"
+INPUT:
+${input}
+OUTPUT:
+${output}`,
+    )
   })
 })
 
