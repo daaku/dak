@@ -712,6 +712,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
       yield 'break;'
     }
   }
+  throw err(ctx, ctx, 'unterminated case')
 }
 
 function* transpileBuiltinDot(ctx, input, assign, hoist) {
@@ -725,7 +726,7 @@ function* transpileBuiltinDot(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ']'
   }
-  throw err(ctx, ctx, 'unterminated list')
+  throw err(ctx, ctx, 'unterminated "."')
 }
 
 const builtins = {
@@ -858,7 +859,9 @@ function* transpileExpr(ctx, input, assign, hoist) {
     case 'symbol':
       yield* transpileSymbol(ctx, token)
       break
+    /* c8 ignore next */
     default:
+      /* c8 ignore next */
       throw err(ctx, token, `unhandled token "${token.kind}"`)
   }
   return true

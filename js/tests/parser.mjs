@@ -312,6 +312,14 @@ const errorCases = [
   ['unterminated for', '(for [a b c]', '<anonymous>:1:12: unterminated for'],
   ['unterminated if', '(if', '<anonymous>:1:2: unterminated if'],
   ['unterminated if', '(if :foo', '<anonymous>:1:6: unterminated if'],
+  ['unterminated case', '(case :foo', '<anonymous>:1:8: unterminated case'],
+  [
+    'unterminated case expr',
+    '(case :foo :bar',
+    '<anonymous>:1:13: unterminated case',
+  ],
+  ['unterminated "."', '(.', '<anonymous>:1:2: unterminated "."'],
+  ['unterminated list', '(foo', '<anonymous>:1:2: unterminated list'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
