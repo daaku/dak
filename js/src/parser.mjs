@@ -272,31 +272,92 @@ function* transpileArray(ctx, input, hoist) {
   throw err(ctx, ctx, 'unterminated array')
 }
 
+function* transpileBuiltinImportOne(ctx, input) {
+  const [importPath] = expect(ctx, input, 'string')
+  let outer = []
+  let inner = []
+  yield 'import '
+  OUTER: for (const token of input) {
+    switch (token.kind) {
+      default:
+        throw err(ctx, token, 'unexpected import')
+      case ']':
+        // finishing the import
+        yield* outer.join(',')
+        if (inner.length !== 0) {
+          if (outer.length !== 0) {
+            yield ','
+          }
+          yield '{'
+          yield inner.join(',')
+          yield '}'
+        }
+        if (inner.length !== 0 || outer.length !== 0) {
+          yield ' from '
+        }
+        yield* transpileString(ctx, importPath)
+        yield ';'
+        return
+      case '[':
+        // list of simple names to import
+        for (const token of input) {
+          switch (token.kind) {
+            default:
+              throw err(ctx, token, `unexpected import name "${token.kind}"`)
+            case ']':
+              continue OUTER
+            case 'symbol':
+              inner.push(strSymbolToken(ctx, token))
+              break
+          }
+        }
+        throw err(ctx, token, 'unterminated import name list')
+      case 'symbol':
+        // default import
+        outer.push(strSymbolToken(ctx, token))
+        break
+      case ':':
+        // :rename, :as
+        const [op] = expect(ctx, input, 'symbol')
+        switch (op.value) {
+          default:
+            throw err(ctx, op, `unexpected import op "${op.value}"`)
+          case 'rename':
+            discard(expect(ctx, input, '{'))
+            for (const token of input) {
+              if (token.kind === '}') {
+                continue OUTER
+              }
+              const [from, to] = expect(
+                ctx,
+                prepend(token, input),
+                'symbol',
+                'symbol',
+              )
+              inner.push(
+                strSymbolToken(ctx, from) + ' as ' + strSymbolToken(ctx, to),
+              )
+            }
+            throw err(ctx, ctx, 'unterminated import rename')
+          case 'as':
+            const [name] = expect(ctx, input, 'symbol')
+            outer.push('* as ' + strSymbolToken(ctx, name))
+            break
+        }
+    }
+  }
+  throw err(ctx, ctx, 'unterminated import')
+}
+
 function* transpileBuiltinImport(ctx, input) {
   for (const token of input) {
     if (token.kind === ')') {
       return
     }
     if (token.kind !== '[') {
-      throw err(ctx, token, `expected [`)
+      throw err(ctx, token, `unexpected "${token.kind}", wanted "["`)
     }
-    yield 'import {'
-    const [importPath] = expect(ctx, input, 'string')
-    discard(expect(ctx, input, '['))
-    for (const name of input) {
-      if (name.kind === ']') {
-        break
-      }
-      if (name.kind !== 'symbol') {
-        throw err(ctx, token, `expecting a symbol`)
-      }
-      yield* transpileSymbol(ctx, name)
-      yield ','
-    }
-    discard(expect(ctx, input, ']'))
-    yield '} from '
-    yield* transpileString(ctx, importPath)
-    yield ';'
+    yield* transpileBuiltinImportOne(ctx, input)
   }
   throw err(ctx, ctx, 'unterminated import')
 }
@@ -815,6 +876,8 @@ function* transpileSymbol(ctx, token) {
     .replace('=', '_EQ_')
     .replace(/-(.)/, (_match, c) => c.toUpperCase())
 }
+
+const strSymbolToken = (ctx, token) => [...transpileSymbol(ctx, token)].join('')
 
 function* transpileAssign(ctx, assign) {
   if (assign) {

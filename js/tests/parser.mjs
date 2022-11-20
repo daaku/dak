@@ -57,10 +57,12 @@ const cases = [
   [
     'builtin: import',
     `
-    (import ["./a.js" [A B c-d]]
-            ["./b/c.js" [E]])
+    (import ["./named.js" [A B c-d]]
+            ["./default.js" TheDefault :rename {A MyA D MyD} [E F]]
+            ["./index.css"]
+            ["./as.js" :as TheNamed])
     `,
-    `import {A,B,cD,} from "./a.js";import {E,} from "./b/c.js";`,
+    `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";`,
   ],
   ['builtin: def', '(def a 42)', 'let a=42;'],
   [
@@ -320,6 +322,42 @@ const errorCases = [
   ],
   ['unterminated "."', '(.', '<anonymous>:1:2: unterminated "."'],
   ['unterminated list', '(foo', '<anonymous>:1:2: unterminated list'],
+  ['unterminated import', '(import', '<anonymous>:1:2: unterminated import'],
+  [
+    'import unexpected token ',
+    '(import :',
+    '<anonymous>:1:9: unexpected ":", wanted "["',
+  ],
+  [
+    'import unterminated',
+    '(import ["a"',
+    '<anonymous>:1:10: unterminated import',
+  ],
+  [
+    'import unexpected',
+    '(import ["a" @',
+    '<anonymous>:1:14: unexpected import',
+  ],
+  [
+    'import unexpected name',
+    '(import ["a" [@',
+    '<anonymous>:1:15: unexpected import name "@"',
+  ],
+  [
+    'import unterminated import name list',
+    '(import ["a" [',
+    '<anonymous>:1:14: unterminated import name list',
+  ],
+  [
+    'import unexpected op',
+    '(import ["a" :f',
+    '<anonymous>:1:15: unexpected import op "f"',
+  ],
+  [
+    'import unterminated rename',
+    '(import ["a" :rename {',
+    '<anonymous>:1:22: unterminated import rename',
+  ],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
