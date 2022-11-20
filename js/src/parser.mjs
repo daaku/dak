@@ -447,7 +447,10 @@ function* transpileDestructure(ctx, input) {
         yield '}'
         return
     }
+    /* c8 ignore next */
   }
+  /* c8 ignore next */
+  throw err(ctx, ctx, 'unterminated destructure')
 }
 
 function* transpileBuiltinFn(ctx, input) {
