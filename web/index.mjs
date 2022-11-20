@@ -10,7 +10,7 @@ const output = document.getElementById("output");
 
 const isPrimitive = (v) => v === Object(v);
 
-globalThis.println = (...rest) => {
+globalThis.prn = (...rest) => {
   console.log(...rest);
   for (const thing of rest) {
     const child = document.createElement("pre");
