@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Dak Lang Web UI</title>
+    <title>Dak Lang Playground</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link
       rel="icon"
@@ -10,6 +10,15 @@
       type="image/svg+xml"
     />
     <style>
+      header {
+        display: grid;
+        grid-auto-columns: 1fr auto;
+        grid-auto-flow: column;
+      }
+      header > div {
+        align-self: center;
+        justify-self: center;
+      }
       .code {
         display: grid;
         grid-auto-columns: minmax(0, 1fr);
@@ -18,16 +27,53 @@
       }
       .code textarea {
         padding: 0.5rem;
-        height: 80vh;
+        height: 50vh;
+        font-size: 16px;
+      }
+      #output {
+        border: 1px solid #bbb;
+        background-color: #eee;
+        min-height: 10vh;
+        margin-top: 1rem;
+        padding: 0.5rem;
+      }
+      #output pre {
+        margin: 0;
         font-size: 16px;
       }
     </style>
   </head>
   <body>
+    <header>
+      <h1>Dak Lang Playground</h1>
+      <div>
+        <input id="autoEval" type="checkbox" checked />
+        <label for="autoEval">Eval</label>
+        <input id="pretty" type="checkbox" checked />
+        <label for="pretty">Pretty</label>
+        <input id="minify" type="checkbox" />
+        <label for="minify">Minify</label>
+      </div>
+    </header>
     <div class="code">
-      <textarea id="input" placeholder="Write some Dak..."></textarea>
-      <textarea id="output" placeholder="Output will show here."></textarea>
+      <textarea
+        id="dakCode"
+        placeholder="Write some Dak..."
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+      ></textarea>
+      <textarea
+        id="jsCode"
+        placeholder="Output will show here."
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+      ></textarea>
     </div>
+    <div id="output"></div>
     <script type="module" src="index.mjs"></script>
   </body>
 </html>
