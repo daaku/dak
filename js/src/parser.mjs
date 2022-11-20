@@ -858,7 +858,7 @@ function* transpileExpr(ctx, input, assign, hoist) {
       yield* transpileSymbol(ctx, token)
       break
     default:
-      throw err(ctx, token, `unhandled token: ${token.kind}`)
+      throw err(ctx, token, `unhandled token "${token.kind}"`)
   }
   return true
 }

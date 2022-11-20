@@ -308,6 +308,8 @@ const errorCases = [
     '(return',
     '<anonymous>:1:2: unfinished return',
   ],
+  ['unfinished for', '(for [a b', '<anonymous>:1:9: unfinished for'],
+  ['unfinished for', '(for [a b c]', '<anonymous>:1:12: unfinished for'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
