@@ -297,6 +297,17 @@ const errorCases = [
     '(let [{:or {:',
     '<anonymous>:1:13: unexpected destructure :or ":"',
   ],
+  [
+    'op: not unary operator',
+    '(* 1)',
+    '<anonymous>:1:5: "*" is not a unary operator',
+  ],
+  ['op: unfinished list', '(+', '<anonymous>:1:2: unfinished list'],
+  [
+    'keyword expr: unfinished return',
+    '(return',
+    '<anonymous>:1:2: unfinished return',
+  ],
 ]
 
 errorCases.forEach(([name, input, msg]) => {

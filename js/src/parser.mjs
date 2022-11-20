@@ -483,7 +483,7 @@ const makeOpTranspile = (op, unary) =>
           if (unary) {
             yield op
           } else {
-            throw err(ctx, token, op + ' is not a unary operator')
+            throw err(ctx, token, `"${op}" is not a unary operator`)
           }
         }
         if (buf) {
