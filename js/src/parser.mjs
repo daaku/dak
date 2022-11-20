@@ -344,7 +344,7 @@ function* transpileDestructure(ctx, input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw err(ctx, token, `unexpected ${token.kind} ${token.value}`)
+        throw err(ctx, token, `unexpected "${token.kind}"`)
       case 'symbol':
         yield* transpileSymbol(ctx, token)
         return
@@ -358,7 +358,7 @@ function* transpileDestructure(ctx, input) {
           yield* transpileDestructure(ctx, prepend(inner, input))
           yield ','
         }
-        return
+        throw err(ctx, ctx, 'unterminated destructure')
       case '{':
         const keys = []
         const rename = {}

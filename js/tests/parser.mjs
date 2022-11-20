@@ -2,7 +2,7 @@ import { tokens, transpile } from '../src/parser.mjs'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-const tostr = code => {
+const tostr = (code, log) => {
   const pieces = []
   try {
     for (const p of transpile(code)) {
@@ -10,7 +10,9 @@ const tostr = code => {
     }
   } catch (e) {
     //console.log([...tokens({}, code)])
-    console.error(pieces.join(''))
+    if (log) {
+      console.error(pieces.join(''))
+    }
     throw e
   }
   return pieces.join('')
@@ -249,19 +251,34 @@ const cases = [
 
 cases.forEach(([name, input, output]) => {
   test(name, () => {
-    assert.equal(tostr(input), output)
+    assert.equal(tostr(input, true), output)
   })
 })
 
 const errorCases = [
   ['lone paren', '(', '<anonymous>:1:1: input ended while expecting symbol'],
+  ['unterminated string', '(foo "', '<anonymous>:1:6: unterminated string'],
+  [
+    'keyword symbol',
+    '(foo :',
+    '<anonymous>:1:6: input ended while expecting symbol',
+  ],
+  ['unterminated map', '{', '<anonymous>:1:1: unterminated map'],
+  ['unterminated array', '[', '<anonymous>:1:1: unterminated array'],
+  ['unterminated list', '(do ', '<anonymous>:1:2: unterminated list'],
+  ['destructure unexpected', '(let [:foo] ', '<anonymous>:1:7: unexpected ":"'],
+  [
+    'destructure unexpected',
+    '(let [[ ',
+    '<anonymous>:1:7: unterminated destructure',
+  ],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
   test(`error case: ${name}`, () => {
     let output
     try {
-      output = tostr(input)
+      output = tostr(input, false)
     } catch (err) {
       assert.equal(err.message, msg)
       return
