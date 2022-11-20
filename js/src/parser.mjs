@@ -12,9 +12,10 @@ const err = (expected, offset) => `expected ${expected} at position ${offset}`
 const posS = pos =>
   `on line ${pos.line + 1} column ${pos.column + 1} at offset ${pos.offset + 1}`
 
-const newCtx = () => {
+const newCtx = config => {
   let _gensym = 0
   return {
+    ...config,
     gensym() {
       return { kind: 'symbol', value: `gensym__${_gensym++}`, pos: {} }
     },
@@ -843,9 +844,9 @@ function* transpileExpr(ctx, input, assign, hoist) {
   return true
 }
 
-export function* transpile(code) {
+export function* transpile(code, config) {
   const input = uninterrupt(tokens(code))
-  const ctx = newCtx()
+  const ctx = newCtx(config)
   // yield* each expression, and use the final return (from transpileExpr) to
   // decide if we should continue. this return is setup to return false when the
   // input iterator stops producing tokens.
