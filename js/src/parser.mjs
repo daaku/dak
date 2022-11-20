@@ -788,7 +788,7 @@ function* transpileExpr(ctx, input, assign, hoist) {
   // list will handle it's own assign, all others are expressions
   if (token.kind === '(') {
     yield* transpileList(ctx, input, assign, hoist)
-    return
+    return true
   }
 
   yield* transpileAssign(ctx, assign)

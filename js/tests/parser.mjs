@@ -38,6 +38,7 @@ const cases = [
   ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
   ['constructor call', '(String. 42)', 'new String(42,)'],
+  ['multiple: list', '(add 1)(add 2)', 'add(1,)add(2,)'],
   [
     'call nested hoisted',
     '(do (String. (Number. (if true 42 43))))',
