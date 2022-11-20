@@ -66,9 +66,6 @@ const readString = (ctx, input, len, pos) => {
 
 const readSymbol = (ctx, input, len, pos) => {
   let start = pos.offset
-  if (start === len) {
-    throw err(ctx, { pos }, 'expecting symbol')
-  }
   let end
   for (end = start; end < len; end++) {
     const c = input[end]
