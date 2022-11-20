@@ -155,7 +155,11 @@ function* expect(ctx, input, ...expected) {
   let i = 0
   for (const actual of input) {
     if (actual.kind !== expected[i]) {
-      throw err(ctx, actual, `expected ${expected[i]} but got ${actual.kind}`)
+      throw err(
+        ctx,
+        actual,
+        `unexpected "${actual.kind}" wanted "${expected[i]}"`,
+      )
     }
     yield actual
     i++
@@ -380,7 +384,7 @@ function* transpileDestructure(ctx, input) {
           const [op] = expect(ctx, input, 'symbol')
           switch (op.value) {
             default:
-              throw err(ctx, op, `unexpected destructing op ${op.value}`)
+              throw err(ctx, op, `unexpected destructuring op ${op.value}`)
             case 'keys':
               discard(expect(ctx, input, '['))
               for (const token of input) {
