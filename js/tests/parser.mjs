@@ -272,6 +272,7 @@ const errorCases = [
     '(let [[ ',
     '<anonymous>:1:7: unterminated destructure',
   ],
+  ['destructure bad key', '(let [{(', '<anonymous>:1:8: unexpected ('],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
