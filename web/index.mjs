@@ -26,7 +26,7 @@ globalThis.prn = (...rest) => {
 const logErr = (prefix, err) => {
   console.error(err);
   const child = document.createElement("pre");
-  child.innerText = prefix + ":" + err;
+  child.innerText = `${prefix}: ${err.message ?? err}`;
   output.appendChild(child);
 };
 
@@ -34,7 +34,7 @@ const refresh = async () => {
   output.replaceChildren();
 
   try {
-    const js = [...transpile(dakCode.value)].join("");
+    const js = [...transpile(dakCode.value, { filename: "main.dak" })].join("");
 
     if (autoEval.checked) {
       try {

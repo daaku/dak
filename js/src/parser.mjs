@@ -7,10 +7,15 @@ const pairs = {
 }
 const plusOnes = ['@', '#', ':', "'", '~', '`', ',']
 
-const err = (expected, offset) => `expected ${expected} at position ${offset}`
-
-const posS = pos =>
-  `on line ${pos.line + 1} column ${pos.column + 1} at offset ${pos.offset + 1}`
+const err = (ctx, { pos = {} }, msg) => {
+  const e = Error(
+    `${ctx.filename ?? '<anonymous>'}:${pos.line + 1}:${
+      pos.column + 1
+    }: ${msg}`,
+  )
+  e.pos = pos
+  return e
+}
 
 const newCtx = config => {
   let _gensym = 0
@@ -22,7 +27,7 @@ const newCtx = config => {
   }
 }
 
-const readString = (input, len, pos) => {
+const readString = (ctx, input, len, pos) => {
   let buf = []
   let start = pos.offset + 1
   for (let end = start; end < len; end++) {
@@ -56,13 +61,13 @@ const readString = (input, len, pos) => {
         break
     }
   }
-  throw Error('unterminated string')
+  throw err(ctx, { pos }, 'unterminated string')
 }
 
-const readSymbol = (input, len, pos) => {
+const readSymbol = (ctx, input, len, pos) => {
   let start = pos.offset
   if (start === len) {
-    throw Error(err('symbol', start))
+    throw err(ctx, { pos }, 'expecting symbol')
   }
   let end
   for (end = start; end < len; end++) {
@@ -80,7 +85,7 @@ const readSymbol = (input, len, pos) => {
   return input.substring(start, end)
 }
 
-const readEOL = (input, len, pos) => {
+const readEOL = (ctx, input, len, pos) => {
   let start = pos.offset + 1
   let end
   for (end = start; end < len; end++) {
@@ -95,7 +100,7 @@ const readEOL = (input, len, pos) => {
   return input.substring(start, end)
 }
 
-export function* tokens(input) {
+export function* tokens(ctx, input) {
   let pos = { offset: 0, line: 0, column: 0 }
   let len = input.length
   let value, start
@@ -113,6 +118,7 @@ export function* tokens(input) {
       continue
     }
     if (single.includes(c)) {
+      ctx.pos = { ...pos }
       yield { kind: c, pos: { ...pos } }
       pos.offset++
       pos.column++
@@ -121,17 +127,20 @@ export function* tokens(input) {
     switch (c) {
       case '"':
         start = { ...pos }
-        value = readString(input, len, pos)
+        value = readString(ctx, input, len, pos)
+        ctx.pos = { ...start }
         yield { kind: 'string', value, pos: start }
         break
       case ';':
         start = { ...pos }
-        value = readEOL(input, len, pos)
+        value = readEOL(ctx, input, len, pos)
+        ctx.pos = { ...start }
         yield { kind: 'comment', value, pos: start }
         break
       default:
         start = { ...pos }
-        value = readSymbol(input, len, pos)
+        value = readSymbol(ctx, input, len, pos)
+        ctx.pos = { ...start }
         yield { kind: 'symbol', value, pos: start }
         break
     }
@@ -145,13 +154,11 @@ const iter = vs =>
     })(),
   )
 
-function* expect(input, ...expected) {
+function* expect(ctx, input, ...expected) {
   let i = 0
   for (const actual of input) {
     if (actual.kind !== expected[i]) {
-      throw Error(
-        `expected ${expected[i]} but got ${actual.kind} ${posS(actual.pos)}`,
-      )
+      throw err(ctx, actual, `expected ${expected[i]} but got ${actual.kind}`)
     }
     yield actual
     i++
@@ -159,7 +166,7 @@ function* expect(input, ...expected) {
       return
     }
   }
-  throw Error(`input ended while expecting ${expected[i]}`)
+  throw err(ctx, ctx, `input ended while expecting ${expected[i]}`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
@@ -248,7 +255,7 @@ function* transpileMap(ctx, input, hoist) {
     yield* transpileExpr(ctx, input, null, hoist)
     yield ','
   }
-  throw Error('unterminated map')
+  throw err(ctx, ctx, 'unterminated map')
 }
 
 function* transpileArray(ctx, input, hoist) {
@@ -261,7 +268,7 @@ function* transpileArray(ctx, input, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ','
   }
-  throw Error('unterminated array')
+  throw err(ctx, ctx, 'unterminated array')
 }
 
 function* transpileBuiltinImport(ctx, input) {
@@ -270,27 +277,27 @@ function* transpileBuiltinImport(ctx, input) {
       return
     }
     if (token.kind !== '[') {
-      throw Error(`expected [ ${posS(token.pos)}`)
+      throw err(ctx, token, `expected [`)
     }
     yield 'import {'
-    const [importPath] = expect(input, 'string')
-    discard(expect(input, '['))
+    const [importPath] = expect(ctx, input, 'string')
+    discard(expect(ctx, input, '['))
     for (const name of input) {
       if (name.kind === ']') {
         break
       }
       if (name.kind !== 'symbol') {
-        throw Error(`expecting a symbol ${posS(token.pos)}`)
+        throw err(ctx, token, `expecting a symbol`)
       }
       yield* transpileSymbol(ctx, name)
       yield ','
     }
-    discard(expect(input, ']'))
+    discard(expect(ctx, input, ']'))
     yield '} from '
     yield* transpileString(ctx, importPath)
     yield ';'
   }
-  throw Error('unterminated import')
+  throw err(ctx, ctx, 'unterminated import')
 }
 
 const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
@@ -299,13 +306,13 @@ const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
   assign,
   hoist,
 ) {
-  const [name] = expect(input, 'symbol')
+  const [name] = expect(ctx, input, 'symbol')
   yield 'let '
   yield* transpileSymbol(ctx, name)
   yield '='
   yield* transpileExpr(ctx, input, null, hoist)
   yield ';'
-  discard(expect(input, ')'))
+  discard(expect(ctx, input, ')'))
 })
 
 const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
@@ -330,16 +337,14 @@ const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
     }
     buf = iter(collectForm(prepend(token, input)))
   }
-  throw Error('unterminated list')
+  throw err(ctx, ctx, 'unterminated list')
 })
 
 function* transpileDestructure(ctx, input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw Error(
-          `unexpected ${token.kind} ${token.value} ${posS(token.pos)}`,
-        )
+        throw err(ctx, token, `unexpected ${token.kind} ${token.value}`)
       case 'symbol':
         yield* transpileSymbol(ctx, token)
         return
@@ -363,7 +368,7 @@ function* transpileDestructure(ctx, input) {
             break
           }
           if (token.kind === 'symbol') {
-            const [, { value: source }] = expect(input, ':', 'symbol')
+            const [, { value: source }] = expect(ctx, input, ':', 'symbol')
             if (source !== token.value) {
               rename[source] = token.value
             }
@@ -373,34 +378,32 @@ function* transpileDestructure(ctx, input) {
             continue
           }
           if (token.kind !== ':') {
-            throw Error(`unexpected ${token} ${posS(token.pos)}`)
+            throw err(ctx, token, `unexpected ${token.kind}`)
           }
-          const [op] = expect(input, 'symbol')
+          const [op] = expect(ctx, input, 'symbol')
           switch (op.value) {
             default:
-              throw Error(
-                `unexpected destructing op ${op.value} ${posS(op.pos)}`,
-              )
+              throw err(ctx, op, `unexpected destructing op ${op.value}`)
             case 'keys':
-              discard(expect(input, '['))
+              discard(expect(ctx, input, '['))
               for (const token of input) {
                 if (token.kind === ']') {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw Error(`unexpected key ${token.kind} ${posS(token.pos)}`)
+                  throw err(ctx, token, `unexpected ${token.kind}`)
                 }
                 keys.push(token.value)
               }
               break
             case 'or':
-              discard(expect(input, '{'))
+              discard(expect(ctx, input, '{'))
               for (const token of input) {
                 if (token.kind === '}') {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw Error(`unexpected key ${token.kind} ${posS(token.pos)}`)
+                  throw err(ctx, token, `unexpected key ${token.kind}`)
                 }
                 or[token.value] = [...transpileExpr(ctx, input)]
                 if (!keys.includes(token.value)) {
@@ -436,10 +439,10 @@ function* transpileDestructure(ctx, input) {
 
 function* transpileBuiltinFn(ctx, input) {
   yield 'const '
-  const [name] = expect(input, 'symbol')
+  const [name] = expect(ctx, input, 'symbol')
   yield* transpileSymbol(ctx, name)
   yield '=('
-  discard(expect(input, '['))
+  discard(expect(ctx, input, '['))
   for (const token of input) {
     if (token.kind === ']') {
       yield ')'
@@ -464,7 +467,7 @@ const makeOpTranspile = (op, unary) =>
           if (unary) {
             yield op
           } else {
-            throw Error(op + ' is not a unary operator')
+            throw err(ctx, token, op + ' is not a unary operator')
           }
         }
         if (buf) {
@@ -481,7 +484,7 @@ const makeOpTranspile = (op, unary) =>
       buf = [...transpileExpr(ctx, prepend(token, input), null, hoist)]
       count++
     }
-    throw Error('unfinished list')
+    throw err(ctx, ctx, 'unfinished list')
   }
 
 const transpileBuiltinStr = makeOpTranspile('+')
@@ -503,7 +506,7 @@ const transpileBuiltinLet = hoistable(function* transpileBuiltinLet(
     return
   }
 
-  discard(expect(input, '['))
+  discard(expect(ctx, input, '['))
   yield '{'
   for (const token of input) {
     if (token.kind === ']') {
@@ -549,7 +552,7 @@ const makeKeywordExprTranspile = keyword =>
     yield keyword
     const { value: token, done } = input.next()
     if (done) {
-      throw Error('unfinished ' + keyword)
+      throw err(ctx, ctx, 'unfinished ' + keyword)
     }
     // keyword only statement, like a bare 'return', 'yield' or 'break'
     if (token.kind === ')') {
@@ -559,7 +562,7 @@ const makeKeywordExprTranspile = keyword =>
     yield ' '
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ';'
-    discard(expect(input, ')'))
+    discard(expect(ctx, input, ')'))
   })
 
 const transpileBuiltinThrow = makeKeywordExprTranspile('throw')
@@ -570,8 +573,8 @@ const transpileBuiltinBreak = makeKeywordExprTranspile('break')
 const transpileBuiltinContinue = makeKeywordExprTranspile('continue')
 
 function* transpileBuiltinFor(ctx, input, _assign, hoist) {
-  discard(expect(input, '['))
-  const [binding] = expect(input, 'symbol')
+  discard(expect(ctx, input, '['))
+  const [binding] = expect(ctx, input, 'symbol')
   yield 'for(let '
   yield* transpileSymbol(ctx, binding)
   yield '='
@@ -584,14 +587,14 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
   yield* transpileSymbol(ctx, binding)
   const { value: token, done } = input.next()
   if (done) {
-    throw Error('unfinished for')
+    throw err(ctx, ctx, 'unfinished for')
   }
   if (token.kind === ']') {
     yield '++'
   } else {
     yield '+='
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    discard(expect(input, ']'))
+    discard(expect(ctx, input, ']'))
   }
   yield '){'
   for (const token of input) {
@@ -602,7 +605,7 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input))
     yield ';'
   }
-  throw Error('unfinished for')
+  throw err(ctx, ctx, 'unfinished for')
 }
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
@@ -623,7 +626,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw Error('unterminated list')
+      throw err(ctx, ctx, 'unterminated list')
     }
 
     // path for final else clause
@@ -668,7 +671,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw Error('unterminated list')
+      throw err(ctx, ctx, 'unterminated list')
     }
 
     // path for final default clause
@@ -705,7 +708,7 @@ function* transpileBuiltinDot(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ']'
   }
-  throw Error('unfinished list')
+  throw err(ctx, ctx, 'unfinished list')
 }
 
 const builtins = {
@@ -735,7 +738,7 @@ const builtins = {
 
 // function, method or constructor call
 function* transpileCall(ctx, input, assign, hoist) {
-  const [token] = expect(input, 'symbol')
+  const [token] = expect(ctx, input, 'symbol')
   yield* transpileAssign(ctx, assign)
   if (token.value.endsWith('.')) {
     yield 'new '
@@ -753,11 +756,11 @@ function* transpileCall(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ','
   }
-  throw Error('unterminated list')
+  throw err(ctx, ctx, 'unterminated list')
 }
 
 function* transpileList(ctx, input, assign, hoist) {
-  const [token] = expect(input, 'symbol')
+  const [token] = expect(ctx, input, 'symbol')
   const builtin = builtins[token.value]
   if (builtin) {
     yield* builtin(ctx, input, assign, hoist)
@@ -773,7 +776,7 @@ function* transpileAwait(ctx, input, assign, hoist) {
 }
 
 function* transpileKeyword(ctx, input) {
-  const [token] = expect(input, 'symbol')
+  const [token] = expect(ctx, input, 'symbol')
   yield* transpileString(ctx, token)
 }
 
@@ -839,14 +842,14 @@ function* transpileExpr(ctx, input, assign, hoist) {
       yield* transpileSymbol(ctx, token)
       break
     default:
-      throw Error(`unhandled token: ${token.kind} ${posS(token.pos)}`)
+      throw err(ctx, token, `unhandled token: ${token.kind}`)
   }
   return true
 }
 
 export function* transpile(code, config) {
-  const input = uninterrupt(tokens(code))
   const ctx = newCtx(config)
+  const input = uninterrupt(tokens(ctx, code))
   // yield* each expression, and use the final return (from transpileExpr) to
   // decide if we should continue. this return is setup to return false when the
   // input iterator stops producing tokens.
