@@ -256,13 +256,9 @@ cases.forEach(([name, input, output]) => {
 })
 
 const errorCases = [
-  ['lone paren', '(', '<anonymous>:1:1: input ended while expecting symbol'],
+  ['lone paren', '(', '<anonymous>:1:1: input ended, wanted "symbol"'],
   ['unterminated string', '(foo "', '<anonymous>:1:6: unterminated string'],
-  [
-    'keyword symbol',
-    '(foo :',
-    '<anonymous>:1:6: input ended while expecting symbol',
-  ],
+  ['keyword symbol', '(foo :', '<anonymous>:1:6: input ended, wanted "symbol"'],
   ['unterminated map', '{', '<anonymous>:1:1: unterminated map'],
   ['unterminated array', '[', '<anonymous>:1:1: unterminated array'],
   ['unterminated list', '(do ', '<anonymous>:1:2: unterminated list'],

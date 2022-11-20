@@ -167,7 +167,7 @@ function* expect(ctx, input, ...expected) {
       return
     }
   }
-  throw err(ctx, ctx, `input ended while expecting ${expected[i]}`)
+  throw err(ctx, ctx, `input ended, wanted "${expected[i]}"`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
