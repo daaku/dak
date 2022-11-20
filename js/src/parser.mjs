@@ -55,13 +55,13 @@ const readString = (input, len, pos) => {
         break
     }
   }
-  throw new Error('unterminated string')
+  throw Error('unterminated string')
 }
 
 const readSymbol = (input, len, pos) => {
   let start = pos.offset
   if (start === len) {
-    throw new Error(err('symbol', start))
+    throw Error(err('symbol', start))
   }
   let end
   for (end = start; end < len; end++) {
@@ -148,7 +148,7 @@ function* expect(input, ...expected) {
   let i = 0
   for (const actual of input) {
     if (actual.kind !== expected[i]) {
-      throw new Error(
+      throw Error(
         `expected ${expected[i]} but got ${actual.kind} ${posS(actual.pos)}`,
       )
     }
@@ -158,7 +158,7 @@ function* expect(input, ...expected) {
       return
     }
   }
-  throw new Error(`input ended while expecting ${expected[i]}`)
+  throw Error(`input ended while expecting ${expected[i]}`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
@@ -247,7 +247,7 @@ function* transpileMap(ctx, input, hoist) {
     yield* transpileExpr(ctx, input, null, hoist)
     yield ','
   }
-  throw new Error('unterminated map')
+  throw Error('unterminated map')
 }
 
 function* transpileArray(ctx, input, hoist) {
@@ -260,7 +260,7 @@ function* transpileArray(ctx, input, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ','
   }
-  throw new Error('unterminated array')
+  throw Error('unterminated array')
 }
 
 function* transpileBuiltinImport(ctx, input) {
@@ -269,7 +269,7 @@ function* transpileBuiltinImport(ctx, input) {
       return
     }
     if (token.kind !== '[') {
-      throw new Error(`expected [ ${posS(token.pos)}`)
+      throw Error(`expected [ ${posS(token.pos)}`)
     }
     yield 'import {'
     const [importPath] = expect(input, 'string')
@@ -279,7 +279,7 @@ function* transpileBuiltinImport(ctx, input) {
         break
       }
       if (name.kind !== 'symbol') {
-        throw new Error(`expecting a symbol ${posS(token.pos)}`)
+        throw Error(`expecting a symbol ${posS(token.pos)}`)
       }
       yield* transpileSymbol(ctx, name)
       yield ','
@@ -289,7 +289,7 @@ function* transpileBuiltinImport(ctx, input) {
     yield* transpileString(ctx, importPath)
     yield ';'
   }
-  throw new Error('unterminated import')
+  throw Error('unterminated import')
 }
 
 const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
@@ -329,14 +329,14 @@ const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
     }
     buf = iter(collectForm(prepend(token, input)))
   }
-  throw new Error('unterminated list')
+  throw Error('unterminated list')
 })
 
 function* transpileDestructure(ctx, input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw new Error(
+        throw Error(
           `unexpected ${token.kind} ${token.value} ${posS(token.pos)}`,
         )
       case 'symbol':
@@ -372,12 +372,12 @@ function* transpileDestructure(ctx, input) {
             continue
           }
           if (token.kind !== ':') {
-            throw new Error(`unexpected ${token} ${posS(token.pos)}`)
+            throw Error(`unexpected ${token} ${posS(token.pos)}`)
           }
           const [op] = expect(input, 'symbol')
           switch (op.value) {
             default:
-              throw new Error(
+              throw Error(
                 `unexpected destructing op ${op.value} ${posS(op.pos)}`,
               )
             case 'keys':
@@ -387,9 +387,7 @@ function* transpileDestructure(ctx, input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(
-                    `unexpected key ${token.kind} ${posS(token.pos)}`,
-                  )
+                  throw Error(`unexpected key ${token.kind} ${posS(token.pos)}`)
                 }
                 keys.push(token.value)
               }
@@ -401,9 +399,7 @@ function* transpileDestructure(ctx, input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw new Error(
-                    `unexpected key ${token.kind} ${posS(token.pos)}`,
-                  )
+                  throw Error(`unexpected key ${token.kind} ${posS(token.pos)}`)
                 }
                 or[token.value] = [...transpileExpr(ctx, input)]
                 if (!keys.includes(token.value)) {
@@ -467,7 +463,7 @@ const makeOpTranspile = (op, unary) =>
           if (unary) {
             yield op
           } else {
-            throw new Error(op + ' is not a unary operator')
+            throw Error(op + ' is not a unary operator')
           }
         }
         if (buf) {
@@ -484,7 +480,7 @@ const makeOpTranspile = (op, unary) =>
       buf = [...transpileExpr(ctx, prepend(token, input), null, hoist)]
       count++
     }
-    throw new Error('unfinished list')
+    throw Error('unfinished list')
   }
 
 const transpileBuiltinStr = makeOpTranspile('+')
@@ -552,7 +548,7 @@ const makeKeywordExprTranspile = keyword =>
     yield keyword
     const { value: token, done } = input.next()
     if (done) {
-      throw new Error('unfinished ' + keyword)
+      throw Error('unfinished ' + keyword)
     }
     // keyword only statement, like a bare 'return', 'yield' or 'break'
     if (token.kind === ')') {
@@ -587,7 +583,7 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
   yield* transpileSymbol(ctx, binding)
   const { value: token, done } = input.next()
   if (done) {
-    throw new Error('unfinished for')
+    throw Error('unfinished for')
   }
   if (token.kind === ']') {
     yield '++'
@@ -605,7 +601,7 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input))
     yield ';'
   }
-  throw new Error('unfinished for')
+  throw Error('unfinished for')
 }
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
@@ -626,7 +622,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw new Error('unterminated list')
+      throw Error('unterminated list')
     }
 
     // path for final else clause
@@ -671,7 +667,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw new Error('unterminated list')
+      throw Error('unterminated list')
     }
 
     // path for final default clause
@@ -708,7 +704,7 @@ function* transpileBuiltinDot(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ']'
   }
-  throw new Error('unfinished list')
+  throw Error('unfinished list')
 }
 
 const builtins = {
@@ -756,7 +752,7 @@ function* transpileCall(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ','
   }
-  throw new Error('unterminated list')
+  throw Error('unterminated list')
 }
 
 function* transpileList(ctx, input, assign, hoist) {
@@ -842,7 +838,7 @@ function* transpileExpr(ctx, input, assign, hoist) {
       yield* transpileSymbol(ctx, token)
       break
     default:
-      throw new Error(`unhandled token: ${token.kind} ${posS(token.pos)}`)
+      throw Error(`unhandled token: ${token.kind} ${posS(token.pos)}`)
   }
   return true
 }
