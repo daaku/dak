@@ -3,8 +3,7 @@ import parserBabel from "https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs";
 import { transpile } from "../js/src/parser.mjs";
 
 const autoEval = document.getElementById("autoEval");
-const pretty = document.getElementById("pretty");
-const minify = document.getElementById("minify");
+const fmt = document.getElementById("fmt");
 const dakCode = document.getElementById("dakCode");
 const jsCode = document.getElementById("jsCode");
 const output = document.getElementById("output");
@@ -31,13 +30,13 @@ const logErr = (prefix, err) => {
   output.appendChild(child);
 };
 
-dakCode.oninput = (ev) => {
+const refresh = async () => {
   output.replaceChildren();
 
   try {
     const js = [...transpile(dakCode.value)].join("");
 
-    if (autoEval.value) {
+    if (autoEval.checked) {
       try {
         eval(js);
       } catch (e) {
@@ -45,7 +44,7 @@ dakCode.oninput = (ev) => {
       }
     }
 
-    if (pretty.value) {
+    if (fmt.value === "pretty") {
       try {
         jsCode.value = prettier.format(js, {
           parser: "babel",
@@ -57,9 +56,23 @@ dakCode.oninput = (ev) => {
       }
     }
 
-    // if we get here we're not doing pretty or minify
+    if (fmt.value === "minify") {
+      try {
+        const result = await Terser.minify(js);
+        jsCode.value = result.code;
+        return;
+      } catch (e) {
+        logErr("minify", e);
+      }
+    }
+
+    // if we get here we're doing raw mode
     jsCode.value = js;
   } catch (e) {
     logErr("compile", e);
   }
 };
+
+autoEval.onchange = refresh;
+dakCode.oninput = refresh;
+fmt.onchange = refresh;

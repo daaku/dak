@@ -49,10 +49,11 @@
       <div>
         <input id="autoEval" type="checkbox" checked />
         <label for="autoEval">Eval</label>
-        <input id="pretty" type="checkbox" checked />
-        <label for="pretty">Pretty</label>
-        <input id="minify" type="checkbox" />
-        <label for="minify">Minify</label>
+        <select id="fmt">
+          <option value="pretty">Pretty</option>
+          <option value="raw">Raw</option>
+          <option value="minify">Minify</option>
+        </select>
       </div>
     </header>
     <div class="code">
@@ -74,6 +75,9 @@
       ></textarea>
     </div>
     <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/terser/dist/bundle.min.js"></script>
     <script type="module" src="index.mjs"></script>
   </body>
 </html>
