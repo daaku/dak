@@ -456,20 +456,44 @@ function* transpileBuiltinFn(ctx, input) {
   yield '}'
 }
 
-function* transpileBuiltinStr(ctx, input, assign, hoist) {
-  yield* transpileAssign(ctx, assign)
-  let first = true
-  for (const token of input) {
-    if (token.kind === ')') {
-      return
+const makeOpTranspile = (op, unary) =>
+  function* transpileOp(ctx, input, assign, hoist) {
+    yield* transpileAssign(ctx, assign)
+    let count = 0
+    let buf
+    for (const token of input) {
+      if (token.kind === ')') {
+        if (count === 1) {
+          if (unary) {
+            yield op
+          } else {
+            throw new Error(op + ' is not a unary operator')
+          }
+        }
+        if (buf) {
+          yield* buf
+        }
+        return
+      }
+      if (buf) {
+        yield* buf
+      }
+      if (count !== 0) {
+        yield op
+      }
+      buf = [...transpileExpr(ctx, prepend(token, input), null, hoist)]
+      count++
     }
-    if (!first) {
-      yield '+'
-    }
-    first = false
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    throw new Error('unfinished list')
   }
-}
+
+const transpileBuiltinStr = makeOpTranspile('+')
+const transpileBuiltinPlus = makeOpTranspile('+', true)
+const transpileBuiltinMinus = makeOpTranspile('-', true)
+const transpileBuiltinMul = makeOpTranspile('*')
+const transpileBuiltinDiv = makeOpTranspile('/')
+const transpileBuiltinPow = makeOpTranspile('**')
+const transpileBuiltinMod = makeOpTranspile('%')
 
 const transpileBuiltinLet = hoistable(function* transpileBuiltinLet(
   ctx,
@@ -692,6 +716,12 @@ const builtins = {
   def: transpileBuiltinDef,
   fn: transpileBuiltinFn,
   str: transpileBuiltinStr,
+  '+': transpileBuiltinPlus,
+  '-': transpileBuiltinMinus,
+  '*': transpileBuiltinMul,
+  '/': transpileBuiltinDiv,
+  '**': transpileBuiltinPow,
+  '%': transpileBuiltinMod,
   let: transpileBuiltinLet,
   throw: transpileBuiltinThrow,
   return: transpileBuiltinReturn,

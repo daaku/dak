@@ -224,6 +224,15 @@ const cases = [
     `@(make :promise)`,
     `await (make("promise",))`,
   ],
+  ['builtin: op str', '(str :a :b :c)', '"a"+"b"+"c"'],
+  ['builtin: op +', '(+ 1 2 3)', '1+2+3'],
+  ['builtin: op + unary', '(+ 1)', '+1'],
+  ['builtin: op -', '(- 1 2 3)', '1-2-3'],
+  ['builtin: op - unary', '(- 1)', '-1'],
+  ['builtin: op *', '(* 1 2 3)', '1*2*3'],
+  ['builtin: op /', '(/ 1 2 3)', '1/2/3'],
+  ['builtin: op **', '(** 1 2 3)', '1**2**3'],
+  ['builtin: op %', '(% 1 2 3)', '1%2%3'],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]
