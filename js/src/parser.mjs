@@ -500,7 +500,7 @@ const makeOpTranspile = (op, unary) =>
       buf = [...transpileExpr(ctx, prepend(token, input), null, hoist)]
       count++
     }
-    throw err(ctx, ctx, 'unfinished list')
+    throw err(ctx, ctx, 'unterminated list')
   }
 
 const transpileBuiltinStr = makeOpTranspile('+')
@@ -568,7 +568,7 @@ const makeKeywordExprTranspile = keyword =>
     yield keyword
     const { value: token, done } = input.next()
     if (done) {
-      throw err(ctx, ctx, 'unfinished ' + keyword)
+      throw err(ctx, ctx, 'unterminated ' + keyword)
     }
     // keyword only statement, like a bare 'return', 'yield' or 'break'
     if (token.kind === ')') {
@@ -603,7 +603,7 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
   yield* transpileSymbol(ctx, binding)
   const { value: token, done } = input.next()
   if (done) {
-    throw err(ctx, ctx, 'unfinished for')
+    throw err(ctx, ctx, 'unterminated for')
   }
   if (token.kind === ']') {
     yield '++'
@@ -621,7 +621,7 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input))
     yield ';'
   }
-  throw err(ctx, ctx, 'unfinished for')
+  throw err(ctx, ctx, 'unterminated for')
 }
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
@@ -642,7 +642,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw err(ctx, ctx, 'unterminated list')
+      throw err(ctx, ctx, 'unterminated if')
     }
 
     // path for final else clause
@@ -664,6 +664,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(expr, input), assign)
     yield '}'
   }
+  throw err(ctx, ctx, 'unterminated if')
 }
 
 function* transpileBuiltinCase(ctx, input, assign, hoist) {
@@ -687,7 +688,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
 
     const { value: expr, done } = input.next()
     if (done) {
-      throw err(ctx, ctx, 'unterminated list')
+      throw err(ctx, ctx, 'unterminated case')
     }
 
     // path for final default clause
@@ -724,7 +725,7 @@ function* transpileBuiltinDot(ctx, input, assign, hoist) {
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
     yield ']'
   }
-  throw err(ctx, ctx, 'unfinished list')
+  throw err(ctx, ctx, 'unterminated list')
 }
 
 const builtins = {

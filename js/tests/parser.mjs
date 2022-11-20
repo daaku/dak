@@ -302,14 +302,16 @@ const errorCases = [
     '(* 1)',
     '<anonymous>:1:5: "*" is not a unary operator',
   ],
-  ['op: unfinished list', '(+', '<anonymous>:1:2: unfinished list'],
+  ['op: unterminated list', '(+', '<anonymous>:1:2: unterminated list'],
   [
-    'keyword expr: unfinished return',
+    'keyword expr: unterminated return',
     '(return',
-    '<anonymous>:1:2: unfinished return',
+    '<anonymous>:1:2: unterminated return',
   ],
-  ['unfinished for', '(for [a b', '<anonymous>:1:9: unfinished for'],
-  ['unfinished for', '(for [a b c]', '<anonymous>:1:12: unfinished for'],
+  ['unterminated for', '(for [a b', '<anonymous>:1:9: unterminated for'],
+  ['unterminated for', '(for [a b c]', '<anonymous>:1:12: unterminated for'],
+  ['unterminated if', '(if', '<anonymous>:1:2: unterminated if'],
+  ['unterminated if', '(if :foo', '<anonymous>:1:6: unterminated if'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
