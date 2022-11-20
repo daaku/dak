@@ -262,27 +262,40 @@ const errorCases = [
   ['unterminated map', '{', '<anonymous>:1:1: unterminated map'],
   ['unterminated array', '[', '<anonymous>:1:1: unterminated array'],
   ['unterminated list', '(do ', '<anonymous>:1:2: unterminated list'],
-  ['destructure unexpected', '(let [:foo] ', '<anonymous>:1:7: unexpected ":"'],
   [
     'destructure unexpected',
+    '(let [:foo] ',
+    '<anonymous>:1:7: unexpected destructure ":"',
+  ],
+  [
+    'destructure unterminated',
     '(let [[ ',
     '<anonymous>:1:7: unterminated destructure',
   ],
-  ['destructure bad key', '(let [{(', '<anonymous>:1:8: unexpected ('],
   [
-    'destructure unexpected op',
+    'destructure map',
+    '(let [{(',
+    '<anonymous>:1:8: unexpected destructure map "("',
+  ],
+  [
+    'destructure map op',
     '(let [{:foo',
-    '<anonymous>:1:9: unexpected destructuring op foo',
+    '<anonymous>:1:9: unexpected destructuring map op "foo"',
   ],
   [
     'destructure unexpected keys',
     '(let [{:keys [:foo',
-    '<anonymous>:1:15: unexpected :',
+    '<anonymous>:1:15: unexpected destructure key ":"',
   ],
   [
     'destructure unexpected or',
     '(let [{:or [',
     '<anonymous>:1:12: unexpected "[" wanted "{"',
+  ],
+  [
+    'destructure unexpected or item',
+    '(let [{:or {:',
+    '<anonymous>:1:13: unexpected destructure or key ":"',
   ],
 ]
 

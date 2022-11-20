@@ -345,7 +345,7 @@ function* transpileDestructure(ctx, input) {
   for (const token of input) {
     switch (token.kind) {
       default:
-        throw err(ctx, token, `unexpected "${token.kind}"`)
+        throw err(ctx, token, `unexpected destructure "${token.kind}"`)
       case 'symbol':
         yield* transpileSymbol(ctx, token)
         return
@@ -379,12 +379,16 @@ function* transpileDestructure(ctx, input) {
             continue
           }
           if (token.kind !== ':') {
-            throw err(ctx, token, `unexpected ${token.kind}`)
+            throw err(ctx, token, `unexpected destructure map "${token.kind}"`)
           }
           const [op] = expect(ctx, input, 'symbol')
           switch (op.value) {
             default:
-              throw err(ctx, op, `unexpected destructuring op ${op.value}`)
+              throw err(
+                ctx,
+                op,
+                `unexpected destructuring map op "${op.value}"`,
+              )
             case 'keys':
               discard(expect(ctx, input, '['))
               for (const token of input) {
@@ -392,7 +396,11 @@ function* transpileDestructure(ctx, input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw err(ctx, token, `unexpected ${token.kind}`)
+                  throw err(
+                    ctx,
+                    token,
+                    `unexpected destructure key "${token.kind}"`,
+                  )
                 }
                 keys.push(token.value)
               }
@@ -404,7 +412,11 @@ function* transpileDestructure(ctx, input) {
                   break
                 }
                 if (token.kind !== 'symbol') {
-                  throw err(ctx, token, `unexpected key ${token.kind}`)
+                  throw err(
+                    ctx,
+                    token,
+                    `unexpected destructure or key "${token.kind}"`,
+                  )
                 }
                 or[token.value] = [...transpileExpr(ctx, input)]
                 if (!keys.includes(token.value)) {
