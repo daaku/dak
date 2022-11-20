@@ -285,7 +285,7 @@ const errorCases = [
   [
     'destructure unexpected keys',
     '(let [{:keys [:foo',
-    '<anonymous>:1:15: unexpected destructure key ":"',
+    '<anonymous>:1:15: unexpected destructure :keys ":"',
   ],
   [
     'destructure unexpected or',
@@ -295,7 +295,7 @@ const errorCases = [
   [
     'destructure unexpected or item',
     '(let [{:or {:',
-    '<anonymous>:1:13: unexpected destructure or key ":"',
+    '<anonymous>:1:13: unexpected destructure :or ":"',
   ],
 ]
 

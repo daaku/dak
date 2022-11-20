@@ -399,7 +399,7 @@ function* transpileDestructure(ctx, input) {
                   throw err(
                     ctx,
                     token,
-                    `unexpected destructure key "${token.kind}"`,
+                    `unexpected destructure :keys "${token.kind}"`,
                   )
                 }
                 keys.push(token.value)
@@ -415,7 +415,7 @@ function* transpileDestructure(ctx, input) {
                   throw err(
                     ctx,
                     token,
-                    `unexpected destructure or key "${token.kind}"`,
+                    `unexpected destructure :or "${token.kind}"`,
                   )
                 }
                 or[token.value] = [...transpileExpr(ctx, input)]
