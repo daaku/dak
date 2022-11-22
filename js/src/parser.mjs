@@ -529,49 +529,27 @@ function* transpileFnArgs(ctx, input) {
   throw err(ctx, ctx, 'unterminated function arguments')
 }
 
-function* transpileBuiltinConstArrow(ctx, input) {
-  yield 'const '
-  const [name] = expect(ctx, input, 'symbol')
-  yield* transpileSymbol(ctx, name)
-  yield '='
-  yield* transpileFnArgs(ctx, input)
-  yield '=>{'
-  yield* transpileBuiltinDo(ctx, input, 'return ')
-  yield '};'
-}
+const makeFnTranspiler = (preArgs, postArgs) =>
+  function* transpileFn(ctx, input) {
+    yield 'const '
+    const [name] = expect(ctx, input, 'symbol')
+    yield* transpileSymbol(ctx, name)
+    yield '='
+    yield preArgs
+    yield* transpileFnArgs(ctx, input)
+    yield* postArgs
+    yield '{'
+    yield* transpileBuiltinDo(ctx, input, 'return ')
+    yield '};'
+  }
 
-function* transpileBuiltinConstArrowAsync(ctx, input) {
-  yield 'const '
-  const [name] = expect(ctx, input, 'symbol')
-  yield* transpileSymbol(ctx, name)
-  yield '=async'
-  yield* transpileFnArgs(ctx, input)
-  yield '=>{'
-  yield* transpileBuiltinDo(ctx, input, 'return ')
-  yield '};'
-}
-
-function* transpileBuiltinConstGenerator(ctx, input) {
-  yield 'const '
-  const [name] = expect(ctx, input, 'symbol')
-  yield* transpileSymbol(ctx, name)
-  yield '=function*'
-  yield* transpileFnArgs(ctx, input)
-  yield '{'
-  yield* transpileBuiltinDo(ctx, input, 'return ')
-  yield '};'
-}
-
-function* transpileBuiltinConstAsyncGenerator(ctx, input) {
-  yield 'const '
-  const [name] = expect(ctx, input, 'symbol')
-  yield* transpileSymbol(ctx, name)
-  yield '=async function*'
-  yield* transpileFnArgs(ctx, input)
-  yield '{'
-  yield* transpileBuiltinDo(ctx, input, 'return ')
-  yield '};'
-}
+const transpileBuiltinConstArrow = makeFnTranspiler('', '=>')
+const transpileBuiltinConstArrowAsync = makeFnTranspiler('async', '=>')
+const transpileBuiltinConstGenerator = makeFnTranspiler('function*', '')
+const transpileBuiltinConstAsyncGenerator = makeFnTranspiler(
+  'async function*',
+  '',
+)
 
 const makeOpTranspile = (op, unary) =>
   function* transpileOp(ctx, input, assign, hoist) {
