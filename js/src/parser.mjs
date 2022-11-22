@@ -543,13 +543,10 @@ const makeFnTranspiler = (preArgs, postArgs) =>
     yield '};'
   }
 
-const transpileBuiltinConstArrow = makeFnTranspiler('', '=>')
-const transpileBuiltinConstArrowAsync = makeFnTranspiler('async', '=>')
-const transpileBuiltinConstGenerator = makeFnTranspiler('function*', '')
-const transpileBuiltinConstAsyncGenerator = makeFnTranspiler(
-  'async function*',
-  '',
-)
+const transpileBuiltinFnArrow = makeFnTranspiler('', '=>')
+const transpileBuiltinFnArrowAsync = makeFnTranspiler('async', '=>')
+const transpileBuiltinFnGenerator = makeFnTranspiler('function*', '')
+const transpileBuiltinFnAsyncGenerator = makeFnTranspiler('async function*', '')
 
 const makeOpTranspile = (op, unary) =>
   function* transpileOp(ctx, input, assign, hoist) {
@@ -854,10 +851,10 @@ function* transpileHash(ctx, input) {
 const builtins = {
   import: transpileBuiltinImport,
   def: transpileBuiltinDef,
-  fn: transpileBuiltinConstArrow,
-  'fn@': transpileBuiltinConstArrowAsync,
-  'fn*': transpileBuiltinConstGenerator,
-  'fn@*': transpileBuiltinConstAsyncGenerator,
+  fn: transpileBuiltinFnArrow,
+  'fn@': transpileBuiltinFnArrowAsync,
+  'fn*': transpileBuiltinFnGenerator,
+  'fn@*': transpileBuiltinFnAsyncGenerator,
   str: transpileBuiltinStr,
   '+': transpileBuiltinPlus,
   '-': transpileBuiltinMinus,
