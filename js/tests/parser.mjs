@@ -240,7 +240,7 @@ const cases = [
   [
     'lambda',
     `#([(if $ true false) $2])`,
-    `function (gensym__0,gensym__1,){let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
+    `(gensym__0,gensym__1,)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
   ],
   // [
   //   'compound: read-string',

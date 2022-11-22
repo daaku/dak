@@ -808,12 +808,12 @@ function* transpileLambda(ctx, input) {
   }
   discard(expect(ctx, input, ')'))
 
-  yield 'function ('
+  yield '('
   for (const arg of args) {
     yield* transpileSymbol(ctx, arg)
     yield ','
   }
-  yield '){'
+  yield ')=>{'
   yield* transpileExprHoistable(ctx, iter(buf), 'return ')
   yield '}'
   return
