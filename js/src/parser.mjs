@@ -790,6 +790,49 @@ function* transpileBuiltinDot(ctx, input, assign, hoist) {
   throw err(ctx, ctx, 'unterminated "."')
 }
 
+function* transpileLambda(ctx, input) {
+  const args = []
+  // lambda is one single form
+  const buf = collectForm(input)
+  for (const token of buf) {
+    let arg
+    if (token.value === '$') {
+      arg = 0
+    } else if (token.value?.startsWith('$')) {
+      arg = parseInt(token.value.slice(1), 10) - 1
+    } else {
+      continue
+    }
+    token.kind = 'symbol'
+    token.value = (args[arg] ?? (args[arg] = ctx.gensym())).value
+  }
+  discard(expect(ctx, input, ')'))
+
+  yield 'function ('
+  for (const arg of args) {
+    yield* transpileSymbol(ctx, arg)
+    yield ','
+  }
+  yield '){'
+  yield* transpileExprHoistable(ctx, iter(buf), 'return ')
+  yield '}'
+  return
+}
+
+function* transpileHash(ctx, input) {
+  const { value: delimiter, done } = input.next()
+  if (done) {
+    throw err(ctx, ctx, 'unterminated "#"')
+  }
+  switch (delimiter.kind) {
+    default:
+      throw err(ctx, ctx, `unexpected "${delimiter.kind}" after "#"`)
+    case '(':
+      yield* transpileLambda(ctx, input)
+      return
+  }
+}
+
 const builtins = {
   import: transpileBuiltinImport,
   def: transpileBuiltinDef,
@@ -916,6 +959,9 @@ function* transpileExpr(ctx, input, assign, hoist) {
     case '@':
       yield* transpileAwait(ctx, input)
       break
+    case '#':
+      yield* transpileHash(ctx, input)
+      break
     case 'string':
       yield* transpileString(ctx, token)
       break
@@ -929,6 +975,7 @@ function* transpileExpr(ctx, input, assign, hoist) {
   }
   return true
 }
+const transpileExprHoistable = hoistable(transpileExpr)
 
 export function* transpile(code, config) {
   const ctx = newCtx(config)

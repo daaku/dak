@@ -237,6 +237,11 @@ const cases = [
   ['builtin: op /', '(/ 1 2 3)', '1/2/3'],
   ['builtin: op **', '(** 1 2 3)', '1**2**3'],
   ['builtin: op %', '(% 1 2 3)', '1%2%3'],
+  [
+    'lambda',
+    `#([(if $ true false) $2])`,
+    `function (gensym__0,gensym__1,){let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]
@@ -358,6 +363,8 @@ const errorCases = [
     '(import ["a" :rename {',
     '<anonymous>:1:22: unterminated import rename',
   ],
+  ['unterminated hash', '#', '<anonymous>:1:1: unterminated "#"'],
+  ['hash: unexpected {', '#{', '<anonymous>:1:2: unexpected "{" after "#"'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
