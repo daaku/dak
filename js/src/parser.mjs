@@ -514,20 +514,25 @@ function* transpileDestructure(ctx, input) {
   throw err(ctx, ctx, 'unterminated destructure')
 }
 
-function* transpileBuiltinFn(ctx, input) {
-  yield 'const '
-  const [name] = expect(ctx, input, 'symbol')
-  yield* transpileSymbol(ctx, name)
-  yield '=('
+function* transpileFnArgs(ctx, input) {
   discard(expect(ctx, input, '['))
+  yield '('
   for (const token of input) {
     if (token.kind === ']') {
       yield ')'
-      break
+      return
     }
     yield* transpileDestructure(ctx, prepend(token, input))
     yield ','
   }
+}
+
+function* transpileBuiltinFn(ctx, input) {
+  yield 'const '
+  const [name] = expect(ctx, input, 'symbol')
+  yield* transpileSymbol(ctx, name)
+  yield '='
+  yield* transpileFnArgs(ctx, input)
   yield '=>{'
   yield* transpileBuiltinDo(ctx, input, 'return ')
   yield '}'
