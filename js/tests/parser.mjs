@@ -106,6 +106,14 @@ const cases = [
     `const run=async(v,)=>{return await (v(42,));};`,
   ],
   [
+    'builtin: fn*',
+    `
+    (fn* run [v]
+      (yield v))
+    `,
+    `const run=function*(v,){yield v;;};`,
+  ],
+  [
     'builtin: let',
     `(fn run []
       (let [a 0

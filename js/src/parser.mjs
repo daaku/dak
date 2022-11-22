@@ -551,6 +551,17 @@ function* transpileBuiltinConstArrowAsync(ctx, input) {
   yield '};'
 }
 
+function* transpileBuiltinConstGenerator(ctx, input) {
+  yield 'const '
+  const [name] = expect(ctx, input, 'symbol')
+  yield* transpileSymbol(ctx, name)
+  yield '=function*'
+  yield* transpileFnArgs(ctx, input)
+  yield '{'
+  yield* transpileBuiltinDo(ctx, input, 'return ')
+  yield '};'
+}
+
 const makeOpTranspile = (op, unary) =>
   function* transpileOp(ctx, input, assign, hoist) {
     yield* transpileAssign(ctx, assign)
@@ -856,6 +867,7 @@ const builtins = {
   def: transpileBuiltinDef,
   fn: transpileBuiltinConstArrow,
   'fn@': transpileBuiltinConstArrowAsync,
+  'fn*': transpileBuiltinConstGenerator,
   str: transpileBuiltinStr,
   '+': transpileBuiltinPlus,
   '-': transpileBuiltinMinus,
