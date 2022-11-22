@@ -1,4 +1,5 @@
-const single = ['(', ')', '[', ']', '{', '}', '@', '#', ':', "'", '~', '`', ',']
+const symbolBreaker = ['(', ')', '[', ']', '{', '}']
+const single = [...symbolBreaker, '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
 const pairs = {
   '(': ')',
@@ -73,7 +74,7 @@ const readSymbol = (ctx, input, len, pos) => {
       pos.line++
       pos.column = 0
     }
-    if (single.includes(c) || whitespace.includes(c)) {
+    if (symbolBreaker.includes(c) || whitespace.includes(c)) {
       break
     }
     pos.offset++
@@ -525,9 +526,10 @@ function* transpileFnArgs(ctx, input) {
     yield* transpileDestructure(ctx, prepend(token, input))
     yield ','
   }
+  throw err(ctx, ctx, 'unterminated function arguments')
 }
 
-function* transpileBuiltinFn(ctx, input) {
+function* transpileBuiltinConstArrow(ctx, input) {
   yield 'const '
   const [name] = expect(ctx, input, 'symbol')
   yield* transpileSymbol(ctx, name)
@@ -535,7 +537,18 @@ function* transpileBuiltinFn(ctx, input) {
   yield* transpileFnArgs(ctx, input)
   yield '=>{'
   yield* transpileBuiltinDo(ctx, input, 'return ')
-  yield '}'
+  yield '};'
+}
+
+function* transpileBuiltinConstArrowAsync(ctx, input) {
+  yield 'const '
+  const [name] = expect(ctx, input, 'symbol')
+  yield* transpileSymbol(ctx, name)
+  yield '=async'
+  yield* transpileFnArgs(ctx, input)
+  yield '=>{'
+  yield* transpileBuiltinDo(ctx, input, 'return ')
+  yield '};'
 }
 
 const makeOpTranspile = (op, unary) =>
@@ -841,7 +854,8 @@ function* transpileHash(ctx, input) {
 const builtins = {
   import: transpileBuiltinImport,
   def: transpileBuiltinDef,
-  fn: transpileBuiltinFn,
+  fn: transpileBuiltinConstArrow,
+  'fn@': transpileBuiltinConstArrowAsync,
   str: transpileBuiltinStr,
   '+': transpileBuiltinPlus,
   '-': transpileBuiltinMinus,

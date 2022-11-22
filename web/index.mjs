@@ -37,11 +37,13 @@ const refresh = async () => {
     const js = [...transpile(dakCode.value, { filename: "main.dak" })].join("");
 
     if (autoEval.checked) {
-      try {
-        eval(js);
-      } catch (e) {
-        logErr("eval", e);
-      }
+      (async () => {
+        try {
+          await Object.getPrototypeOf(async function () {}).constructor(js)();
+        } catch (e) {
+          logErr("eval", e);
+        }
+      })();
     }
 
     if (fmt.value === "pretty") {

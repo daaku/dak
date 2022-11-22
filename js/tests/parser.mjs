@@ -80,7 +80,7 @@ const cases = [
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
     `,
-    `const err=(expected,offset,)=>{return "expected "+expected+" at position "+offset;}`,
+    `const err=(expected,offset,)=>{return "expected "+expected+" at position "+offset;};`,
   ],
   [
     'fn with array destructuring',
@@ -88,14 +88,22 @@ const cases = [
     (fn first [[first second] other]
       first)
     `,
-    `const first=([first,second,],other,)=>{return first;}`,
+    `const first=([first,second,],other,)=>{return first;};`,
   ],
   [
     'fn with object destructuring',
     `(fn run [{x :y :keys [b c] :or {a 1 b 2 d 3}}]
       a)
     `,
-    `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;}`,
+    `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;};`,
+  ],
+  [
+    'builtin: fn@',
+    `
+    (fn@ run [v]
+      @(v 42))
+    `,
+    `const run=async(v,)=>{return await (v(42,));};`,
   ],
   [
     'builtin: let',
@@ -105,7 +113,7 @@ const cases = [
         (console.log a)
         b))
     `,
-    `const run=()=>{{let a;a=0;let b;b=inc(a,);console.log(a,);return b;};}`,
+    `const run=()=>{{let a;a=0;let b;b=inc(a,);console.log(a,);return b;};};`,
   ],
   [
     'builtin: let with destructuring',
@@ -113,7 +121,7 @@ const cases = [
       (let [{:keys [a b]} (foo)]
         [a b]))
     `,
-    `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};}`,
+    `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};};`,
   ],
   ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
   ['builtin: return with value', '(return 42)', 'return 42;'],
@@ -123,7 +131,7 @@ const cases = [
     `(fn run []
       (return (if true 42)))
     `,
-    `const run=()=>{let gensym__0;if(true){gensym__0=42}return gensym__0;;}`,
+    `const run=()=>{let gensym__0;if(true){gensym__0=42}return gensym__0;;};`,
   ],
   ['builtin: yield', '(yield)', 'yield;'],
   ['builtin: yield*', '(yield* [1 2])', 'yield* [1,2,];'],
@@ -154,7 +162,7 @@ const cases = [
       "baz" :boo
       :otherwise))
     `,
-    `const run=()=>{switch (inc(1,)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};}`,
+    `const run=()=>{switch (inc(1,)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
   ],
   [
     'builtin: case assign',
@@ -166,7 +174,7 @@ const cases = [
                 :otherwise)]
         v))
     `,
-    `const run=()=>{{let v;switch (inc(1,)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};}`,
+    `const run=()=>{{let v;switch (inc(1,)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
   ],
   [
     'builtin: do',
@@ -187,19 +195,19 @@ const cases = [
     'builtin: if without else',
     `
     (fn run [] (if true 42))`,
-    'const run=()=>{if(true){return 42};}',
+    'const run=()=>{if(true){return 42};};',
   ],
   [
     'builtin: if and else if',
     `
     (fn run [a b] (if a 42 b 43))`,
-    'const run=(a,b,)=>{if(a){return 42}else if(b){return 43};}',
+    'const run=(a,b,)=>{if(a){return 42}else if(b){return 43};};',
   ],
   [
     'builtin: if return',
     `
     (fn run [] (if true 42 43))`,
-    'const run=()=>{if(true){return 42}else{return 43};}',
+    'const run=()=>{if(true){return 42}else{return 43};};',
   ],
   [
     'builtin: if let',
@@ -220,7 +228,7 @@ const cases = [
     `(fn run []
       (. foo (if true 42)))
     `,
-    `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];}`,
+    `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];};`,
   ],
   ['builtin: await', `@42`, `await (42)`],
   [
@@ -365,6 +373,11 @@ const errorCases = [
   ],
   ['unterminated hash', '#', '<anonymous>:1:1: unterminated "#"'],
   ['hash: unexpected {', '#{', '<anonymous>:1:2: unexpected "{" after "#"'],
+  [
+    'unterminated function arguments',
+    '(fn run [a',
+    '<anonymous>:1:10: unterminated function arguments',
+  ],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
