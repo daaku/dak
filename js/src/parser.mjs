@@ -531,10 +531,22 @@ function* transpileFnArgs(ctx, input) {
 
 const makeFnTranspiler = (preArgs, postArgs) =>
   function* transpileFn(ctx, input) {
-    yield 'const '
-    const [name] = expect(ctx, input, 'symbol')
-    yield* transpileSymbol(ctx, name)
-    yield '='
+    const { value: token, done } = input.next()
+    if (done) {
+      throw err(ctx, ctx, 'unterminated function')
+    }
+    switch (token.kind) {
+      default:
+        throw err(ctx, ctx, `unexpected "${token.kind}"`)
+      case 'symbol':
+        yield 'const '
+        yield* transpileSymbol(ctx, token)
+        yield '='
+        break
+      case '[':
+        input = prepend(token, input)
+        break
+    }
     yield preArgs
     yield* transpileFnArgs(ctx, input)
     yield* postArgs

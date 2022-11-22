@@ -122,6 +122,38 @@ const cases = [
     `const run=async function*(v,){yield v;;};`,
   ],
   [
+    'builtin: anonymous fn',
+    `
+    (fn [v]
+      (v 42))
+    `,
+    `(v,)=>{return v(42,);};`,
+  ],
+  [
+    'builtin: anonymous fn@',
+    `
+    (fn@ [v]
+      @(v 42))
+    `,
+    `async(v,)=>{return await (v(42,));};`,
+  ],
+  [
+    'builtin: anonymous fn*',
+    `
+    (fn* [v]
+      (yield v))
+    `,
+    `function*(v,){yield v;;};`,
+  ],
+  [
+    'builtin: anonymous fn@*',
+    `
+    (fn@* [v]
+      (yield v))
+    `,
+    `async function*(v,){yield v;;};`,
+  ],
+  [
     'builtin: let',
     `(fn run []
       (let [a 0
@@ -394,6 +426,8 @@ const errorCases = [
     '(fn run [a',
     '<anonymous>:1:10: unterminated function arguments',
   ],
+  ['unterminated function', '(fn', '<anonymous>:1:2: unterminated function'],
+  ['unterminated function', '(fn (', '<anonymous>:1:5: unexpected "("'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
