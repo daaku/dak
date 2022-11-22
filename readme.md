@@ -4,8 +4,8 @@ Dak or DakLang is a Lisp that transpiles to JavaScript.
 
 Zen:
 
-1. Full access to JavaScript. No feature left behind.
-2. No runtime. Prefer libraries.
+1. Full access to JavaScript.
+2. No runtime.
 3. Participate in the ecosystem.
 
 JavaScript is ubiquitous. It's ecosystem is diverse and populated. Dak attempts
@@ -18,6 +18,21 @@ It has browser output as an important goal. Specifically, small bundle size and
 tree shaking for pay-as-you-go, are key considerations that determine the design
 choices. If you are making a browser based application in Dak, a [Vite based
 setup is the recommended choice](#12).
+
+## Programmable Language
+
+Lisp is often regarded as a programmable language. Augmenting the syntax is a
+powerful, and available tool. Since Dak is a transpiler, it only makes sense to
+allow augmenting the transpile process directly. This has various implications.
+
+1. Prefer functions where possible.
+2. Macros when you need to control evaluation.
+3. Syntax extension like delimited structures.
+4. Trainspile extension as the ulimate last resort.
+
+## Why Lisp?
+
+Because they spark joy.
 
 ## Documentation
 
