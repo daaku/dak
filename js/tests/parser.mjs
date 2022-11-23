@@ -74,6 +74,7 @@ const cases = [
   `,
     'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;',
   ],
+  ['builtin: var', '(var a 42)', 'var a=42;'],
   [
     'builtin: fn',
     `
