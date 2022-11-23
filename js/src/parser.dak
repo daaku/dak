@@ -1,5 +1,5 @@
-(def single ["(" ")" "[" "]" "{" "}" "@" "#"])
-(def whitespace [" " "\r" "\n" "\t"])
+(const single ["(" ")" "[" "]" "{" "}" "@" "#"])
+(const whitespace [" " "\r" "\n" "\t"])
 
 (fn err [expected offset]
   (str "expected " expected " at position " offset))

@@ -75,6 +75,7 @@ const cases = [
     'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;',
   ],
   ['builtin: var', '(var a 42)', 'var a=42;'],
+  ['builtin: let', '(let a 42)', 'let a=42;'],
   [
     'builtin: fn',
     `
@@ -454,6 +455,7 @@ const errorCases = [
   ['unterminated function', '(fn', '<anonymous>:1:2: unterminated function'],
   ['unterminated function', '(fn (', '<anonymous>:1:5: unexpected "("'],
   ['unterminated for', '(for-of [a b]', '<anonymous>:1:13: unterminated for'],
+  ['unterminated let', '(let', '<anonymous>:1:2: unterminated let'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {

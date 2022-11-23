@@ -377,6 +377,7 @@ const makeDefTranspile = kind =>
 
 const transpileBuiltinConst = makeDefTranspile('const')
 const transpileBuiltinVar = makeDefTranspile('var')
+const transpileBuiltinLetDef = makeDefTranspile('let')
 
 const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
   ctx,
@@ -599,7 +600,19 @@ const transpileBuiltinDiv = makeOpTranspile('/')
 const transpileBuiltinPow = makeOpTranspile('**')
 const transpileBuiltinMod = makeOpTranspile('%')
 
-const transpileBuiltinLet = hoistable(function* transpileBuiltinLet(
+function* transpileBuiltinLet(ctx, input, assign, hoist) {
+  const { value: token, done } = input.next()
+  if (done) {
+    throw err(ctx, ctx, 'unterminated let')
+  }
+  if (token.kind === 'symbol') {
+    yield* transpileBuiltinLetDef(ctx, prepend(token, input), assign, hoist)
+    return
+  }
+  yield* transpileBuiltinLetMulti(ctx, prepend(token, input), assign, hoist)
+}
+
+const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
   ctx,
   input,
   assign,
