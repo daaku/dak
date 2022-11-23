@@ -2,8 +2,7 @@
         ["@daaku/firebase-auth" :rename {Auth FirebaseAuth}]
         ["./jsx.js" [JSX]]
         ["./index.css"]
-        ["./parser.js" [DB Item Macro Quantity quantityString summarizeMacros
-                        Summary Unit]]
+        ["./parser.js" [DB Macro quantity-string summarize-macros]]
         ["./pie.js" [Pie]])
 
 ; Janky title case.
@@ -13,13 +12,13 @@
       (.map #($.replace (. $ 0) (.toUpperCase (. $ 0))))
       (.join " ")))
 
+; Make the path for today's plan.
 (fn today-path []
-  "Make the path for today's plan."
   (let [d (Date.)]
     (str "#/date/" (d.getFullYear) "/" (inc (d.getMonth)) "/" (d.getDate))))
 
-(fn site-header [ctx & children]
-  "Render the top level site header."
+; Render the top level site header.
+(fn site-header [ctx ...children]
   #[:header
     [:h1 children]
     [:nav [:ul
@@ -39,7 +38,7 @@
                          :amount (or summary.macros?.fat?.amount 0)}
                         {:label "Carb"
                          :amount (or summary.macros?.carb?.amount 0)}]})]
-    #[:svg {:viewBox (:viewBox pie)}
+    #[:svg {:viewBox pie.viewBox}
       (.map (p.paths)
             (fn [{:keys [d fill label title]}]
               #[:<>
@@ -57,8 +56,8 @@
 
 (fn render-date [{:keys [ctx year month date]}]
   (let [date (Date. (+ year) (- month 1) (+ date))
-        recipe (ctx.db.findDay date)
-        summary (summarizeMacros ctx.db recipe)]
+        recipe (ctx.db.find-day date)
+        summary (summarize-macros ctx.db recipe)]
     #[:<>
       [site-header ctx "Plan for " (date.toDateString)]
       [:div
@@ -104,7 +103,7 @@
         count 0
         onclick (fn []
                   (set! count (inc count))
-                  (.replaceChildren (:value ref) #[:strong "BOOM: " count]))]
+                  (.replaceChildren ref.value #[:strong "BOOM: " count]))]
     #[:<>
       [site-header ctx "About"]
       [:div {:ref ref} "Click below to change me."]
