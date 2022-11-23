@@ -932,6 +932,7 @@ const builtins = {
   if: transpileBuiltinIf,
   '.': transpileBuiltinDot,
   typeof: transpileTypeof,
+  'set!': transpileSet,
 }
 
 // function, method or constructor call
@@ -991,6 +992,13 @@ function* transpileList(ctx, input, assign, hoist) {
 
 function* transpileTypeof(ctx, input, assign, hoist) {
   yield 'typeof '
+  yield* transpileExpr(ctx, input, assign, hoist)
+  discard(expect(ctx, input, ')'))
+}
+
+function* transpileSet(ctx, input, assign, hoist) {
+  yield* transpileExpr(ctx, input, assign, hoist)
+  yield '='
   yield* transpileExpr(ctx, input, assign, hoist)
   discard(expect(ctx, input, ')'))
 }
