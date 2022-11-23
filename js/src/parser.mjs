@@ -992,7 +992,7 @@ function* transpileSymbol(ctx, token) {
     .replace('>', '_GT_')
     .replace('<', '_LT_')
     .replace('=', '_EQ_')
-    .replace(/-(.)/, (_match, c) => c.toUpperCase())
+    .replace(/-(.)/g, (_match, c) => c.toUpperCase())
 }
 
 const strSymbolToken = (ctx, token) => [...transpileSymbol(ctx, token)].join('')

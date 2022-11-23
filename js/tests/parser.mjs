@@ -23,6 +23,7 @@ const cases = [
   ['string with escaped newline', '"\\\n"', '"\\\n"'],
   ['string with unescaped newline', '"hello\nworld"', '"hello\\\nworld"'],
   ['symbol: dash special case', 'foo-bar', 'fooBar'],
+  ['symbol: dash special case 2x', 'foo-bar-baz', 'fooBarBaz'],
   ['symbol: bang', 'foo!', 'foo_BANG_'],
   ['symbol: qmark', 'foo?', 'foo_QMARK_'],
   ['symbol: star', 'foo*', 'foo_STAR_'],
