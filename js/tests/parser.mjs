@@ -203,6 +203,22 @@ const cases = [
     `for(let i=0;i<len;i++){console.log(i,);}`,
   ],
   [
+    'builtin: for-of',
+    `
+    (for-of [v vs]
+      (console.log v))
+    `,
+    `for(let v of vs){console.log(v,);}`,
+  ],
+  [
+    'builtin: for-in',
+    `
+    (for-in [v vs]
+      (console.log v))
+    `,
+    `for(let v in vs){console.log(v,);}`,
+  ],
+  [
     'builtin: case return position',
     `
     (fn run []
@@ -429,6 +445,7 @@ const errorCases = [
   ],
   ['unterminated function', '(fn', '<anonymous>:1:2: unterminated function'],
   ['unterminated function', '(fn (', '<anonymous>:1:5: unexpected "("'],
+  ['unterminated for', '(for-of [a b]', '<anonymous>:1:13: unterminated for'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
