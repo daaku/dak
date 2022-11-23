@@ -712,14 +712,15 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
   throw err(ctx, ctx, 'unterminated for')
 }
 
-const makeForTranspiler = kind =>
+const makeForTranspiler = (prefix, middle) =>
   function* transpileBuiltinFor(ctx, input, _assign, hoist) {
     discard(expect(ctx, input, '['))
     const [binding] = expect(ctx, input, 'symbol')
-    yield 'for(let '
+    yield prefix
+    yield '(let '
     yield* transpileSymbol(ctx, binding)
     yield ' '
-    yield kind
+    yield middle
     yield ' '
     yield* transpileExpr(ctx, input, null, hoist)
     discard(expect(ctx, input, ']'))
@@ -735,8 +736,9 @@ const makeForTranspiler = kind =>
     throw err(ctx, ctx, 'unterminated for')
   }
 
-const transpileBuiltinForOf = makeForTranspiler('of')
-const transpileBuiltinForIn = makeForTranspiler('in')
+const transpileBuiltinForOf = makeForTranspiler('for', 'of')
+const transpileBuiltinForIn = makeForTranspiler('for', 'in')
+const transpileBuiltinForAwait = makeForTranspiler('for await', 'in')
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
   if (!assign && hoist) {
@@ -909,6 +911,7 @@ const builtins = {
   break: transpileBuiltinBreak,
   continue: transpileBuiltinContinue,
   for: transpileBuiltinFor,
+  'for@': transpileBuiltinForAwait,
   'for-of': transpileBuiltinForOf,
   'for-in': transpileBuiltinForIn,
   case: transpileBuiltinCase,

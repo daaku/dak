@@ -219,6 +219,14 @@ const cases = [
     `for(let v in vs){console.log(v,);}`,
   ],
   [
+    'builtin: for@',
+    `
+    (for@ [v vs]
+      (console.log v))
+    `,
+    `for await(let v in vs){console.log(v,);}`,
+  ],
+  [
     'builtin: case return position',
     `
     (fn run []
