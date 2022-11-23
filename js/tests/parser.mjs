@@ -38,19 +38,19 @@ const cases = [
     '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}',
   ],
   ['nested arrays', '[[1 2 3] [4 5 6]]', '[[1,2,3,],[4,5,6,],]'],
-  ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
-  ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
-  ['constructor call', '(String. 42)', 'new String(42,)'],
+  ['function call', '(a {:b c})', 'a({["b"]:c,})'],
+  ['method call', '(.a b {:c d})', 'b.a({["c"]:d,})'],
+  ['constructor call', '(String. 42)', 'new String(42)'],
   [
     'value call',
     '(fn run [a] ((. Array :isArray) a))',
-    `const run=(a,)=>{return (Array["isArray"])(a,);};`,
+    `const run=(a)=>{return (Array["isArray"])(a);};`,
   ],
-  ['multiple: list', '(add 1)(add 2)', 'add(1,)add(2,)'],
+  ['multiple: list', '(add 1)(add 2)', 'add(1)add(2)'],
   [
     'call nested hoisted',
     '(do (String. (Number. (if true 42 43))))',
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0,),);',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0));',
   ],
   [
     'comments',
@@ -88,7 +88,7 @@ const cases = [
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
     `,
-    `const err=(expected,offset,)=>{return "expected "+expected+" at position "+offset;};`,
+    `const err=(expected,offset)=>{return "expected "+expected+" at position "+offset;};`,
   ],
   [
     'fn with array destructuring',
@@ -96,14 +96,21 @@ const cases = [
     (fn first [[first second] other]
       first)
     `,
-    `const first=([first,second,],other,)=>{return first;};`,
+    `const first=([first,second,],other)=>{return first;};`,
   ],
   [
     'fn with object destructuring',
     `(fn run [{x :y :keys [b c] :or {a 1 b 2 d 3}}]
       a)
     `,
-    `const run=({y:x,b=2,c,a=1,d=3},)=>{return a;};`,
+    `const run=({y:x,b=2,c,a=1,d=3})=>{return a;};`,
+  ],
+  [
+    'fn with rest',
+    `(fn run [a ...rest]
+       (a ...rest))
+    `,
+    `const run=(a,...rest)=>{return a(...rest);};`,
   ],
   [
     'builtin: fn@',
@@ -111,7 +118,7 @@ const cases = [
     (fn@ run [v]
       @(v 42))
     `,
-    `const run=async(v,)=>{return await (v(42,));};`,
+    `const run=async(v)=>{return await (v(42));};`,
   ],
   [
     'builtin: fn*',
@@ -119,7 +126,7 @@ const cases = [
     (fn* run [v]
       (yield v))
     `,
-    `const run=function*(v,){yield v;;};`,
+    `const run=function*(v){yield v;;};`,
   ],
   [
     'builtin: fn@*',
@@ -127,7 +134,7 @@ const cases = [
     (fn@* run [v]
       (yield v))
     `,
-    `const run=async function*(v,){yield v;;};`,
+    `const run=async function*(v){yield v;;};`,
   ],
   [
     'builtin: anonymous fn',
@@ -135,7 +142,7 @@ const cases = [
     (fn [v]
       (v 42))
     `,
-    `(v,)=>{return v(42,);};`,
+    `(v)=>{return v(42);};`,
   ],
   [
     'builtin: anonymous fn@',
@@ -143,7 +150,7 @@ const cases = [
     (fn@ [v]
       @(v 42))
     `,
-    `async(v,)=>{return await (v(42,));};`,
+    `async(v)=>{return await (v(42));};`,
   ],
   [
     'builtin: anonymous fn*',
@@ -151,7 +158,7 @@ const cases = [
     (fn* [v]
       (yield v))
     `,
-    `function*(v,){yield v;;};`,
+    `function*(v){yield v;;};`,
   ],
   [
     'builtin: anonymous fn@*',
@@ -159,7 +166,7 @@ const cases = [
     (fn@* [v]
       (yield v))
     `,
-    `async function*(v,){yield v;;};`,
+    `async function*(v){yield v;;};`,
   ],
   [
     'builtin: let',
@@ -169,7 +176,7 @@ const cases = [
         (console.log a)
         b))
     `,
-    `const run=()=>{{let a;a=0;let b;b=inc(a,);console.log(a,);return b;};};`,
+    `const run=()=>{{let a;a=0;let b;b=inc(a);console.log(a);return b;};};`,
   ],
   [
     'builtin: let with destructuring',
@@ -179,7 +186,7 @@ const cases = [
     `,
     `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};};`,
   ],
-  ['builtin: throw', '(throw (error "foo"))', 'throw error("foo",);'],
+  ['builtin: throw', '(throw (error "foo"))', 'throw error("foo");'],
   ['builtin: return with value', '(return 42)', 'return 42;'],
   ['builtin: return bare', '(return)', 'return;'],
   [
@@ -199,7 +206,7 @@ const cases = [
     (for [i 0 len step]
       (console.log i))
     `,
-    `for(let i=0;i<len;i+=step){console.log(i,);}`,
+    `for(let i=0;i<len;i+=step){console.log(i);}`,
   ],
   [
     'builtin: for without step',
@@ -207,7 +214,7 @@ const cases = [
     (for [i 0 len]
       (console.log i))
     `,
-    `for(let i=0;i<len;i++){console.log(i,);}`,
+    `for(let i=0;i<len;i++){console.log(i);}`,
   ],
   [
     'builtin: for-of',
@@ -215,7 +222,7 @@ const cases = [
     (for-of [v vs]
       (console.log v))
     `,
-    `for(let v of vs){console.log(v,);}`,
+    `for(let v of vs){console.log(v);}`,
   ],
   [
     'builtin: for-in',
@@ -223,7 +230,7 @@ const cases = [
     (for-in [v vs]
       (console.log v))
     `,
-    `for(let v in vs){console.log(v,);}`,
+    `for(let v in vs){console.log(v);}`,
   ],
   [
     'builtin: for@',
@@ -231,7 +238,7 @@ const cases = [
     (for@ [v vs]
       (console.log v))
     `,
-    `for await(let v of vs){console.log(v,);}`,
+    `for await(let v of vs){console.log(v);}`,
   ],
   [
     'builtin: case return position',
@@ -242,7 +249,7 @@ const cases = [
       "baz" :boo
       :otherwise))
     `,
-    `const run=()=>{switch (inc(1,)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
+    `const run=()=>{switch (inc(1)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
   ],
   [
     'builtin: case assign',
@@ -254,7 +261,7 @@ const cases = [
                 :otherwise)]
         v))
     `,
-    `const run=()=>{{let v;switch (inc(1,)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
+    `const run=()=>{{let v;switch (inc(1)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
   ],
   [
     'builtin: do',
@@ -263,7 +270,7 @@ const cases = [
       (add 1 1)
       42)
     `,
-    `add(1,1,);42;`,
+    `add(1,1);42;`,
   ],
   [
     'builtin: if hoisted',
@@ -281,7 +288,7 @@ const cases = [
     'builtin: if and else if',
     `
     (fn run [a b] (if a 42 b 43))`,
-    'const run=(a,b,)=>{if(a){return 42}else if(b){return 43};};',
+    'const run=(a,b)=>{if(a){return 42}else if(b){return 43};};',
   ],
   [
     'builtin: if return',
@@ -293,13 +300,13 @@ const cases = [
     'builtin: if let',
     `
     (.foo (let [a (if true 42 43)] a) :bar)`,
-    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar",)',
+    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar")',
   ],
   [
     'builtin: double if hoisting',
     `
     (do (.foo (if (if true 40 41) 42 43) :bar))`,
-    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar",);',
+    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar");',
   ],
   ['builtin: dot', '(. foo bar)', 'foo[bar]'],
   ['builtin: dot double', '(. foo bar baz)', 'foo[bar][baz]'],
@@ -311,11 +318,7 @@ const cases = [
     `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];};`,
   ],
   ['builtin: await', `@42`, `await (42)`],
-  [
-    'builtin: await method call',
-    `@(make :promise)`,
-    `await (make("promise",))`,
-  ],
+  ['builtin: await method call', `@(make :promise)`, `await (make("promise"))`],
   ['builtin: op str', '(str :a :b :c)', '"a"+"b"+"c"'],
   ['builtin: op +', '(+ 1 2 3)', '1+2+3'],
   ['builtin: op + unary', '(+ 1)', '+1'],
@@ -328,7 +331,7 @@ const cases = [
   [
     'lambda',
     `#([(if $ true false) $2])`,
-    `(gensym__0,gensym__1,)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
+    `(gensym__0,gensym__1)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
   ],
   ['builtin: typeof', '(typeof 1)', 'typeof 1'],
   ['builtin: set!', '(set! a 1)', 'a=1'],

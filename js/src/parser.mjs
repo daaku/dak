@@ -519,13 +519,18 @@ function* transpileDestructure(ctx, input) {
 function* transpileFnArgs(ctx, input) {
   discard(expect(ctx, input, '['))
   yield '('
+  let first = true
   for (const token of input) {
     if (token.kind === ']') {
       yield ')'
       return
     }
+    if (first) {
+      first = false
+    } else {
+      yield ','
+    }
     yield* transpileDestructure(ctx, prepend(token, input))
-    yield ','
   }
   throw err(ctx, ctx, 'unterminated function arguments')
 }
@@ -876,10 +881,15 @@ function* transpileLambda(ctx, input) {
   }
   discard(expect(ctx, input, ')'))
 
+  let first = true
   yield '('
   for (const arg of args) {
+    if (first) {
+      first = false
+    } else {
+      yield ','
+    }
     yield* transpileSymbol(ctx, arg)
-    yield ','
   }
   yield ')=>{'
   yield* transpileExprHoistable(ctx, iter(buf), 'return ')
@@ -963,14 +973,19 @@ function* transpileCall(ctx, input, assign, hoist) {
       yield* transpileSymbol(ctx, token)
       break
   }
+  let first = true
   yield '('
   for (const token of input) {
     if (token.kind === ')') {
       yield ')'
       return
     }
+    if (first) {
+      first = false
+    } else {
+      yield ','
+    }
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    yield ','
   }
   throw err(ctx, ctx, 'unterminated list')
 }
