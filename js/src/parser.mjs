@@ -363,14 +363,14 @@ function* transpileBuiltinImport(ctx, input) {
   throw err(ctx, ctx, 'unterminated import')
 }
 
-const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
+const transpileBuiltinConst = hoistable(function* transpileBuiltinDef(
   ctx,
   input,
   assign,
   hoist,
 ) {
   const [name] = expect(ctx, input, 'symbol')
-  yield 'let '
+  yield 'const '
   yield* transpileSymbol(ctx, name)
   yield '='
   yield* transpileExpr(ctx, input, null, hoist)
@@ -862,7 +862,7 @@ function* transpileHash(ctx, input) {
 
 const builtins = {
   import: transpileBuiltinImport,
-  def: transpileBuiltinDef,
+  const: transpileBuiltinConst,
   fn: transpileBuiltinFnArrow,
   'fn@': transpileBuiltinFnArrowAsync,
   'fn*': transpileBuiltinFnGenerator,

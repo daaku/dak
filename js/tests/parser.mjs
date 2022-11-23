@@ -64,15 +64,15 @@ const cases = [
     `,
     `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";`,
   ],
-  ['builtin: def', '(def a 42)', 'let a=42;'],
+  ['builtin: const', '(const a 42)', 'const a=42;'],
   [
-    'builtin: def with hoist',
+    'builtin: const with hoist',
     `
-    (def a (case v
-             42 :answer
-             43 :not))
+    (const a (case v
+                42 :answer
+                43 :not))
   `,
-    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}let a=gensym__0;',
+    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;',
   ],
   [
     'builtin: fn',
@@ -236,8 +236,8 @@ const cases = [
   [
     'builtin: if hoisted',
     `
-    (def a (if true 42 43))`,
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}let a=gensym__0;',
+    (const a (if true 42 43))`,
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}const a=gensym__0;',
   ],
   [
     'builtin: if without else',
