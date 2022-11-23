@@ -935,15 +935,32 @@ const builtins = {
 
 // function, method or constructor call
 function* transpileCall(ctx, input, assign, hoist) {
-  const [token] = expect(ctx, input, 'symbol')
-  yield* transpileAssign(ctx, assign)
-  if (token.value.endsWith('.')) {
-    yield 'new '
-    token.value = token.value.slice(0, -1) // drop the tailing .
-  } else if (token.value.startsWith('.')) {
-    yield* transpileExpr(ctx, input, null, hoist)
+  const { value: token, done } = input.next()
+  /* c8 ignore next */
+  if (done) {
+    /* c8 ignore next */
+    throw err(ctx, ctx, 'unterminated list')
+    /* c8 ignore next */
   }
-  yield* transpileSymbol(ctx, token)
+  yield* transpileAssign(ctx, assign)
+  switch (token.kind) {
+    default:
+      throw err(ctx, token, `unexpected "${token.kind}"`)
+    case '(':
+      yield '('
+      yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+      yield ')'
+      break
+    case 'symbol':
+      if (token.value.endsWith('.')) {
+        yield 'new '
+        token.value = token.value.slice(0, -1) // drop the tailing .
+      } else if (token.value.startsWith('.')) {
+        yield* transpileExpr(ctx, input, null, hoist)
+      }
+      yield* transpileSymbol(ctx, token)
+      break
+  }
   yield '('
   for (const token of input) {
     if (token.kind === ')') {
@@ -957,11 +974,16 @@ function* transpileCall(ctx, input, assign, hoist) {
 }
 
 function* transpileList(ctx, input, assign, hoist) {
-  const [token] = expect(ctx, input, 'symbol')
-  const builtin = builtins[token.value]
-  if (builtin) {
-    yield* builtin(ctx, input, assign, hoist)
-    return
+  const { value: token, done } = input.next()
+  if (done) {
+    throw err(ctx, ctx, 'unterminated list')
+  }
+  if (token.kind === 'symbol') {
+    const builtin = builtins[token.value]
+    if (builtin) {
+      yield* builtin(ctx, input, assign, hoist)
+      return
+    }
   }
   yield* transpileCall(ctx, prepend(token, input), assign, hoist)
 }

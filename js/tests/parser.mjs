@@ -41,6 +41,11 @@ const cases = [
   ['function call', '(a {:b c})', 'a({["b"]:c,},)'],
   ['method call', '(.a b {:c d})', 'b.a({["c"]:d,},)'],
   ['constructor call', '(String. 42)', 'new String(42,)'],
+  [
+    'value call',
+    '(fn run [a] ((. Array :isArray) a))',
+    `const run=(a,)=>{return (Array["isArray"])(a,);};`,
+  ],
   ['multiple: list', '(add 1)(add 2)', 'add(1,)add(2,)'],
   [
     'call nested hoisted',
@@ -346,7 +351,7 @@ cases.forEach(([name, input, output]) => {
 })
 
 const errorCases = [
-  ['lone paren', '(', '<anonymous>:1:1: input ended, wanted "symbol"'],
+  ['lone paren', '(', '<anonymous>:1:1: unterminated list'],
   ['unterminated string', '(foo "', '<anonymous>:1:6: unterminated string'],
   ['keyword symbol', '(foo :', '<anonymous>:1:6: input ended, wanted "symbol"'],
   ['unterminated map', '{', '<anonymous>:1:1: unterminated map'],
@@ -457,6 +462,7 @@ const errorCases = [
   ['unterminated function', '(fn (', '<anonymous>:1:5: unexpected "("'],
   ['unterminated for', '(for-of [a b]', '<anonymous>:1:13: unterminated for'],
   ['unterminated let', '(let', '<anonymous>:1:2: unterminated let'],
+  ['call unexpected', '([', '<anonymous>:1:2: unexpected "["'],
 ]
 
 errorCases.forEach(([name, input, msg]) => {
