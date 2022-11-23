@@ -738,7 +738,7 @@ const makeForTranspiler = (prefix, middle) =>
 
 const transpileBuiltinForOf = makeForTranspiler('for', 'of')
 const transpileBuiltinForIn = makeForTranspiler('for', 'in')
-const transpileBuiltinForAwait = makeForTranspiler('for await', 'in')
+const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
   if (!assign && hoist) {
