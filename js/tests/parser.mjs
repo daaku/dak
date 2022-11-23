@@ -330,6 +330,7 @@ const cases = [
     `#([(if $ true false) $2])`,
     `(gensym__0,gensym__1,)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,]}`,
   ],
+  ['builtin: typeof', '(typeof 1)', 'typeof 1'],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]

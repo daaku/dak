@@ -931,6 +931,7 @@ const builtins = {
   do: transpileBuiltinDo,
   if: transpileBuiltinIf,
   '.': transpileBuiltinDot,
+  typeof: transpileTypeof,
 }
 
 // function, method or constructor call
@@ -986,6 +987,12 @@ function* transpileList(ctx, input, assign, hoist) {
     }
   }
   yield* transpileCall(ctx, prepend(token, input), assign, hoist)
+}
+
+function* transpileTypeof(ctx, input, assign, hoist) {
+  yield 'typeof '
+  yield* transpileExpr(ctx, input, assign, hoist)
+  discard(expect(ctx, input, ')'))
 }
 
 function* transpileAwait(ctx, input, assign, hoist) {
