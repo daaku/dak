@@ -34,7 +34,7 @@ const refresh = async () => {
   output.replaceChildren();
 
   try {
-    const js = [...transpile(dakCode.value, { filename: "main.dak" })].join("");
+    const js = "".concat(...transpile(dakCode.value, { filename: "main.dak" }));
 
     if (autoEval.checked) {
       (async () => {
