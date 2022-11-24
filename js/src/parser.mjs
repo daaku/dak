@@ -219,20 +219,13 @@ const collectForm = input => {
 
 const hoister = ctx => {
   const collected = []
-  return [
-    (transpile, input, hoist) => {
-      const sym = [...transpileSymbol(ctx, ctx.gensym())]
-      const assign = [...sym, '=']
-      collected.push(
-        'let ',
-        ...sym,
-        ';',
-        ...transpile(ctx, input, assign, hoist),
-      )
-      return sym
-    },
-    uninterrupt(iter(collected)),
-  ]
+  const hoist = (transpile, input) => {
+    const sym = [...transpileSymbol(ctx, ctx.gensym())]
+    const assign = [...sym, '=']
+    collected.push('let ', ...sym, ';', ...transpile(ctx, input, assign, hoist))
+    return sym
+  }
+  return [hoist, uninterrupt(iter(collected))]
 }
 
 const hoistable = transpile => {
@@ -766,7 +759,7 @@ const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
 
 function* transpileBuiltinIf(ctx, input, assign, hoist) {
   if (!assign && hoist) {
-    yield* hoist(transpileBuiltinIf, input, hoist)
+    yield* hoist(transpileBuiltinIf, input)
     return
   }
 
