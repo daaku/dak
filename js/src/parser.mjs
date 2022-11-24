@@ -244,6 +244,20 @@ const hoistable = transpile => {
   }
 }
 
+const splitter = s => {
+  let first = true
+  return () => {
+    while (true) {
+      if (first) {
+        first = false
+        return ''
+      } else {
+        return s
+      }
+    }
+  }
+}
+
 function* transpileMap(ctx, input, hoist) {
   yield '{'
   for (const token of input) {
@@ -490,13 +504,9 @@ function* transpileDestructure(ctx, input) {
           }
         }
         yield '{'
-        let first = true
+        const comma = splitter(',')
         for (const key of keys) {
-          if (first) {
-            first = false
-          } else {
-            yield ','
-          }
+          yield comma()
           yield* transpileSymbol(ctx, { value: key })
           if (Object.hasOwn(rename, key)) {
             yield ':'
@@ -519,17 +529,13 @@ function* transpileDestructure(ctx, input) {
 function* transpileFnArgs(ctx, input) {
   discard(expect(ctx, input, '['))
   yield '('
-  let first = true
+  const comma = splitter(',')
   for (const token of input) {
     if (token.kind === ']') {
       yield ')'
       return
     }
-    if (first) {
-      first = false
-    } else {
-      yield ','
-    }
+    yield comma()
     yield* transpileDestructure(ctx, prepend(token, input))
   }
   throw err(ctx, ctx, 'unterminated function arguments')
@@ -764,7 +770,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
     return
   }
 
-  let first = true
+  const elseSplitter = splitter('else ')
   for (const token of input) {
     if (token.kind === ')') {
       return
@@ -787,11 +793,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
       return
     }
 
-    if (first) {
-      first = false
-    } else {
-      yield 'else '
-    }
+    yield elseSplitter()
     yield 'if('
     yield* transpileExpr(ctx, buf, null, hoist)
     yield '){'
@@ -881,14 +883,10 @@ function* transpileLambda(ctx, input) {
   }
   discard(expect(ctx, input, ')'))
 
-  let first = true
+  const comma = splitter(',')
   yield '('
   for (const arg of args) {
-    if (first) {
-      first = false
-    } else {
-      yield ','
-    }
+    yield comma()
     yield* transpileSymbol(ctx, arg)
   }
   yield ')=>{'
@@ -973,18 +971,14 @@ function* transpileCall(ctx, input, assign, hoist) {
       yield* transpileSymbol(ctx, token)
       break
   }
-  let first = true
+  const comma = splitter(',')
   yield '('
   for (const token of input) {
     if (token.kind === ')') {
       yield ')'
       return
     }
-    if (first) {
-      first = false
-    } else {
-      yield ','
-    }
+    yield comma()
     yield* transpileExpr(ctx, prepend(token, input), null, hoist)
   }
   throw err(ctx, ctx, 'unterminated list')
