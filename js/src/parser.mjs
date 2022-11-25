@@ -336,8 +336,12 @@ function* macroThreadFirst(ctx, input) {
     yield* val
     return
   }
-  const form = collectForm(prepend(value, input))
-  form.splice(2, 0, ...val)
+  let form = collectForm(prepend(value, input))
+  if (form[0].kind === 'symbol') {
+    form = [{ kind: '(' }, ...form, ...val, { kind: ')' }]
+  } else {
+    form.splice(2, 0, ...val)
+  }
   yield* macroThreadFirst(ctx, join(form, input))
 }
 

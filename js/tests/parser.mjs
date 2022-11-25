@@ -361,6 +361,11 @@ const cases = [
     '(-> :hello (.toUpperCase) (str " world"))',
     '"hello".toUpperCase()+" world"',
   ],
+  [
+    'macro: -> with symbol',
+    '(-> :hello .toUpperCase (str " world"))',
+    '"hello".toUpperCase()+" world"',
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]
