@@ -193,9 +193,9 @@ const cases = [
     'builtin: let as arg',
     `
     (fn run [a] a)
-     (do (run (let [a 0
-                    b (inc a)]
-                (+ a b))))
+    (do (run (let [a 0
+                   b (inc a)]
+               (+ a b))))
     `,
     `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;}run(gensym__0);`,
   ],
