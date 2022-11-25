@@ -179,6 +179,27 @@ const cases = [
     `const run=()=>{{let a;a=0;let b;b=inc(a);console.log(a);return b;};};`,
   ],
   [
+    'builtin: let without assign',
+    `(fn run []
+      (let [a 0
+            b (inc a)]
+        (console.log a)
+        b)
+       null)
+    `,
+    `const run=()=>{let gensym__0;{let a;a=0;let b;b=inc(a);console.log(a);gensym__0=b;}gensym__0;return null;};`,
+  ],
+  [
+    'builtin: let as arg',
+    `
+    (fn run [a] a)
+     (do (run (let [a 0
+                    b (inc a)]
+                (+ a b))))
+    `,
+    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;}run(gensym__0);`,
+  ],
+  [
     'builtin: let with destructuring',
     `(fn run []
       (let [{:keys [a b]} (foo)]
@@ -409,7 +430,11 @@ const errorCases = [
     '<anonymous>:1:2: unterminated return',
   ],
   ['unterminated for', '(for [a b', '<anonymous>:1:9: unterminated for'],
-  ['unterminated for', '(for [a b c]', '<anonymous>:1:12: unterminated for'],
+  [
+    'unterminated for list',
+    '(for [a b c]',
+    '<anonymous>:1:12: unterminated list',
+  ],
   ['unterminated if', '(if', '<anonymous>:1:2: unterminated if'],
   ['unterminated if', '(if :foo', '<anonymous>:1:6: unterminated if'],
   ['unterminated case', '(case :foo', '<anonymous>:1:8: unterminated case'],
@@ -465,7 +490,11 @@ const errorCases = [
   ],
   ['unterminated function', '(fn', '<anonymous>:1:2: unterminated function'],
   ['unterminated function', '(fn (', '<anonymous>:1:5: unexpected "("'],
-  ['unterminated for', '(for-of [a b]', '<anonymous>:1:13: unterminated for'],
+  [
+    'unterminated for list',
+    '(for-of [a b]',
+    '<anonymous>:1:13: unterminated list',
+  ],
   ['unterminated let', '(let', '<anonymous>:1:2: unterminated let'],
   ['call unexpected', '([', '<anonymous>:1:2: unexpected "["'],
 ]

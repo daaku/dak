@@ -267,9 +267,17 @@ const hoister = ctx => {
 const hoistable = transpile => {
   return function* transpileHoistable(ctx, input, assign) {
     const [hoist, hoisted] = hoister(ctx)
-    const postHoist = [...transpile(ctx, input, assign, hoist)]
-    yield* hoisted
-    yield* postHoist
+    const postHoist = []
+    const transpiler = transpile(ctx, input, assign, hoist)
+    while (true) {
+      const { value, done } = transpiler.next()
+      if (done) {
+        yield* hoisted
+        yield* postHoist
+        return value
+      }
+      postHoist.push(value)
+    }
   }
 }
 
@@ -668,14 +676,9 @@ function* transpileBuiltinLet(ctx, input, assign, hoist) {
   yield* transpileBuiltinLetMulti(ctx, prepend(token, input), assign, hoist)
 }
 
-const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
-  ctx,
-  input,
-  assign,
-  hoist,
-) {
+function* transpileBuiltinLetMulti(ctx, input, assign, hoist) {
   if (!assign && hoist) {
-    yield* hoist(transpileBuiltinLet, input)
+    yield* hoist(transpileBuiltinLetMulti, input)
     return
   }
 
@@ -721,7 +724,7 @@ const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
   yield* transpileBuiltinDo(ctx, input, assign)
   yield '}'
   ctx.bindings.pop()
-})
+}
 
 const makeKeywordExprTranspile = keyword =>
   hoistable(function* transpileKeywordExpr(ctx, input, _assign, hoist) {
@@ -773,15 +776,8 @@ function* transpileBuiltinFor(ctx, input, _assign, hoist) {
     discard(expect(ctx, input, ']'))
   }
   yield '){'
-  for (const token of input) {
-    if (token.kind === ')') {
-      yield '}'
-      return
-    }
-    yield* transpileExpr(ctx, prepend(token, input))
-    yield ';'
-  }
-  throw err(ctx, ctx, 'unterminated for')
+  yield* transpileBuiltinDo(ctx, input, null)
+  yield '}'
 }
 
 const makeForTranspiler = (prefix, middle) =>
@@ -797,15 +793,8 @@ const makeForTranspiler = (prefix, middle) =>
     yield* transpileExpr(ctx, input, null, hoist)
     discard(expect(ctx, input, ']'))
     yield '){'
-    for (const token of input) {
-      if (token.kind === ')') {
-        yield '}'
-        return
-      }
-      yield* transpileExpr(ctx, prepend(token, input))
-      yield ';'
-    }
-    throw err(ctx, ctx, 'unterminated for')
+    yield* transpileBuiltinDo(ctx, input, null)
+    yield '}'
   }
 
 const transpileBuiltinForOf = makeForTranspiler('for', 'of')
@@ -836,7 +825,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
     // path for final else clause
     if (expr.kind === ')') {
       yield 'else{'
-      yield* transpileExpr(ctx, buf, assign)
+      yield* transpileExprHoistable(ctx, buf, assign)
       yield '}'
       return
     }
@@ -845,7 +834,7 @@ function* transpileBuiltinIf(ctx, input, assign, hoist) {
     yield 'if('
     yield* transpileExpr(ctx, buf, null, hoist)
     yield '){'
-    yield* transpileExpr(ctx, prepend(expr, input), assign)
+    yield* transpileExprHoistable(ctx, prepend(expr, input), assign)
     yield '}'
   }
   throw err(ctx, ctx, 'unterminated if')
@@ -858,7 +847,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
   }
 
   yield 'switch ('
-  yield* transpileExpr(ctx, input)
+  yield* transpileExpr(ctx, input, null, hoist)
   yield '){'
   for (const token of input) {
     if (token.kind === ')') {
@@ -878,7 +867,7 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
     // path for final default clause
     if (expr.kind === ')') {
       yield 'default:'
-      yield* transpileExpr(ctx, buf, assign)
+      yield* transpileExprHoistable(ctx, buf, assign)
       yield ';'
       if (assign !== 'return ') {
         yield 'break'
@@ -888,9 +877,9 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
     }
 
     yield 'case '
-    yield* transpileExpr(ctx, buf)
+    yield* transpileExpr(ctx, buf, null, hoist)
     yield ':'
-    yield* transpileExpr(ctx, prepend(expr, input), assign)
+    yield* transpileExprHoistable(ctx, prepend(expr, input), assign)
     yield ';'
     if (assign !== 'return ') {
       yield 'break;'
@@ -1139,7 +1128,7 @@ function* transpileExpr(ctx, input, assign, hoist) {
       yield* transpileKeyword(ctx, input)
       break
     case '@':
-      yield* transpileAwait(ctx, input)
+      yield* transpileAwait(ctx, input, null, hoist)
       break
     case '#':
       yield* transpileHash(ctx, input)
@@ -1165,5 +1154,5 @@ export function* transpile(code, config) {
   // yield* each expression, and use the final return (from transpileExpr) to
   // decide if we should continue. this return is setup to return false when the
   // input iterator stops producing tokens.
-  while (yield* transpileExpr(ctx, input)) {}
+  while (yield* transpileExprHoistable(ctx, input)) {}
 }
