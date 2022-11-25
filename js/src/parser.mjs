@@ -18,10 +18,35 @@ const err = (ctx, { pos = {} }, msg) => {
   return e
 }
 
+const bindings = initial => {
+  const scopes = [{}, initial]
+  return {
+    push() {
+      scopes.unshift({})
+    },
+    pop() {
+      scopes.shift()
+    },
+    add(name, value) {
+      scopes[0][name] = value ?? true
+    },
+    get(name) {
+      for (const scope of scopes) {
+        const binding = scope[name]
+        if (binding) {
+          return binding
+        }
+      }
+    },
+  }
+}
+
 const newCtx = config => {
   let _gensym = 0
   return {
     ...config,
+    bindings: bindings(builtins),
+    macros: bindings(macros),
     gensym() {
       return { kind: 'symbol', value: `gensym__${_gensym++}`, pos: {} }
     },
@@ -394,6 +419,7 @@ function* transpileBuiltinImport(ctx, input) {
 const makeDefTranspile = kind =>
   hoistable(function* transpileDef(ctx, input, assign, hoist) {
     const [name] = expect(ctx, input, 'symbol')
+    ctx.bindings.add(name.value)
     yield kind
     yield ' '
     yield* transpileSymbol(ctx, name)
@@ -438,6 +464,7 @@ function* transpileDestructure(ctx, input) {
       default:
         throw err(ctx, token, `unexpected destructure "${token.kind}"`)
       case 'symbol':
+        ctx.bindings.add(token.name)
         yield* transpileSymbol(ctx, token)
         return
       case '[':
@@ -525,6 +552,9 @@ function* transpileDestructure(ctx, input) {
           if (Object.hasOwn(rename, key)) {
             yield ':'
             yield* transpileSymbol(ctx, { value: rename[key] })
+            ctx.bindings.add(rename[key])
+          } else {
+            ctx.bindings.add(key)
           }
           if (Object.hasOwn(or, key)) {
             yield '='
@@ -566,6 +596,7 @@ const makeFnTranspiler = (preArgs, postArgs) =>
         throw err(ctx, ctx, `unexpected "${token.kind}"`)
       case 'symbol':
         yield 'const '
+        ctx.bindings.add(token.value)
         yield* transpileSymbol(ctx, token)
         yield '='
         break
@@ -649,6 +680,7 @@ const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
   }
 
   discard(expect(ctx, input, '['))
+  ctx.bindings.push()
   yield '{'
   for (const token of input) {
     if (token.kind === ']') {
@@ -660,6 +692,7 @@ const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
     let sym
     let destructing
     if (token.kind === 'symbol') {
+      ctx.bindings.add(token.value)
       sym = [...transpileSymbol(ctx, token)]
     } else {
       sym = [...transpileSymbol(ctx, ctx.gensym())]
@@ -687,6 +720,7 @@ const transpileBuiltinLetMulti = hoistable(function* transpileBuiltinLet(
   }
   yield* transpileBuiltinDo(ctx, input, assign)
   yield '}'
+  ctx.bindings.pop()
 })
 
 const makeKeywordExprTranspile = keyword =>
@@ -1008,12 +1042,16 @@ function* transpileList(ctx, input, assign, hoist) {
     throw err(ctx, ctx, 'unterminated list')
   }
   if (token.kind === 'symbol') {
-    const builtin = builtins[token.value]
-    if (builtin) {
-      yield* builtin(ctx, input, assign, hoist)
+    const binding = ctx.bindings.get(token.value)
+    if (binding === true) {
+      yield* transpileCall(ctx, prepend(token, input), assign, hoist)
       return
     }
-    const macro = macros[token.value]
+    if (binding) {
+      yield* binding(ctx, input, assign, hoist)
+      return
+    }
+    const macro = ctx.macros.get(token.value)
     if (macro) {
       yield* transpileExpr(ctx, macro(ctx, input), assign, hoist)
       return
