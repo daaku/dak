@@ -217,6 +217,17 @@ const collectForm = input => {
   return collected
 }
 
+const collectUntil = (ctx, input, kind) => {
+  const collected = []
+  for (const token of input) {
+    if (token.kind === kind) {
+      return collected
+    }
+    collected.push(...collectForm(prepend(token, input)))
+  }
+  throw err(ctx, ctx, `unterminated form, expected ${kind}`)
+}
+
 const hoister = ctx => {
   const collected = []
   const hoist = (transpile, input) => {
@@ -249,6 +260,16 @@ const splitter = s => {
       }
     }
   }
+}
+
+function* macroWhen(ctx, input) {
+  const cond = collectForm(input)
+  const body = collectUntil(ctx, input, ')')
+  yield* tokens(ctx, '(if ')
+  yield* cond
+  yield* tokens(ctx, '(do ')
+  yield* body
+  yield* tokens(ctx, '))')
 }
 
 function* transpileMap(ctx, input, hoist) {
@@ -902,6 +923,10 @@ function* transpileHash(ctx, input) {
   }
 }
 
+const macros = {
+  when: macroWhen,
+}
+
 const builtins = {
   import: transpileBuiltinImport,
   const: transpileBuiltinConst,
@@ -986,6 +1011,11 @@ function* transpileList(ctx, input, assign, hoist) {
     const builtin = builtins[token.value]
     if (builtin) {
       yield* builtin(ctx, input, assign, hoist)
+      return
+    }
+    const macro = macros[token.value]
+    if (macro) {
+      yield* transpileExpr(ctx, macro(ctx, input), assign, hoist)
       return
     }
   }
