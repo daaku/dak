@@ -356,6 +356,11 @@ const cases = [
   ],
   ['builtin: typeof', '(typeof 1)', 'typeof 1'],
   ['builtin: set!', '(set! a 1)', 'a=1'],
+  [
+    'macro: ->',
+    '(-> :hello (.toUpperCase) (str " world"))',
+    '"hello".toUpperCase()+" world"',
+  ],
   // [
   //   'compound: read-string',
   //   `(fn read-string [input len start]

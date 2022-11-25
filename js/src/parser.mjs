@@ -224,6 +224,14 @@ const prepend = (one, rest) =>
     })(),
   )
 
+const join = (begin, rest) =>
+  uninterrupt(
+    (function* () {
+      yield* begin
+      yield* rest
+    })(),
+  )
+
 // finished input returns an empty array.
 const collectForm = input => {
   const collected = []
@@ -295,6 +303,16 @@ const splitter = s => {
   }
 }
 
+function* transpileMacro(ctx, input, assign, hoist) {
+  // args
+  // special macro binding env: symbol? object? array? etc
+  // quote/unquote
+  // gensym
+  // converts token stream to another token stream
+  for (const token of input) {
+  }
+}
+
 function* macroWhen(ctx, input) {
   const cond = collectForm(input)
   const body = collectUntil(ctx, input, ')')
@@ -303,6 +321,24 @@ function* macroWhen(ctx, input) {
   yield* tokens(ctx, '(do ')
   yield* body
   yield* tokens(ctx, '))')
+}
+
+function* macroThreadFirst(ctx, input) {
+  const val = collectForm(input)
+  if (val.length === 0) {
+    throw err(ctx, ctx, 'invalid -> form')
+  }
+  const { value, done } = input.next()
+  if (done) {
+    throw err(ctx, ctx, 'unterimated ->')
+  }
+  if (value.kind === ')') {
+    yield* val
+    return
+  }
+  const form = collectForm(prepend(value, input))
+  form.splice(2, 0, ...val)
+  yield* macroThreadFirst(ctx, join(form, input))
 }
 
 function* transpileMap(ctx, input, hoist) {
@@ -948,6 +984,7 @@ function* transpileHash(ctx, input) {
 
 const macros = {
   when: macroWhen,
+  '->': macroThreadFirst,
 }
 
 const builtins = {
