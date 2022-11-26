@@ -42,13 +42,13 @@ const bindings = initial => {
 }
 
 const newCtx = config => {
-  let _gensym = 0
+  let gensym = 0
   return {
     ...config,
     bindings: bindings(builtins),
     macros: bindings(macros),
     gensym() {
-      return { kind: 'symbol', value: `gensym__${_gensym++}`, pos: {} }
+      return { kind: 'symbol', value: `gensym__${gensym++}`, pos: {} }
     },
   }
 }
