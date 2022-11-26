@@ -1,6 +1,27 @@
 (const single ["(" ")" "[" "]" "{" "}" "@" "#"])
 (const whitespace [" " "\r" "\n" "\t"])
 
+(macro when [cond ...body]
+  `(if ,cond
+     (do ,body)))
+
+(macro -> [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (array? f)
+               (doto f (.splice 1 0 c))
+               `(,f ,c)))
+           v))
+
+; TODO v should not be evaluated multiple times
+(macro doto [v ...forms]
+  (doto (.map forms
+              (fn [f]
+                (if (array? f)
+                  (doto f (.splice 1 0 v))
+                  `(,f ,v))))
+        (.push v)))
+
 (fn err [expected offset]
   (str "expected " expected " at position " offset))
 
