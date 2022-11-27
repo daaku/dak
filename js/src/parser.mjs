@@ -1,12 +1,6 @@
 const symbolBreaker = ['(', ')', '[', ']', '{', '}']
 const single = [...symbolBreaker, '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
-const pairs = {
-  '(': ')',
-  '[': ']',
-  '{': '}',
-}
-const plusOnes = ['@', '#', ':', "'", '~', '`', ',']
 
 const err = (ctx, { pos = {} }, msg) => {
   const e = Error(
@@ -170,30 +164,90 @@ export function* tokens(ctx, input) {
   }
 }
 
-const iter = vs =>
-  uninterrupt(
-    (function* () {
-      yield* vs
-    })(),
-  )
+const setKind = (o, kind, { pos }) => {
+  Object.defineProperty(o, 'kind', {
+    value: kind,
+    enumerable: false,
+  })
+  Object.defineProperty(o, 'pos', {
+    value: pos,
+    enumerable: false,
+  })
+  return o
+}
 
-function* expect(ctx, input, ...expected) {
-  let i = 0
-  for (const actual of input) {
-    if (actual.kind !== expected[i]) {
-      throw err(
-        ctx,
-        actual,
-        `unexpected "${actual.kind}" wanted "${expected[i]}"`,
-      )
-    }
-    yield actual
-    i++
-    if (i === expected.length) {
+function* astUntil(ctx, input, kind) {
+  for (const token of input) {
+    if (token.kind === kind) {
       return
     }
+    yield astOne(ctx, prepend(token, input))
   }
-  throw err(ctx, ctx, `input ended, wanted "${expected[i]}"`)
+  throw err(ctx, ctx, 'unterminated form')
+}
+
+const astNeedOne = (ctx, input) => {
+  const node = astOne(ctx, input)
+  if (!node) {
+    throw err(ctx, ctx, 'unterminated form')
+  }
+  return node
+}
+
+const astShorthand = (ctx, token, special, input) =>
+  setKind(
+    [
+      { kind: 'symbol', pos: token.pos, value: special },
+      astNeedOne(ctx, input),
+    ],
+    'list',
+    token,
+  )
+
+const astOne = (ctx, input) => {
+  const { value, done } = input.next()
+  if (done) {
+    return
+  }
+  switch (value.kind) {
+    case 'comment':
+      return value
+    case 'string':
+      return value
+    case 'symbol':
+      return value
+    case '(':
+      return setKind([...astUntil(ctx, input, ')')], 'list', value)
+    case '[':
+      return setKind([...astUntil(ctx, input, ']')], 'array', value)
+    case '{':
+      const o = setKind([...astUntil(ctx, input, '}')], 'object', value)
+      if (o.length % 2 === 1) {
+        throw err(
+          ctx,
+          value,
+          'object literal must contain even number of forms',
+        )
+      }
+      return o
+    case "'":
+      return astShorthand(ctx, value, 'quote', input)
+    case ',':
+      return astShorthand(ctx, value, 'unquote', input)
+    case '@':
+      return astShorthand(ctx, value, 'await', input)
+    case '#':
+      return astShorthand(ctx, value, 'hash', input)
+    case ':':
+      const sym = astNeedOne(ctx, input)
+      if (sym.kind !== 'symbol') {
+        throw err(ctx, value, 'invalid keyword')
+      }
+      sym.kind = 'string'
+      return sym
+  }
+  /* c8 ignore next */
+  throw err(ctx, value, `unknown token ${value.kind}`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
@@ -211,11 +265,6 @@ const uninterrupt = it => {
   }
 }
 
-function discard(iterator) {
-  for (const _ of iterator) {
-  }
-}
-
 const prepend = (one, rest) =>
   uninterrupt(
     (function* () {
@@ -224,70 +273,24 @@ const prepend = (one, rest) =>
     })(),
   )
 
-const join = (begin, rest) =>
-  uninterrupt(
-    (function* () {
-      yield* begin
-      yield* rest
-    })(),
-  )
-
-// finished input returns an empty array.
-const collectForm = input => {
-  const collected = []
-  const closers = []
-  for (const token of input) {
-    collected.push(token)
-    if (closers.length !== 0 && closers[closers.length - 1] === token.kind) {
-      closers.pop()
-    } else if (Object.hasOwn(pairs, token.kind)) {
-      closers.push(pairs[token.kind])
-    }
-    if (!plusOnes.includes(token.kind) && closers.length === 0) {
-      break
-    }
-  }
-  return collected
-}
-
-const collectUntil = (ctx, input, kind) => {
-  const collected = []
-  for (const token of input) {
-    if (token.kind === kind) {
-      return collected
-    }
-    collected.push(...collectForm(prepend(token, input)))
-  }
-  throw err(ctx, ctx, `unterminated form, expected ${kind}`)
-}
-
 const hoister = ctx => {
   const collected = []
-  const hoist = (transpile, input) => {
-    const sym = [...transpileSymbol(ctx, ctx.gensym())]
+  const hoist = (transpile, node) => {
+    const sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
     const assign = [...sym, '=']
-    collected.push('let ', ...sym, ';', ...transpile(ctx, input, assign, hoist))
+    collected.push('let ', ...sym, ';', ...transpile(ctx, node, assign, hoist))
     return sym
   }
-  return [hoist, uninterrupt(iter(collected))]
+  return [hoist, collected]
 }
 
-const hoistable = transpile => {
-  return function* transpileHoistable(ctx, input, assign) {
+const hoistable = transpile =>
+  function* transpileHoistable(ctx, node, assign) {
     const [hoist, hoisted] = hoister(ctx)
-    const postHoist = []
-    const transpiler = transpile(ctx, input, assign, hoist)
-    while (true) {
-      const { value, done } = transpiler.next()
-      if (done) {
-        yield* hoisted
-        yield* postHoist
-        return value
-      }
-      postHoist.push(value)
-    }
+    const postHoist = [...transpile(ctx, node, assign, hoist)]
+    yield* hoisted
+    yield* postHoist
   }
-}
 
 const splitter = s => {
   let first = true
@@ -303,360 +306,294 @@ const splitter = s => {
   }
 }
 
-function* transpileMacro(ctx, input, assign, hoist) {
-  // args
-  // special macro binding env: symbol? object? array? etc
-  // quote/unquote
-  // gensym
-  // converts token stream to another token stream
-  for (const token of input) {
+const macroThreadFirst = (ctx, node) => {
+  if (node.length === 2) {
+    return node[1]
+  }
+  const [thread, subject, form, ...rest] = node
+  let second
+  if (form.kind === 'symbol') {
+    second = setKind([form, subject], 'list', form)
+  } else {
+    form.splice(1, 0, subject)
+    second = form
+  }
+  return setKind([thread, second, ...rest], 'list', thread)
+}
+
+function* transpileNodeObject(ctx, node, hoist) {
+  yield '{'
+  for (let i = 0; i < node.length; i += 2) {
+    yield '['
+    yield* transpileNode(ctx, node[i], null, hoist)
+    yield ']:'
+    yield* transpileNode(ctx, node[i + 1], null, hoist)
+    yield ','
+  }
+  yield '}'
+}
+
+function* transpileNodeArray(ctx, node, hoist) {
+  yield '['
+  for (const i of node) {
+    yield* transpileNode(ctx, i, null, hoist)
+    yield ','
+  }
+  yield ']'
+}
+
+function* transpileNodeString(ctx, token) {
+  yield '"'
+  yield token.value
+  yield '"'
+}
+
+const mangleSym = sym =>
+  sym
+    .replace('!', '_BANG_')
+    .replace('?', '_QMARK_')
+    .replace('*', '_STAR_')
+    .replace('+', '_PLUS_')
+    .replace('>', '_GT_')
+    .replace('<', '_LT_')
+    .replace('=', '_EQ_')
+    .replace(/-(.)/g, (_match, c) => c.toUpperCase())
+
+function* transpileNodeSymbol(ctx, token) {
+  yield mangleSym(token.value)
+}
+
+function* transpileSpecialAssign(ctx, assign) {
+  if (assign) {
+    yield* assign
   }
 }
 
-function* macroWhen(ctx, input) {
-  const cond = collectForm(input)
-  const body = collectUntil(ctx, input, ')')
-  yield* tokens(ctx, '(if ')
-  yield* cond
-  yield* tokens(ctx, '(do ')
-  yield* body
-  yield* tokens(ctx, '))')
-}
-
-function* macroThreadFirst(ctx, input) {
-  const val = collectForm(input)
-  if (val.length === 0) {
-    throw err(ctx, ctx, 'invalid -> form')
-  }
-  const { value, done } = input.next()
-  if (done) {
-    throw err(ctx, ctx, 'unterimated ->')
-  }
-  if (value.kind === ')') {
-    yield* val
+function* transpileNode(ctx, node, assign, hoist) {
+  // completely ignore comments
+  if (node.kind === 'comment') {
     return
   }
-  let form = collectForm(prepend(value, input))
-  if (form[0].kind === 'symbol') {
-    form = [{ kind: '(' }, ...form, ...val, { kind: ')' }]
-  } else {
-    form.splice(2, 0, ...val)
-  }
-  yield* macroThreadFirst(ctx, join(form, input))
-}
 
-function* transpileMap(ctx, input, hoist) {
-  yield '{'
-  for (const token of input) {
-    if (token.kind === '}') {
-      yield '}'
-      return
-    }
-    yield '['
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    yield ']:'
-    yield* transpileExpr(ctx, input, null, hoist)
-    yield ','
+  // list will handle it's own assign, all others are expressions
+  if (node.kind === 'list') {
+    yield* transpileNodeList(ctx, node, assign, hoist)
+    return
   }
-  throw err(ctx, ctx, 'unterminated map')
-}
 
-function* transpileArray(ctx, input, hoist) {
-  yield '['
-  for (const token of input) {
-    if (token.kind === ']') {
-      yield ']'
-      return
-    }
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    yield ','
+  yield* transpileSpecialAssign(ctx, assign)
+  switch (node.kind) {
+    case 'object':
+      yield* transpileNodeObject(ctx, node, hoist)
+      break
+    case 'array':
+      yield* transpileNodeArray(ctx, node, hoist)
+      break
+    case 'string':
+      yield* transpileNodeString(ctx, node)
+      break
+    case 'symbol':
+      yield* transpileNodeSymbol(ctx, node)
+      break
+    /* c8 ignore next */
+    default:
+      /* c8 ignore next */
+      throw err(ctx, node, `unhandled node "${node.kind}"`)
   }
-  throw err(ctx, ctx, 'unterminated array')
 }
+const transpileNodeHoist = hoistable(transpileNode)
 
-function* transpileBuiltinImportOne(ctx, input) {
-  const [importPath] = expect(ctx, input, 'string')
-  let outer = []
-  let inner = []
-  yield 'import '
-  OUTER: for (const token of input) {
-    switch (token.kind) {
+function* transpileBuiltinImportOne(ctx, node) {
+  const outer = []
+  const inner = []
+  for (let i = 1; i < node.length; i++) {
+    const c = node[i]
+    switch (c.kind) {
       default:
-        throw err(ctx, token, 'unexpected import')
-      case ']':
-        // finishing the import
-        yield* outer.join(',')
-        if (inner.length !== 0) {
-          if (outer.length !== 0) {
-            yield ','
-          }
-          yield '{'
-          yield inner.join(',')
-          yield '}'
-        }
-        if (inner.length !== 0 || outer.length !== 0) {
-          yield ' from '
-        }
-        yield* transpileString(ctx, importPath)
-        yield ';'
-        return
-      case '[':
+        throw err(ctx, c, 'unexpected import')
+      case 'array':
         // list of simple names to import
-        for (const token of input) {
-          switch (token.kind) {
-            default:
-              throw err(ctx, token, `unexpected import name "${token.kind}"`)
-            case ']':
-              continue OUTER
-            case 'symbol':
-              inner.push(strSymbolToken(ctx, token))
-              break
-          }
+        for (const name of c) {
+          inner.push(mangleSym(name.value))
         }
-        throw err(ctx, token, 'unterminated import name list')
+        break
       case 'symbol':
         // default import
-        outer.push(strSymbolToken(ctx, token))
+        outer.push(mangleSym(c.value))
         break
-      case ':':
-        // :rename, :as
-        const [op] = expect(ctx, input, 'symbol')
-        switch (op.value) {
-          default:
-            throw err(ctx, op, `unexpected import op "${op.value}"`)
-          case 'rename':
-            discard(expect(ctx, input, '{'))
-            for (const token of input) {
-              if (token.kind === '}') {
-                continue OUTER
-              }
-              const [from, to] = expect(
-                ctx,
-                prepend(token, input),
-                'symbol',
-                'symbol',
-              )
-              inner.push(
-                strSymbolToken(ctx, from) + ' as ' + strSymbolToken(ctx, to),
-              )
-            }
-            throw err(ctx, ctx, 'unterminated import rename')
-          case 'as':
-            const [name] = expect(ctx, input, 'symbol')
-            outer.push('* as ' + strSymbolToken(ctx, name))
-            break
+      case 'string':
+        // :as
+        if (c.value !== 'as') {
+          throw err(ctx, c, 'unexpected import')
         }
+        const next = node[++i]
+        outer.push('* as ' + mangleSym(next.value))
+        break
+      case 'object':
+        // rename
+        for (let i = 0; i < c.length; i += 2) {
+          inner.push(mangleSym(c[i].value) + ' as ' + mangleSym(c[i + 1].value))
+        }
+        break
     }
   }
-  throw err(ctx, ctx, 'unterminated import')
-}
-
-function* transpileBuiltinImport(ctx, input) {
-  for (const token of input) {
-    if (token.kind === ')') {
-      return
+  yield 'import '
+  yield* outer.join(',')
+  if (inner.length !== 0) {
+    if (outer.length !== 0) {
+      yield ','
     }
-    if (token.kind !== '[') {
-      throw err(ctx, token, `unexpected "${token.kind}", wanted "["`)
-    }
-    yield* transpileBuiltinImportOne(ctx, input)
+    yield '{'
+    yield inner.join(',')
+    yield '}'
   }
-  throw err(ctx, ctx, 'unterminated import')
+  if (inner.length !== 0 || outer.length !== 0) {
+    yield ' from '
+  }
+  yield* transpileNodeString(ctx, node[0])
+  yield ';'
 }
 
-const makeDefTranspile = kind =>
-  hoistable(function* transpileDef(ctx, input, assign, hoist) {
-    const [name] = expect(ctx, input, 'symbol')
-    ctx.bindings.add(name.value)
-    yield kind
-    yield ' '
-    yield* transpileSymbol(ctx, name)
-    yield '='
-    yield* transpileExpr(ctx, input, null, hoist)
-    yield ';'
-    discard(expect(ctx, input, ')'))
-  })
+function* transpileBuiltinImport(ctx, node) {
+  for (let i = 1; i < node.length; i++) {
+    yield* transpileBuiltinImportOne(ctx, node[i])
+  }
+}
 
-const transpileBuiltinConst = makeDefTranspile('const')
-const transpileBuiltinVar = makeDefTranspile('var')
-const transpileBuiltinLetDef = makeDefTranspile('let')
-
-const transpileBuiltinDo = hoistable(function* transpileBuiltinDo(
+const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
   ctx,
-  input,
+  node,
   assign,
   hoist,
 ) {
-  let buf
-  for (const token of input) {
-    if (token.kind === ')') {
-      if (buf) {
-        // final expression gets the assign
-        yield* transpileExpr(ctx, buf, assign, hoist)
-        yield ';'
-      }
-      return
-    }
-    if (buf) {
-      yield* transpileExpr(ctx, buf, null, hoist)
-      yield ';'
-    }
-    buf = iter(collectForm(prepend(token, input)))
-  }
-  throw err(ctx, ctx, 'unterminated list')
+  ctx.bindings.add(node[1].value)
+  yield node[0].value
+  yield ' '
+  yield* transpileNodeSymbol(ctx, node[1])
+  yield '='
+  yield* transpileNode(ctx, node[2], null, hoist)
+  yield ';'
 })
 
-function* transpileDestructure(ctx, input) {
-  for (const token of input) {
-    switch (token.kind) {
-      default:
-        throw err(ctx, token, `unexpected destructure "${token.kind}"`)
-      case 'symbol':
-        ctx.bindings.add(token.name)
-        yield* transpileSymbol(ctx, token)
-        return
-      case '[':
-        yield '['
-        for (const inner of input) {
-          if (inner.kind === ']') {
-            yield ']'
-            return
-          }
-          yield* transpileDestructure(ctx, prepend(inner, input))
-          yield ','
-        }
-        throw err(ctx, ctx, 'unterminated destructure')
-      case '{':
-        const keys = []
-        const rename = {}
-        const or = {}
-        for (const token of input) {
-          if (token.kind === '}') {
-            break
-          }
-          if (token.kind === 'symbol') {
-            const [, { value: source }] = expect(ctx, input, ':', 'symbol')
-            if (source !== token.value) {
-              rename[source] = token.value
-            }
-            if (!keys.includes(source)) {
-              keys.push(source)
-            }
-            continue
-          }
-          if (token.kind !== ':') {
-            throw err(ctx, token, `unexpected destructure map "${token.kind}"`)
-          }
-          const [op] = expect(ctx, input, 'symbol')
-          switch (op.value) {
-            default:
-              throw err(
-                ctx,
-                op,
-                `unexpected destructuring map op "${op.value}"`,
-              )
-            case 'keys':
-              discard(expect(ctx, input, '['))
-              for (const token of input) {
-                if (token.kind === ']') {
-                  break
-                }
-                if (token.kind !== 'symbol') {
-                  throw err(
-                    ctx,
-                    token,
-                    `unexpected destructure :keys "${token.kind}"`,
-                  )
-                }
-                keys.push(token.value)
-              }
-              break
-            case 'or':
-              discard(expect(ctx, input, '{'))
-              for (const token of input) {
-                if (token.kind === '}') {
-                  break
-                }
-                if (token.kind !== 'symbol') {
-                  throw err(
-                    ctx,
-                    token,
-                    `unexpected destructure :or "${token.kind}"`,
-                  )
-                }
-                or[token.value] = [...transpileExpr(ctx, input)]
-                if (!keys.includes(token.value)) {
-                  keys.push(token.value)
-                }
-              }
-              break
-          }
-        }
-        yield '{'
-        const comma = splitter(',')
-        for (const key of keys) {
-          yield comma()
-          yield* transpileSymbol(ctx, { value: key })
-          if (Object.hasOwn(rename, key)) {
-            yield ':'
-            yield* transpileSymbol(ctx, { value: rename[key] })
-            ctx.bindings.add(rename[key])
-          } else {
-            ctx.bindings.add(key)
-          }
-          if (Object.hasOwn(or, key)) {
-            yield '='
-            yield* or[key]
-          }
-        }
-        yield '}'
-        return
+const transpileSpecialBody = hoistable(function* transpileSpecialBody(
+  ctx,
+  node,
+  assign,
+  hoist,
+) {
+  for (let i = 0; i < node.length; i++) {
+    let a
+    if (i === node.length - 1) {
+      a = assign
     }
-    /* c8 ignore next */
+    yield* transpileNode(ctx, node[i], a, hoist)
+    yield ';'
   }
-  /* c8 ignore next */
-  throw err(ctx, ctx, 'unterminated destructure')
+})
+
+function* transpileBuiltinDo(ctx, node, assign) {
+  yield* transpileSpecialBody(ctx, node.slice(1), assign)
 }
 
-function* transpileFnArgs(ctx, input) {
-  discard(expect(ctx, input, '['))
-  yield '('
-  const comma = splitter(',')
-  for (const token of input) {
-    if (token.kind === ']') {
-      yield ')'
-      return
-    }
-    yield comma()
-    yield* transpileDestructure(ctx, prepend(token, input))
+function* transpileSpecialDestructure(ctx, node) {
+  switch (node.kind) {
+    default:
+      throw err(ctx, node, `unexpected destructure "${node.kind}"`)
+    case 'symbol':
+      ctx.bindings.add(node.name)
+      yield* transpileNodeSymbol(ctx, node)
+      break
+    case 'array':
+      yield '['
+      for (const inner of node) {
+        yield* transpileSpecialDestructure(ctx, inner)
+        yield ','
+      }
+      yield ']'
+      break
+    case 'object':
+      const keys = []
+      const rename = {}
+      const or = {}
+      for (let i = 0; i < node.length; i += 2) {
+        let key = node[i]
+        let value = node[i + 1]
+        if (key.kind === 'symbol') {
+          rename[key.value] = value.value
+          if (!keys.includes(key.value)) {
+            keys.push(key.value)
+          }
+          continue
+        }
+        switch (key.value) {
+          default:
+            throw err(
+              ctx,
+              node[i],
+              `unexpected destructuring map op "${key.value}"`,
+            )
+          case 'keys':
+            for (const inner of value) {
+              keys.push(inner.value)
+            }
+            break
+          case 'or':
+            for (let j = 0; j < value.length; j += 2) {
+              or[value[j].value] = [...transpileNode(ctx, value[j + 1])]
+              if (!keys.includes(value[j].value)) {
+                keys.push(value[j].value)
+              }
+            }
+            break
+        }
+      }
+      yield '{'
+      const comma = splitter(',')
+      for (const key of keys) {
+        yield comma()
+        yield mangleSym(key)
+        if (Object.hasOwn(rename, key)) {
+          yield ':'
+          yield mangleSym(rename[key])
+          ctx.bindings.add(rename[key])
+        } else {
+          ctx.bindings.add(key)
+        }
+        if (Object.hasOwn(or, key)) {
+          yield '='
+          yield* or[key]
+        }
+      }
+      yield '}'
+      break
   }
-  throw err(ctx, ctx, 'unterminated function arguments')
+}
+
+function* transpileSpecialFnArgs(ctx, node) {
+  const comma = splitter(',')
+  yield '('
+  for (const i of node) {
+    yield comma()
+    yield* transpileSpecialDestructure(ctx, i)
+  }
+  yield ')'
 }
 
 const makeFnTranspiler = (preArgs, postArgs) =>
-  function* transpileFn(ctx, input) {
-    const { value: token, done } = input.next()
-    if (done) {
-      throw err(ctx, ctx, 'unterminated function')
-    }
-    switch (token.kind) {
-      default:
-        throw err(ctx, ctx, `unexpected "${token.kind}"`)
-      case 'symbol':
-        yield 'const '
-        ctx.bindings.add(token.value)
-        yield* transpileSymbol(ctx, token)
-        yield '='
-        break
-      case '[':
-        input = prepend(token, input)
-        break
+  function* transpileBuiltinFn(ctx, node) {
+    let [, args, ...rest] = node
+    if (args.kind === 'symbol') {
+      yield 'const '
+      ctx.bindings.add(args.value)
+      yield* transpileNodeSymbol(ctx, args)
+      yield '='
+      ;[, , args, ...rest] = node
     }
     yield preArgs
-    yield* transpileFnArgs(ctx, input)
-    yield* postArgs
+    yield* transpileSpecialFnArgs(ctx, args)
+    yield postArgs
     yield '{'
-    yield* transpileBuiltinDo(ctx, input, 'return ')
+    yield* transpileSpecialBody(ctx, rest, 'return ')
     yield '};'
   }
 
@@ -665,81 +602,62 @@ const transpileBuiltinFnArrowAsync = makeFnTranspiler('async', '=>')
 const transpileBuiltinFnGenerator = makeFnTranspiler('function*', '')
 const transpileBuiltinFnAsyncGenerator = makeFnTranspiler('async function*', '')
 
-const makeOpTranspile = (op, unary) =>
-  function* transpileOp(ctx, input, assign, hoist) {
-    yield* transpileAssign(ctx, assign)
-    let count = 0
-    let buf
-    for (const token of input) {
-      if (token.kind === ')') {
-        if (count === 1) {
-          if (unary) {
-            yield op
-          } else {
-            throw err(ctx, token, `"${op}" is not a unary operator`)
-          }
-        }
-        if (buf) {
-          yield* buf
-        }
-        return
-      }
-      if (buf) {
-        yield* buf
-      }
-      if (count !== 0) {
-        yield op
-      }
-      buf = [...transpileExpr(ctx, prepend(token, input), null, hoist)]
-      count++
-    }
-    throw err(ctx, ctx, 'unterminated list')
+function* transpileBuiltinOp(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  const sp = splitter(node[0].value)
+  for (let i = 1; i < node.length; i++) {
+    yield sp()
+    yield* transpileNode(ctx, node[i], null, hoist)
   }
-
-const transpileBuiltinStr = makeOpTranspile('+')
-const transpileBuiltinPlus = makeOpTranspile('+', true)
-const transpileBuiltinMinus = makeOpTranspile('-', true)
-const transpileBuiltinMul = makeOpTranspile('*')
-const transpileBuiltinDiv = makeOpTranspile('/')
-const transpileBuiltinPow = makeOpTranspile('**')
-const transpileBuiltinMod = makeOpTranspile('%')
-
-function* transpileBuiltinLet(ctx, input, assign, hoist) {
-  const { value: token, done } = input.next()
-  if (done) {
-    throw err(ctx, ctx, 'unterminated let')
-  }
-  if (token.kind === 'symbol') {
-    yield* transpileBuiltinLetDef(ctx, prepend(token, input), assign, hoist)
-    return
-  }
-  yield* transpileBuiltinLetMulti(ctx, prepend(token, input), assign, hoist)
 }
 
-function* transpileBuiltinLetMulti(ctx, input, assign, hoist) {
+function* transpileBuiltinOpUnary(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  if (node.length === 2) {
+    yield node[0].value
+  }
+  const sp = splitter(node[0].value)
+  for (let i = 1; i < node.length; i++) {
+    yield sp()
+    yield* transpileNode(ctx, node[i], null, hoist)
+  }
+}
+
+function* transpileBuiltinStr(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  const sp = splitter('+')
+  for (let i = 1; i < node.length; i++) {
+    yield sp()
+    yield* transpileNode(ctx, node[i], null, hoist)
+  }
+}
+
+function* transpileBuiltinLet(ctx, node, assign, hoist) {
+  if (node[1].kind === 'symbol') {
+    yield* transpileBuiltinDef(ctx, node, assign, hoist)
+    return
+  }
+  yield* transpileBuiltinLetMulti(ctx, node, assign, hoist)
+}
+
+function* transpileBuiltinLetMulti(ctx, node, assign, hoist) {
   if (!assign && hoist) {
-    yield* hoist(transpileBuiltinLetMulti, input)
+    yield* hoist(transpileBuiltinLetMulti, node)
     return
   }
 
-  discard(expect(ctx, input, '['))
   ctx.bindings.push()
   yield '{'
-  for (const token of input) {
-    if (token.kind === ']') {
-      break
-    }
-
+  for (let i = 0; i < node[1].length; i += 2) {
+    const binding = node[1][i]
     // for non destructuring (simple) assignments, use symbol directly.
-    // for destructuring, store the transpiled code and assign to temporary.
+    // for destructuring, assign to gensym first.
     let sym
-    let destructing
-    if (token.kind === 'symbol') {
-      ctx.bindings.add(token.value)
-      sym = [...transpileSymbol(ctx, token)]
+    if (binding.kind === 'symbol') {
+      ctx.bindings.add(binding.value)
+      sym = [...transpileNodeSymbol(ctx, binding)]
     } else {
-      sym = [...transpileSymbol(ctx, ctx.gensym())]
-      destructing = [...transpileDestructure(ctx, prepend(token, input))]
+      sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
     }
 
     // declare the simple symbol
@@ -749,91 +667,75 @@ function* transpileBuiltinLetMulti(ctx, input, assign, hoist) {
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    yield* transpileExpr(ctx, input, assign, hoist)
+    yield* transpileNodeHoist(ctx, node[1][i + 1], assign, hoist)
     yield ';'
 
     // if destructuring, then we need to assign our generated symbol now
-    if (destructing) {
+    if (binding.kind !== 'symbol') {
       yield 'let '
-      yield* destructing
+      yield* transpileSpecialDestructure(ctx, binding)
       yield '='
       yield* sym
       yield ';'
     }
   }
-  yield* transpileBuiltinDo(ctx, input, assign)
+  yield* transpileSpecialBody(ctx, node.slice(2), assign)
   yield '}'
   ctx.bindings.pop()
 }
 
-const makeKeywordExprTranspile = keyword =>
-  hoistable(function* transpileKeywordExpr(ctx, input, _assign, hoist) {
-    yield keyword
-    const { value: token, done } = input.next()
-    if (done) {
-      throw err(ctx, ctx, 'unterminated ' + keyword)
-    }
-    // keyword only statement, like a bare 'return', 'yield' or 'break'
-    if (token.kind === ')') {
-      yield ';'
-      return
-    }
+function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  yield node[0].value
+  if (node.length !== 1) {
     yield ' '
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    yield ';'
-    discard(expect(ctx, input, ')'))
-  })
-
-const transpileBuiltinThrow = makeKeywordExprTranspile('throw')
-const transpileBuiltinReturn = makeKeywordExprTranspile('return')
-const transpileBuiltinYield = makeKeywordExprTranspile('yield')
-const transpileBuiltinYieldStar = makeKeywordExprTranspile('yield*')
-const transpileBuiltinBreak = makeKeywordExprTranspile('break')
-const transpileBuiltinContinue = makeKeywordExprTranspile('continue')
-
-function* transpileBuiltinFor(ctx, input, _assign, hoist) {
-  discard(expect(ctx, input, '['))
-  const [binding] = expect(ctx, input, 'symbol')
-  yield 'for(let '
-  yield* transpileSymbol(ctx, binding)
-  yield '='
-  yield* transpileExpr(ctx, input, null, hoist)
-  yield ';'
-  yield* transpileSymbol(ctx, binding)
-  yield '<'
-  yield* transpileExpr(ctx, input, null, hoist)
-  yield ';'
-  yield* transpileSymbol(ctx, binding)
-  const { value: token, done } = input.next()
-  if (done) {
-    throw err(ctx, ctx, 'unterminated for')
+    yield* transpileNode(ctx, node[1], null, hoist)
   }
-  if (token.kind === ']') {
+}
+
+function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist) {
+  if (node.length === 1) {
+    yield node[0].value
+  } else {
+    yield* transpileNode(ctx, node[1], [node[0].value, ' '], hoist)
+  }
+}
+
+function* transpileBuiltinFor(ctx, node, _assign, hoist) {
+  const binding = node[1]
+  yield 'for(let '
+  yield* transpileNode(ctx, binding[0])
+  yield '='
+  yield* transpileNode(ctx, binding[1], null, hoist)
+  yield ';'
+  yield* transpileNode(ctx, binding[0])
+  yield '<'
+  yield* transpileNode(ctx, binding[2], null, hoist)
+  yield ';'
+  yield* transpileNode(ctx, binding[0])
+  if (binding.length === 3) {
     yield '++'
   } else {
     yield '+='
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-    discard(expect(ctx, input, ']'))
+    yield* transpileNode(ctx, binding[3], null, hoist)
   }
   yield '){'
-  yield* transpileBuiltinDo(ctx, input, null)
+  yield* transpileSpecialBody(ctx, node.slice(2))
   yield '}'
 }
 
 const makeForTranspiler = (prefix, middle) =>
-  function* transpileBuiltinFor(ctx, input, _assign, hoist) {
-    discard(expect(ctx, input, '['))
-    const [binding] = expect(ctx, input, 'symbol')
+  function* transpileBuiltinForSpecial(ctx, node, _assign, hoist) {
+    const binding = node[1]
     yield prefix
     yield '(let '
-    yield* transpileSymbol(ctx, binding)
+    yield* transpileNode(ctx, binding[0])
     yield ' '
     yield middle
     yield ' '
-    yield* transpileExpr(ctx, input, null, hoist)
-    discard(expect(ctx, input, ']'))
+    yield* transpileNode(ctx, binding[1], null, hoist)
     yield '){'
-    yield* transpileBuiltinDo(ctx, input, null)
+    yield* transpileSpecialBody(ctx, node.slice(2))
     yield '}'
   }
 
@@ -841,73 +743,44 @@ const transpileBuiltinForOf = makeForTranspiler('for', 'of')
 const transpileBuiltinForIn = makeForTranspiler('for', 'in')
 const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
 
-function* transpileBuiltinIf(ctx, input, assign, hoist) {
+function* transpileBuiltinIf(ctx, node, assign, hoist) {
   if (!assign && hoist) {
-    yield* hoist(transpileBuiltinIf, input)
+    yield* hoist(transpileBuiltinIf, node)
     return
   }
 
-  const elseSplitter = splitter('else ')
-  for (const token of input) {
-    if (token.kind === ')') {
-      return
-    }
-
-    // could be the final default clause, or another condition to match. buffer
-    // the form and decide based on the next token.
-    const buf = iter(collectForm(prepend(token, input)))
-
-    const { value: expr, done } = input.next()
-    if (done) {
-      throw err(ctx, ctx, 'unterminated if')
-    }
-
-    // path for final else clause
-    if (expr.kind === ')') {
+  const elif = splitter('else ')
+  const finalElse = node.length % 2 === 0
+  for (let i = 1; i < node.length; i += 2) {
+    if (finalElse && i === node.length - 1) {
       yield 'else{'
-      yield* transpileExprHoistable(ctx, buf, assign)
+      yield* transpileNodeHoist(ctx, node[i], assign)
       yield '}'
       return
     }
-
-    yield elseSplitter()
+    yield elif()
     yield 'if('
-    yield* transpileExpr(ctx, buf, null, hoist)
+    yield* transpileNode(ctx, node[i], null, hoist)
     yield '){'
-    yield* transpileExprHoistable(ctx, prepend(expr, input), assign)
+    yield* transpileNodeHoist(ctx, node[i + 1], assign)
     yield '}'
   }
-  throw err(ctx, ctx, 'unterminated if')
 }
 
-function* transpileBuiltinCase(ctx, input, assign, hoist) {
+function* transpileBuiltinCase(ctx, node, assign, hoist) {
   if (!assign && hoist) {
-    yield* hoist(transpileBuiltinCase, input)
+    yield* hoist(transpileBuiltinCase, node)
     return
   }
 
+  const finalDefault = node.length % 2 === 1
   yield 'switch ('
-  yield* transpileExpr(ctx, input, null, hoist)
+  yield* transpileNode(ctx, node[1], null, hoist)
   yield '){'
-  for (const token of input) {
-    if (token.kind === ')') {
-      yield '}'
-      return
-    }
-
-    // could be the final default clause, or another case to match. buffer the
-    // form and decide based on the next token.
-    const buf = iter(collectForm(prepend(token, input)))
-
-    const { value: expr, done } = input.next()
-    if (done) {
-      throw err(ctx, ctx, 'unterminated case')
-    }
-
-    // path for final default clause
-    if (expr.kind === ')') {
+  for (let i = 2; i < node.length; i += 2) {
+    if (finalDefault && i === node.length - 1) {
       yield 'default:'
-      yield* transpileExprHoistable(ctx, buf, assign)
+      yield* transpileNodeHoist(ctx, node[i], assign)
       yield ';'
       if (assign !== 'return ') {
         yield 'break'
@@ -917,102 +790,95 @@ function* transpileBuiltinCase(ctx, input, assign, hoist) {
     }
 
     yield 'case '
-    yield* transpileExpr(ctx, buf, null, hoist)
+    yield* transpileNode(ctx, node[i], null, hoist)
     yield ':'
-    yield* transpileExprHoistable(ctx, prepend(expr, input), assign)
+    yield* transpileNodeHoist(ctx, node[i + 1], assign)
     yield ';'
     if (assign !== 'return ') {
       yield 'break;'
     }
   }
-  throw err(ctx, ctx, 'unterminated case')
+  yield '}'
 }
 
-function* transpileBuiltinDot(ctx, input, assign, hoist) {
-  yield* transpileAssign(ctx, assign)
-  yield* transpileExpr(ctx, input)
-  for (const token of input) {
-    if (token.kind === ')') {
-      return
-    }
+function* transpileBuiltinDot(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  yield* transpileNode(ctx, node[1])
+  for (let i = 2; i < node.length; i++) {
     yield '['
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    yield* transpileNode(ctx, node[i], null, hoist)
     yield ']'
   }
-  throw err(ctx, ctx, 'unterminated "."')
 }
 
-function* transpileLambda(ctx, input) {
+function* transpileHashLambda(ctx, node) {
   const args = []
-  // lambda is one single form
-  const buf = collectForm(input)
-  for (const token of buf) {
-    let arg
-    if (token.value === '$') {
-      arg = 0
-    } else if (token.value?.startsWith('$')) {
-      arg = parseInt(token.value.slice(1), 10) - 1
-    } else {
-      continue
+  const argMap = n => {
+    if (Array.isArray(n)) {
+      n.forEach(argMap)
+      return
     }
-    token.kind = 'symbol'
-    token.value = (args[arg] ?? (args[arg] = ctx.gensym())).value
+    if (n.kind !== 'symbol') {
+      return
+    }
+    let arg
+    if (n.value === '$') {
+      arg = 0
+    } else if (n.value.startsWith('$')) {
+      arg = parseInt(n.value.slice(1), 10) - 1
+    } else {
+      return
+    }
+    n.value = (args[arg] ?? (args[arg] = ctx.gensym())).value
   }
-  discard(expect(ctx, input, ')'))
+  argMap(node[1])
 
   const comma = splitter(',')
   yield '('
   for (const arg of args) {
     yield comma()
-    yield* transpileSymbol(ctx, arg)
+    yield* transpileNode(ctx, arg)
   }
   yield ')=>{'
-  yield* transpileExprHoistable(ctx, iter(buf), 'return ')
+  yield* transpileSpecialBody(ctx, node[1], 'return ')
   yield '}'
-  return
 }
 
-function* transpileHash(ctx, input) {
-  const { value: delimiter, done } = input.next()
-  if (done) {
-    throw err(ctx, ctx, 'unterminated "#"')
+function* transpileBuiltinHash(ctx, node) {
+  if (node[1].kind === 'list') {
+    yield* transpileHashLambda(ctx, node)
+    return
   }
-  switch (delimiter.kind) {
-    default:
-      throw err(ctx, ctx, `unexpected "${delimiter.kind}" after "#"`)
-    case '(':
-      yield* transpileLambda(ctx, input)
-      return
-  }
+  throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
 }
 
 const macros = {
-  when: macroWhen,
   '->': macroThreadFirst,
 }
 
 const builtins = {
   import: transpileBuiltinImport,
-  const: transpileBuiltinConst,
-  var: transpileBuiltinVar,
+  const: transpileBuiltinDef,
+  var: transpileBuiltinDef,
   fn: transpileBuiltinFnArrow,
   'fn@': transpileBuiltinFnArrowAsync,
   'fn*': transpileBuiltinFnGenerator,
   'fn@*': transpileBuiltinFnAsyncGenerator,
   str: transpileBuiltinStr,
-  '+': transpileBuiltinPlus,
-  '-': transpileBuiltinMinus,
-  '*': transpileBuiltinMul,
-  '/': transpileBuiltinDiv,
-  '**': transpileBuiltinPow,
-  '%': transpileBuiltinMod,
+  '+': transpileBuiltinOpUnary,
+  '-': transpileBuiltinOpUnary,
+  '*': transpileBuiltinOp,
+  '/': transpileBuiltinOp,
+  '**': transpileBuiltinOp,
+  '%': transpileBuiltinOp,
   let: transpileBuiltinLet,
-  throw: transpileBuiltinThrow,
-  return: transpileBuiltinReturn,
-  yield: transpileBuiltinYield,
-  'yield*': transpileBuiltinYieldStar,
-  break: transpileBuiltinBreak,
-  continue: transpileBuiltinContinue,
+  throw: transpileBuiltinKeywordStatement,
+  return: transpileBuiltinKeywordStatement,
+  yield: transpileBuiltinKeywordExpr,
+  'yield*': transpileBuiltinKeywordExpr,
+  break: transpileBuiltinKeywordStatement,
+  continue: transpileBuiltinKeywordStatement,
+  await: transpileBuiltinKeywordExpr,
   for: transpileBuiltinFor,
   'for@': transpileBuiltinForAwait,
   'for-of': transpileBuiltinForOf,
@@ -1023,177 +889,75 @@ const builtins = {
   '.': transpileBuiltinDot,
   typeof: transpileTypeof,
   'set!': transpileSet,
+  hash: transpileBuiltinHash,
 }
 
 // function, method or constructor call
-function* transpileCall(ctx, input, assign, hoist) {
-  const { value: token, done } = input.next()
-  /* c8 ignore next */
-  if (done) {
-    /* c8 ignore next */
-    throw err(ctx, ctx, 'unterminated list')
-    /* c8 ignore next */
-  }
-  yield* transpileAssign(ctx, assign)
-  switch (token.kind) {
-    default:
-      throw err(ctx, token, `unexpected "${token.kind}"`)
-    case '(':
-      yield '('
-      yield* transpileExpr(ctx, prepend(token, input), null, hoist)
-      yield ')'
-      break
-    case 'symbol':
-      if (token.value.endsWith('.')) {
-        yield 'new '
-        token.value = token.value.slice(0, -1) // drop the tailing .
-      } else if (token.value.startsWith('.')) {
-        yield* transpileExpr(ctx, input, null, hoist)
-      }
-      yield* transpileSymbol(ctx, token)
-      break
+function* transpileSpecialCall(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  let argStart = 1
+  if (node[0].kind === 'symbol') {
+    const call = node[0].value
+    if (call.endsWith('.')) {
+      yield 'new '
+      yield mangleSym(call.slice(0, -1)) // drop the tailing .
+    } else if (call.startsWith('.')) {
+      yield* transpileNode(ctx, node[1], null, hoist)
+      yield mangleSym(call)
+      argStart = 2
+    } else {
+      yield mangleSym(call)
+    }
+  } else {
+    yield* transpileNode(ctx, node[0], null, hoist)
   }
   const comma = splitter(',')
   yield '('
-  for (const token of input) {
-    if (token.kind === ')') {
-      yield ')'
-      return
-    }
+  for (let i = argStart; i < node.length; i++) {
     yield comma()
-    yield* transpileExpr(ctx, prepend(token, input), null, hoist)
+    yield* transpileNode(ctx, node[i], null, hoist)
   }
-  throw err(ctx, ctx, 'unterminated list')
-}
-
-function* transpileList(ctx, input, assign, hoist) {
-  const { value: token, done } = input.next()
-  if (done) {
-    throw err(ctx, ctx, 'unterminated list')
-  }
-  if (token.kind === 'symbol') {
-    const binding = ctx.bindings.get(token.value)
-    if (binding === true) {
-      yield* transpileCall(ctx, prepend(token, input), assign, hoist)
-      return
-    }
-    if (binding) {
-      yield* binding(ctx, input, assign, hoist)
-      return
-    }
-    const macro = ctx.macros.get(token.value)
-    if (macro) {
-      yield* transpileExpr(ctx, macro(ctx, input), assign, hoist)
-      return
-    }
-  }
-  yield* transpileCall(ctx, prepend(token, input), assign, hoist)
-}
-
-function* transpileTypeof(ctx, input, assign, hoist) {
-  yield 'typeof '
-  yield* transpileExpr(ctx, input, assign, hoist)
-  discard(expect(ctx, input, ')'))
-}
-
-function* transpileSet(ctx, input, assign, hoist) {
-  yield* transpileExpr(ctx, input, assign, hoist)
-  yield '='
-  yield* transpileExpr(ctx, input, assign, hoist)
-  discard(expect(ctx, input, ')'))
-}
-
-function* transpileAwait(ctx, input, assign, hoist) {
-  yield 'await ('
-  yield* transpileExpr(ctx, input, assign, hoist)
   yield ')'
 }
 
-function* transpileKeyword(ctx, input) {
-  const [token] = expect(ctx, input, 'symbol')
-  yield* transpileString(ctx, token)
+function* transpileNodeList(ctx, node, assign, hoist) {
+  const call = node[0].value
+  const binding = ctx.bindings.get(call)
+  if (binding === true) {
+    yield* transpileSpecialCall(ctx, node, assign, hoist)
+    return
+  }
+  if (binding) {
+    yield* binding(ctx, node, assign, hoist)
+    return
+  }
+  const macro = ctx.macros.get(call)
+  if (macro) {
+    yield* transpileNode(ctx, macro(ctx, node), assign, hoist)
+    return
+  }
+  yield* transpileSpecialCall(ctx, node, assign, hoist)
 }
 
-function* transpileString(ctx, token) {
-  yield '"'
-  yield token.value
-  yield '"'
+function* transpileTypeof(ctx, node, assign, hoist) {
+  yield 'typeof '
+  yield* transpileNode(ctx, node[1], assign, hoist)
 }
 
-function* transpileSymbol(ctx, token) {
-  yield token.value
-    .replace('!', '_BANG_')
-    .replace('?', '_QMARK_')
-    .replace('*', '_STAR_')
-    .replace('+', '_PLUS_')
-    .replace('>', '_GT_')
-    .replace('<', '_LT_')
-    .replace('=', '_EQ_')
-    .replace(/-(.)/g, (_match, c) => c.toUpperCase())
+function* transpileSet(ctx, node, assign, hoist) {
+  yield* transpileNode(ctx, node[1], assign, hoist)
+  yield '='
+  yield* transpileNode(ctx, node[2], assign, hoist)
 }
-
-const strSymbolToken = (ctx, token) => [...transpileSymbol(ctx, token)].join('')
-
-function* transpileAssign(ctx, assign) {
-  if (assign) {
-    yield* assign
-  }
-}
-
-function* transpileExpr(ctx, input, assign, hoist) {
-  const { value: token, done } = input.next()
-  if (done) {
-    return false
-  }
-
-  // completely ignore comments
-  if (token.kind === 'comment') {
-    return true
-  }
-
-  // list will handle it's own assign, all others are expressions
-  if (token.kind === '(') {
-    yield* transpileList(ctx, input, assign, hoist)
-    return true
-  }
-
-  yield* transpileAssign(ctx, assign)
-  switch (token.kind) {
-    case '{':
-      yield* transpileMap(ctx, input, hoist)
-      break
-    case '[':
-      yield* transpileArray(ctx, input, hoist)
-      break
-    case ':':
-      yield* transpileKeyword(ctx, input)
-      break
-    case '@':
-      yield* transpileAwait(ctx, input, null, hoist)
-      break
-    case '#':
-      yield* transpileHash(ctx, input)
-      break
-    case 'string':
-      yield* transpileString(ctx, token)
-      break
-    case 'symbol':
-      yield* transpileSymbol(ctx, token)
-      break
-    /* c8 ignore next */
-    default:
-      /* c8 ignore next */
-      throw err(ctx, token, `unhandled token "${token.kind}"`)
-  }
-  return true
-}
-const transpileExprHoistable = hoistable(transpileExpr)
 
 export function* transpile(code, config) {
   const ctx = newCtx(config)
   const input = uninterrupt(tokens(ctx, code))
-  // yield* each expression, and use the final return (from transpileExpr) to
-  // decide if we should continue. this return is setup to return false when the
-  // input iterator stops producing tokens.
-  while (yield* transpileExprHoistable(ctx, input)) {}
+  while (true) {
+    const node = astOne(ctx, input)
+    if (!node) {
+      return
+    }
+    yield* transpileNodeHoist(ctx, node)
+  }
 }
