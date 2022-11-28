@@ -306,20 +306,14 @@ const splitter = s => {
   }
 }
 
-const macroThreadFirst = (ctx, node) => {
-  if (node.length === 2) {
-    return node[1]
-  }
-  const [thread, subject, form, ...rest] = node
-  let second
-  if (form.kind === 'symbol') {
-    second = setKind([form, subject], 'list', form)
-  } else {
-    form.splice(1, 0, subject)
-    second = form
-  }
-  return setKind([thread, second, ...rest], 'list', thread)
-}
+const macroThreadFirst = (ctx, [thread, v, ...forms]) =>
+  forms.reduce((c, f) => {
+    if (Array.isArray(f)) {
+      f.splice(1, 0, c)
+      return f
+    }
+    return setKind([f, c], 'list', thread)
+  }, v)
 
 function* transpileNodeObject(ctx, node, hoist) {
   yield '{'
