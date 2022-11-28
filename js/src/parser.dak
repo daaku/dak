@@ -3,13 +3,23 @@
 
 (macro when [cond ...body]
   `(if ,cond
-     (do ,body)))
+     (do ,...body)))
 
 (macro -> [v ...forms]
   (.reduce forms
            (fn [c f]
              (if (array? f)
                (doto f (.splice 1 0 c))
+               `(,f ,c)))
+           v))
+
+(macro -> [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (Array.isArray f)
+               (do
+                 (.splice f 1 0 c)
+                 f)
                `(,f ,c)))
            v))
 

@@ -230,7 +230,7 @@ const astOne = (ctx, input) => {
         )
       }
       return o
-    case "'":
+    case '`':
       return astShorthand(ctx, value, 'quote', input)
     case ',':
       return astShorthand(ctx, value, 'unquote', input)
@@ -588,7 +588,7 @@ const makeFnTranspiler = (preArgs, postArgs) =>
     yield postArgs
     yield '{'
     yield* transpileSpecialBody(ctx, rest, 'return ')
-    yield '};'
+    yield '}'
   }
 
 const transpileBuiltinFnArrow = makeFnTranspiler('', '=>')
@@ -846,6 +846,54 @@ function* transpileBuiltinHash(ctx, node) {
   throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
 }
 
+function* serializeNode(node) {
+  if (Array.isArray(node)) {
+    if (node[0].value === 'unquote') {
+      yield node[1].value
+      return
+    }
+
+    yield 'Object.defineProperties(['
+    for (const i of node) {
+      yield* serializeNode(i)
+      yield ','
+    }
+    yield '],'
+    yield JSON.stringify({
+      kind: {
+        value: node.kind,
+        enumerable: false,
+      },
+      pos: {
+        value: node.pos,
+        enumerable: false,
+      },
+    })
+    yield ')'
+    return
+  }
+  yield JSON.stringify(node)
+}
+
+function* transpileBuiltinQuote(ctx, node, assign) {
+  yield* transpileSpecialAssign(ctx, assign)
+  yield* serializeNode(node[1])
+}
+
+function* transpileSpecialMacro(ctx, node) {
+  const args = node[2].map(v =>
+    [...transpileSpecialDestructure(ctx, v)].join(''),
+  )
+  ctx.macros.add(
+    node[1].value,
+    new Function(
+      '_macroName',
+      ...args,
+      [...transpileSpecialBody(ctx, node.slice(3), 'return ')].join(''),
+    ),
+  )
+}
+
 const macros = {
   '->': macroThreadFirst,
 }
@@ -884,6 +932,8 @@ const builtins = {
   typeof: transpileTypeof,
   'set!': transpileSet,
   hash: transpileBuiltinHash,
+  quote: transpileBuiltinQuote,
+  macro: transpileSpecialMacro,
 }
 
 // function, method or constructor call
@@ -927,7 +977,7 @@ function* transpileNodeList(ctx, node, assign, hoist) {
   }
   const macro = ctx.macros.get(call)
   if (macro) {
-    yield* transpileNode(ctx, macro(ctx, node), assign, hoist)
+    yield* transpileNode(ctx, macro(...node), assign, hoist)
     return
   }
   yield* transpileSpecialCall(ctx, node, assign, hoist)
