@@ -551,9 +551,9 @@ test('macro: hoist unquote', () => {
               form)
            '(,form ,v))
           ,v))
-  (doto* v (.push 1))
+  (return (doto* v (.push 1)))
   `),
-    ';v.push(1);v;;',
+    ';v.push(1);return v;;',
   )
 })
 
