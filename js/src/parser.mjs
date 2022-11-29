@@ -250,8 +250,6 @@ const astOne = (ctx, input) => {
         )
       }
       return o
-    case '`':
-      return astShorthand(ctx, value, 'quote', input)
     case "'":
       return astShorthand(ctx, value, 'quote', input)
     case ',':
@@ -308,6 +306,7 @@ const hoister = ctx => {
       ...sym,
       ';',
       ...transpile(ctx, node, assign, hoist, evStat),
+      ';',
     )
     return sym
   }

@@ -90,7 +90,7 @@ test('value call', () => {
 test('call nested hoisted', () => {
   assert.equal(
     tostr('(do (String. (Number. (if true 42 43))))'),
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0));;',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43};new String(new Number(gensym__0));;',
   )
 })
 test('comments', () => {
@@ -123,7 +123,7 @@ test('builtin: const with hoist', () => {
                 42 :answer
                 43 :not))
   `),
-    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;;',
+    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;};const a=gensym__0;;',
   )
 })
 test('builtin: var', () => {
@@ -292,7 +292,7 @@ test('builtin: let as arg', () => {
                    b (inc a)]
                (+ a b))))
     `),
-    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;}run(gensym__0);;`,
+    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;};run(gensym__0);;`,
   )
 })
 test('builtin: let with destructuring', () => {
@@ -420,7 +420,7 @@ test('builtin: if hoisted', () => {
     tostr(`
     (const a (if true 42 43))
     `),
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}const a=gensym__0;;',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43};const a=gensym__0;;',
   )
 })
 test('builtin: if without else', () => {
@@ -457,7 +457,7 @@ test('builtin: if let', () => {
              a)
           :bar)
     `),
-    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar");',
+    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;};gensym__0.foo("bar");',
   )
 })
 test('builtin: double if hoisting', () => {
@@ -466,7 +466,7 @@ test('builtin: double if hoisting', () => {
     (.foo (if (if true 40 41) 42 43)
           :bar)
     `),
-    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar");',
+    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41};let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43};gensym__0.foo("bar");',
   )
 })
 test('builtin: dot', () => {
@@ -481,7 +481,7 @@ test('builtin: dot hoist', () => {
     (fn run []
       (. foo (if true 42)))
     `),
-    `const run=()=>{let gensym__0;if(true){gensym__0=42}return foo[gensym__0];};`,
+    `const run=()=>{let gensym__0;if(true){gensym__0=42};return foo[gensym__0];};`,
   )
 })
 test('builtin: await', () => {
@@ -538,7 +538,13 @@ test('builtin: cmp <=', () => {
 test('lambda', () => {
   assert.equal(
     tostr(`#([(if $ true false) $2 :$3])`),
-    `(gensym__0,gensym__1)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,"$3",];};`,
+    `(gensym__0,gensym__1)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false};return [gensym__2,gensym__1,"$3",];};`,
+  )
+})
+test('lambda with assign', () => {
+  assert.equal(
+    tostr(`(#([$]) 42)`),
+    `let gensym__0;gensym__0=(gensym__1)=>{return [gensym__1,];};gensym__0(42);`,
   )
 })
 test('builtin: typeof', () => {
