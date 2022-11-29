@@ -2,6 +2,26 @@ const symbolBreaker = ['(', ')', '[', ']', '{', '}']
 const single = [...symbolBreaker, '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
 
+const builtinMacros = `
+(macro array? [v]
+  '(Array.isArray ,v))
+
+(macro when [cond ...body]
+  '(if ,cond
+     (do ,...body)))
+
+(macro -> [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (array? f)
+               (do
+                 (.splice f 1 0 c)
+                 f)
+               '(,f ,c)))
+           v))
+
+`
+
 const err = (ctx, { pos = {} }, msg) => {
   const e = Error(
     `${ctx.filename ?? '<anonymous>'}:${pos.line + 1}:${
@@ -13,19 +33,19 @@ const err = (ctx, { pos = {} }, msg) => {
 }
 
 const bindings = initial => {
-  const scopes = [{}, initial]
   return {
+    scopes: [{}, initial],
     push() {
-      scopes.unshift({})
+      this.scopes.unshift({})
     },
     pop() {
-      scopes.shift()
+      this.scopes.shift()
     },
     add(name, value) {
-      scopes[0][name] = value ?? true
+      this.scopes[0][name] = value ?? true
     },
     get(name) {
-      for (const scope of scopes) {
+      for (const scope of this.scopes) {
         const binding = scope[name]
         if (binding) {
           return binding
@@ -35,7 +55,7 @@ const bindings = initial => {
   }
 }
 
-const newCtx = config => {
+const newCtx = (config, macros) => {
   let gensym = 0
   return {
     ...config,
@@ -232,6 +252,8 @@ const astOne = (ctx, input) => {
       return o
     case '`':
       return astShorthand(ctx, value, 'quote', input)
+    case "'":
+      return astShorthand(ctx, value, 'quote', input)
     case ',':
       return astShorthand(ctx, value, 'unquote', input)
     case '@':
@@ -305,15 +327,6 @@ const splitter = s => {
     }
   }
 }
-
-const macroThreadFirst = (_, v, ...forms) =>
-  forms.reduce((c, f) => {
-    if (Array.isArray(f)) {
-      f.splice(1, 0, c)
-      return f
-    }
-    return setKind([f, c], 'list', v)
-  }, v)
 
 function* transpileNodeObject(ctx, node, hoist) {
   yield '{'
@@ -894,10 +907,6 @@ function* transpileSpecialMacro(ctx, node) {
   )
 }
 
-const macros = {
-  '->': macroThreadFirst,
-}
-
 const builtins = {
   import: transpileBuiltinImport,
   const: transpileBuiltinDef,
@@ -935,6 +944,18 @@ const builtins = {
   quote: transpileBuiltinQuote,
   macro: transpileSpecialMacro,
 }
+
+const macros = (() => {
+  const ctx = newCtx({}, {})
+  const input = uninterrupt(tokens(ctx, builtinMacros))
+  while (true) {
+    const node = astOne(ctx, input)
+    if (!node) {
+      return ctx.macros.scopes[0]
+    }
+    ;[...transpileNodeHoist(ctx, node)]
+  }
+})()
 
 // function, method or constructor call
 function* transpileSpecialCall(ctx, node, assign, hoist) {
@@ -995,7 +1016,7 @@ function* transpileSet(ctx, node, assign, hoist) {
 }
 
 export function* transpile(code, config) {
-  const ctx = newCtx(config)
+  const ctx = newCtx(config, macros)
   const input = uninterrupt(tokens(ctx, code))
   while (true) {
     const node = astOne(ctx, input)

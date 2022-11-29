@@ -510,6 +510,15 @@ test('macro: -> with symbol', () => {
     '"hello".toUpperCase()+" world";',
   )
 })
+test('macro: when', () => {
+  assert.equal(
+    tostr('(when true (prn :hello) (prn :world))'),
+    'let gensym__0;if(true){prn("hello");gensym__0=prn("world");}gensym__0;',
+  )
+})
+test('macro: array?', () => {
+  assert.equal(tostr('(array? v)'), 'Array.isArray(v);')
+})
 
 const testErr = (input, msg) => () => {
   let output
