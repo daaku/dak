@@ -486,6 +486,24 @@ test('builtin: op **', () => {
 test('builtin: op %', () => {
   assert.equal(tostr('(% 1 2 3)'), '1%2%3;')
 })
+test('builtin: cmp =', () => {
+  assert.equal(tostr('(= a b)'), 'a===b;')
+})
+test('builtin: cmp ==', () => {
+  assert.equal(tostr('(== a b)'), 'a==b;')
+})
+test('builtin: cmp <', () => {
+  assert.equal(tostr('(< a b)'), 'a<b;')
+})
+test('builtin: cmp >', () => {
+  assert.equal(tostr('(> a b)'), 'a>b;')
+})
+test('builtin: cmp >=', () => {
+  assert.equal(tostr('(>= a b)'), 'a>=b;')
+})
+test('builtin: cmp <=', () => {
+  assert.equal(tostr('(<= a b)'), 'a<=b;')
+})
 test('lambda', () => {
   assert.equal(
     tostr(`#([(if $ true false) $2 :$3])`),

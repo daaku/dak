@@ -639,6 +639,14 @@ function* transpileBuiltinStr(ctx, node, assign, hoist) {
   }
 }
 
+function* transpileBuiltinCmp(ctx, node, assign, hoist) {
+  yield* transpileSpecialAssign(ctx, assign)
+  yield* transpileNode(ctx, node[1], null, hoist)
+  const op = node[0].value
+  yield op === '=' ? '===' : op
+  yield* transpileNode(ctx, node[2], null, hoist)
+}
+
 function* transpileBuiltinLet(ctx, node, assign, hoist) {
   if (node[1].kind === 'symbol') {
     yield* transpileBuiltinDef(ctx, node, assign, hoist)
@@ -922,6 +930,12 @@ const builtins = {
   '/': transpileBuiltinOp,
   '**': transpileBuiltinOp,
   '%': transpileBuiltinOp,
+  '=': transpileBuiltinCmp,
+  '==': transpileBuiltinCmp,
+  '<': transpileBuiltinCmp,
+  '>': transpileBuiltinCmp,
+  '<=': transpileBuiltinCmp,
+  '>=': transpileBuiltinCmp,
   let: transpileBuiltinLet,
   throw: transpileBuiltinKeywordStatement,
   return: transpileBuiltinKeywordStatement,
