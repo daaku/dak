@@ -127,10 +127,38 @@ test('builtin: const with hoist', () => {
   )
 })
 test('builtin: var', () => {
-  assert.equal(tostr('(var a 42)'), 'var a=42;;')
+  assert.equal(tostr('(var a 42)'), 'var a=42;')
 })
 test('builtin: let', () => {
-  assert.equal(tostr('(let a 42)'), 'let a=42;;')
+  assert.equal(tostr('(let a 42)'), 'let a=42;')
+})
+test('builtin: let with direct assign', () => {
+  assert.equal(
+    tostr(`
+    (let a (case v
+             42 :answer
+             43 :not))
+  `),
+    'let a;switch (v){case 42:a="answer";break;case 43:a="not";break;};',
+  )
+})
+test('builtin: let with simple assign', () => {
+  assert.equal(
+    tostr(`
+    (let a (do :answer))
+  `),
+    'let a="answer";;',
+  )
+})
+test('builtin: let with hoist and simple assign', () => {
+  assert.equal(
+    tostr(`
+    (let a (do
+             (prn "hello")
+             :answer))
+  `),
+    'let a;prn("hello");a="answer";;',
+  )
 })
 test('builtin: fn', () => {
   assert.equal(

@@ -476,7 +476,7 @@ function* transpileBuiltinImport(ctx, node) {
   }
 }
 
-const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
+const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
   ctx,
   node,
   assign,
@@ -490,6 +490,22 @@ const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
   yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
   yield ';'
 })
+
+function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
+  ctx.bindings.add(node[1].value)
+  // if we hoisted, then split the let, otherwise assign expression directly
+  const [hoist, hoisted] = hoister(ctx)
+  const assign = [...transpileNodeSymbol(ctx, node[1]), '=']
+  const postHoist = [...transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)]
+  yield node[0].value
+  yield ' '
+  if (hoisted.length !== 0 || postHoist[0] != assign[0]) {
+    yield* transpileNodeSymbol(ctx, node[1])
+    yield ';'
+    yield* hoisted
+  }
+  yield* postHoist
+}
 
 const transpileSpecialBody = hoistable(function* transpileSpecialBody(
   ctx,
@@ -798,7 +814,7 @@ function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
 }
 
 function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
-  if (evKind === evExpr) {
+  if (evKind === evExpr && !assign) {
     yield* hoist(transpileBuiltinCase, node)
     return
   }
@@ -938,7 +954,7 @@ function* transpileSpecialMacro(ctx, node) {
 
 const builtins = {
   import: transpileBuiltinImport,
-  const: transpileBuiltinDef,
+  const: transpileBuiltinConst,
   var: transpileBuiltinDef,
   fn: transpileBuiltinFnArrow,
   'fn@': transpileBuiltinFnArrowAsync,
