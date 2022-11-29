@@ -683,7 +683,7 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist) {
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    yield* transpileNodeExpr(ctx, node[1][i + 1], assign, hoist)
+    yield* transpileNodeStatement(ctx, node[1][i + 1], assign, hoist)
     yield ';'
 
     // if destructuring, then we need to assign our generated symbol now
