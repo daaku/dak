@@ -33,6 +33,9 @@ test('symbol: dash special case', () => {
 test('symbol: dash special case 2x', () => {
   assert.equal(tostr('foo-bar-baz'), 'fooBarBaz;')
 })
+test('symbol: replaces all', () => {
+  assert.equal(tostr('>>'), '_GT__GT_;')
+})
 test('symbol: bang', () => {
   assert.equal(tostr('foo!'), 'foo_BANG_;')
 })

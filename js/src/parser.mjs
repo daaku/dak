@@ -357,14 +357,14 @@ function* transpileNodeString(ctx, token) {
 
 const mangleSym = sym =>
   sym
-    .replace('!', '_BANG_')
-    .replace('?', '_QMARK_')
-    .replace('*', '_STAR_')
-    .replace('+', '_PLUS_')
-    .replace('>', '_GT_')
-    .replace('<', '_LT_')
-    .replace('=', '_EQ_')
-    .replace(/-(.)/g, (_match, c) => c.toUpperCase())
+    .replaceAll('!', '_BANG_')
+    .replaceAll('?', '_QMARK_')
+    .replaceAll('*', '_STAR_')
+    .replaceAll('+', '_PLUS_')
+    .replaceAll('>', '_GT_')
+    .replaceAll('<', '_LT_')
+    .replaceAll('=', '_EQ_')
+    .replaceAll(/-(.)/g, (_match, c) => c.toUpperCase())
 
 function* transpileNodeSymbol(ctx, token) {
   yield mangleSym(token.value)
