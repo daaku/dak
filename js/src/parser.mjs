@@ -306,13 +306,13 @@ const splitter = s => {
   }
 }
 
-const macroThreadFirst = (ctx, [thread, v, ...forms]) =>
+const macroThreadFirst = (_, v, ...forms) =>
   forms.reduce((c, f) => {
     if (Array.isArray(f)) {
       f.splice(1, 0, c)
       return f
     }
-    return setKind([f, c], 'list', thread)
+    return setKind([f, c], 'list', v)
   }, v)
 
 function* transpileNodeObject(ctx, node, hoist) {
@@ -1003,5 +1003,6 @@ export function* transpile(code, config) {
       return
     }
     yield* transpileNodeHoist(ctx, node)
+    yield ';'
   }
 }

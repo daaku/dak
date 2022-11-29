@@ -19,64 +19,64 @@ const tostr = (code, log) => {
 }
 
 test('string escape', () => {
-  assert.equal(tostr('"\\t"'), '"\\t"')
+  assert.equal(tostr('"\\t"'), '"\\t";')
 })
 test('string with escaped newline', () => {
-  assert.equal(tostr('"\\\n"'), '"\\\n"')
+  assert.equal(tostr('"\\\n"'), '"\\\n";')
 })
 test('string with unescaped newline', () => {
-  assert.equal(tostr('"hello\nworld"'), '"hello\\\nworld"')
+  assert.equal(tostr('"hello\nworld"'), '"hello\\\nworld";')
 })
 test('symbol: dash special case', () => {
-  assert.equal(tostr('foo-bar'), 'fooBar')
+  assert.equal(tostr('foo-bar'), 'fooBar;')
 })
 test('symbol: dash special case 2x', () => {
-  assert.equal(tostr('foo-bar-baz'), 'fooBarBaz')
+  assert.equal(tostr('foo-bar-baz'), 'fooBarBaz;')
 })
 test('symbol: bang', () => {
-  assert.equal(tostr('foo!'), 'foo_BANG_')
+  assert.equal(tostr('foo!'), 'foo_BANG_;')
 })
 test('symbol: qmark', () => {
-  assert.equal(tostr('foo?'), 'foo_QMARK_')
+  assert.equal(tostr('foo?'), 'foo_QMARK_;')
 })
 test('symbol: star', () => {
-  assert.equal(tostr('foo*'), 'foo_STAR_')
+  assert.equal(tostr('foo*'), 'foo_STAR_;')
 })
 test('symbol: plus', () => {
-  assert.equal(tostr('foo+'), 'foo_PLUS_')
+  assert.equal(tostr('foo+'), 'foo_PLUS_;')
 })
 test('symbol: gt', () => {
-  assert.equal(tostr('>'), '_GT_')
+  assert.equal(tostr('>'), '_GT_;')
 })
 test('symbol: lt', () => {
-  assert.equal(tostr('<'), '_LT_')
+  assert.equal(tostr('<'), '_LT_;')
 })
 test('symbol: eq', () => {
-  assert.equal(tostr('='), '_EQ_')
+  assert.equal(tostr('='), '_EQ_;')
 })
 test('plain keyword', () => {
-  assert.equal(tostr(':foo'), '"foo"')
+  assert.equal(tostr(':foo'), '"foo";')
 })
 test('nested arrays', () => {
-  assert.equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],]')
+  assert.equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],];')
 })
 test('data structures', () => {
   assert.equal(
     tostr('{:a 1 :b [1 2] :c [3 4]}'),
-    '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],}',
+    '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],};',
   )
 })
 test('function call', () => {
-  assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,})')
+  assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,});')
 })
 test('method call', () => {
-  assert.equal(tostr('(.a b {:c d})'), 'b.a({["c"]:d,})')
+  assert.equal(tostr('(.a b {:c d})'), 'b.a({["c"]:d,});')
 })
 test('constructor call', () => {
-  assert.equal(tostr('(String. 42)'), 'new String(42)')
+  assert.equal(tostr('(String. 42)'), 'new String(42);')
 })
 test('multiple: list', () => {
-  assert.equal(tostr('(add 1)(add 2)'), 'add(1)add(2)')
+  assert.equal(tostr('(add 1)(add 2)'), 'add(1);add(2);')
 })
 test('value call', () => {
   assert.equal(
@@ -87,7 +87,7 @@ test('value call', () => {
 test('call nested hoisted', () => {
   assert.equal(
     tostr('(do (String. (Number. (if true 42 43))))'),
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0));',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}new String(new Number(gensym__0));;',
   )
 })
 test('comments', () => {
@@ -96,7 +96,7 @@ test('comments', () => {
     ; this is the truth
     "use strict" ; really sure
     `),
-    `"use strict"`,
+    `;"use strict";;`,
   )
 })
 test('builtin: import', () => {
@@ -107,11 +107,11 @@ test('builtin: import', () => {
             ["./index.css"]
             ["./as.js" :as TheNamed])
     `),
-    `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";`,
+    `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";;`,
   )
 })
 test('builtin: const', () => {
-  assert.equal(tostr('(const a 42)'), 'const a=42;')
+  assert.equal(tostr('(const a 42)'), 'const a=42;;')
 })
 test('builtin: const with hoist', () => {
   assert.equal(
@@ -120,14 +120,14 @@ test('builtin: const with hoist', () => {
                 42 :answer
                 43 :not))
   `),
-    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;',
+    'let gensym__0;switch (v){case 42:gensym__0="answer";break;case 43:gensym__0="not";break;}const a=gensym__0;;',
   )
 })
 test('builtin: var', () => {
-  assert.equal(tostr('(var a 42)'), 'var a=42;')
+  assert.equal(tostr('(var a 42)'), 'var a=42;;')
 })
 test('builtin: let', () => {
-  assert.equal(tostr('(let a 42)'), 'let a=42;')
+  assert.equal(tostr('(let a 42)'), 'let a=42;;')
 })
 test('builtin: fn', () => {
   assert.equal(
@@ -261,7 +261,7 @@ test('builtin: let as arg', () => {
                    b (inc a)]
                (+ a b))))
     `),
-    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;}run(gensym__0);`,
+    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;}run(gensym__0);;`,
   )
 })
 test('builtin: let with destructuring', () => {
@@ -275,13 +275,13 @@ test('builtin: let with destructuring', () => {
   )
 })
 test('builtin: throw', () => {
-  assert.equal(tostr('(throw (error "foo"))'), 'throw error("foo")')
+  assert.equal(tostr('(throw (error "foo"))'), 'throw error("foo");')
 })
 test('builtin: return with value', () => {
-  assert.equal(tostr('(return 42)'), 'return 42')
+  assert.equal(tostr('(return 42)'), 'return 42;')
 })
 test('builtin: return bare', () => {
-  assert.equal(tostr('(return)'), 'return')
+  assert.equal(tostr('(return)'), 'return;')
 })
 test('builtin: return hoist', () => {
   assert.equal(
@@ -293,16 +293,16 @@ test('builtin: return hoist', () => {
   )
 })
 test('builtin: yield', () => {
-  assert.equal(tostr('(yield)'), 'yield')
+  assert.equal(tostr('(yield)'), 'yield;')
 })
 test('builtin: yield*', () => {
-  assert.equal(tostr('(yield* [1 2])'), 'yield* [1,2,]')
+  assert.equal(tostr('(yield* [1 2])'), 'yield* [1,2,];')
 })
 test('builtin: break', () => {
-  assert.equal(tostr('(break)'), 'break')
+  assert.equal(tostr('(break)'), 'break;')
 })
 test('builtin: continue', () => {
-  assert.equal(tostr('(continue)'), 'continue')
+  assert.equal(tostr('(continue)'), 'continue;')
 })
 test('builtin: for with step', () => {
   assert.equal(
@@ -310,7 +310,7 @@ test('builtin: for with step', () => {
     (for [i 0 len step]
       (console.log i))
     `),
-    `for(let i=0;i<len;i+=step){console.log(i);}`,
+    `for(let i=0;i<len;i+=step){console.log(i);};`,
   )
 })
 test('builtin: for without step', () => {
@@ -319,7 +319,7 @@ test('builtin: for without step', () => {
     (for [i 0 len]
       (console.log i))
     `),
-    `for(let i=0;i<len;i++){console.log(i);}`,
+    `for(let i=0;i<len;i++){console.log(i);};`,
   )
 })
 test('builtin: for-of', () => {
@@ -328,7 +328,7 @@ test('builtin: for-of', () => {
     (for-of [v vs]
       (console.log v))
     `),
-    `for(let v of vs){console.log(v);}`,
+    `for(let v of vs){console.log(v);};`,
   )
 })
 test('builtin: for-in', () => {
@@ -337,7 +337,7 @@ test('builtin: for-in', () => {
     (for-in [v vs]
       (console.log v))
     `),
-    `for(let v in vs){console.log(v);}`,
+    `for(let v in vs){console.log(v);};`,
   )
 })
 test('builtin: for@', () => {
@@ -346,7 +346,7 @@ test('builtin: for@', () => {
     (for@ [v vs]
       (console.log v))
     `),
-    `for await(let v of vs){console.log(v);}`,
+    `for await(let v of vs){console.log(v);};`,
   )
 })
 test('builtin: case return position', () => {
@@ -381,7 +381,7 @@ test('builtin: do', () => {
       (add 1 1)
       42)
     `),
-    `add(1,1);42;`,
+    `add(1,1);42;;`,
   )
 })
 test('builtin: if hoisted', () => {
@@ -389,7 +389,7 @@ test('builtin: if hoisted', () => {
     tostr(`
     (const a (if true 42 43))
     `),
-    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}const a=gensym__0;',
+    'let gensym__0;if(true){gensym__0=42}else{gensym__0=43}const a=gensym__0;;',
   )
 })
 test('builtin: if without else', () => {
@@ -426,7 +426,7 @@ test('builtin: if let', () => {
              a)
           :bar)
     `),
-    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar")',
+    'let gensym__0;{let a;if(true){a=42}else{a=43};gensym__0=a;}gensym__0.foo("bar");',
   )
 })
 test('builtin: double if hoisting', () => {
@@ -435,14 +435,14 @@ test('builtin: double if hoisting', () => {
     (.foo (if (if true 40 41) 42 43)
           :bar)
     `),
-    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar")',
+    'let gensym__1;if(true){gensym__1=40}else{gensym__1=41}let gensym__0;if(gensym__1){gensym__0=42}else{gensym__0=43}gensym__0.foo("bar");',
   )
 })
 test('builtin: dot', () => {
-  assert.equal(tostr('(. foo bar)'), 'foo[bar]')
+  assert.equal(tostr('(. foo bar)'), 'foo[bar];')
 })
 test('builtin: dot double', () => {
-  assert.equal(tostr('(. foo bar baz)'), 'foo[bar][baz]')
+  assert.equal(tostr('(. foo bar baz)'), 'foo[bar][baz];')
 })
 test('builtin: dot hoist', () => {
   assert.equal(
@@ -454,60 +454,60 @@ test('builtin: dot hoist', () => {
   )
 })
 test('builtin: await', () => {
-  assert.equal(tostr(`@42`), `await 42`)
+  assert.equal(tostr(`@42`), `await 42;`)
 })
 test('builtin: await method call', () => {
-  assert.equal(tostr(`@(make :promise)`), `await make("promise")`)
+  assert.equal(tostr(`@(make :promise)`), `await make("promise");`)
 })
 test('builtin: op str', () => {
-  assert.equal(tostr('(str :a :b :c)'), '"a"+"b"+"c"')
+  assert.equal(tostr('(str :a :b :c)'), '"a"+"b"+"c";')
 })
 test('builtin: op +', () => {
-  assert.equal(tostr('(+ 1 2 3)'), '1+2+3')
+  assert.equal(tostr('(+ 1 2 3)'), '1+2+3;')
 })
 test('builtin: op + unary', () => {
-  assert.equal(tostr('(+ 1)'), '+1')
+  assert.equal(tostr('(+ 1)'), '+1;')
 })
 test('builtin: op -', () => {
-  assert.equal(tostr('(- 1 2 3)'), '1-2-3')
+  assert.equal(tostr('(- 1 2 3)'), '1-2-3;')
 })
 test('builtin: op - unary', () => {
-  assert.equal(tostr('(- 1)'), '-1')
+  assert.equal(tostr('(- 1)'), '-1;')
 })
 test('builtin: op *', () => {
-  assert.equal(tostr('(* 1 2 3)'), '1*2*3')
+  assert.equal(tostr('(* 1 2 3)'), '1*2*3;')
 })
 test('builtin: op /', () => {
-  assert.equal(tostr('(/ 1 2 3)'), '1/2/3')
+  assert.equal(tostr('(/ 1 2 3)'), '1/2/3;')
 })
 test('builtin: op **', () => {
-  assert.equal(tostr('(** 1 2 3)'), '1**2**3')
+  assert.equal(tostr('(** 1 2 3)'), '1**2**3;')
 })
 test('builtin: op %', () => {
-  assert.equal(tostr('(% 1 2 3)'), '1%2%3')
+  assert.equal(tostr('(% 1 2 3)'), '1%2%3;')
 })
 test('lambda', () => {
   assert.equal(
     tostr(`#([(if $ true false) $2 :$3])`),
-    `(gensym__0,gensym__1)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,"$3",];}`,
+    `(gensym__0,gensym__1)=>{let gensym__2;if(gensym__0){gensym__2=true}else{gensym__2=false}return [gensym__2,gensym__1,"$3",];};`,
   )
 })
 test('builtin: typeof', () => {
-  assert.equal(tostr('(typeof 1)'), 'typeof 1')
+  assert.equal(tostr('(typeof 1)'), 'typeof 1;')
 })
 test('builtin: set!', () => {
-  assert.equal(tostr('(set! a 1)'), 'a=1')
+  assert.equal(tostr('(set! a 1)'), 'a=1;')
 })
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
-    '"hello".toUpperCase()+" world"',
+    '"hello".toUpperCase()+" world";',
   )
 })
 test('macro: -> with symbol', () => {
   assert.equal(
     tostr('(-> :hello .toUpperCase (str " world"))'),
-    '"hello".toUpperCase()+" world"',
+    '"hello".toUpperCase()+" world";',
   )
 })
 
