@@ -867,16 +867,16 @@ function* transpileBuiltinHash(ctx, node) {
   throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
 }
 
-function* serializeNode(node) {
+function* serializeNode(ctx, node, hoist) {
   if (Array.isArray(node)) {
     if (node[0].value === 'unquote') {
-      yield node[1].value
+      yield* transpileNode(ctx, node[1], null, hoist)
       return
     }
 
     yield 'Object.defineProperties(['
     for (const i of node) {
-      yield* serializeNode(i)
+      yield* serializeNode(ctx, i, hoist)
       yield ','
     }
     yield '],'
@@ -896,9 +896,9 @@ function* serializeNode(node) {
   yield JSON.stringify(node)
 }
 
-function* transpileBuiltinQuote(ctx, node, assign) {
+function* transpileBuiltinQuote(ctx, node, assign, hoist) {
   yield* transpileSpecialAssign(ctx, assign)
-  yield* serializeNode(node[1])
+  yield* serializeNode(ctx, node[1], hoist)
 }
 
 function* transpileSpecialMacro(ctx, node) {

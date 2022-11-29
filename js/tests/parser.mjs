@@ -540,6 +540,22 @@ test('macro: when', () => {
 test('macro: array?', () => {
   assert.equal(tostr('(array? v)'), 'Array.isArray(v);')
 })
+test('macro: hoist unquote', () => {
+  assert.equal(
+    tostr(`
+    (macro doto* [v form]
+      '(do
+         ,(if (array? form)
+            (do
+              (.splice form 1 0 v)
+              form)
+           '(,form ,v))
+          ,v))
+  (doto* v (.push 1))
+  `),
+    ';v.push(1);v;;',
+  )
+})
 
 const testErr = (input, msg) => () => {
   let output
