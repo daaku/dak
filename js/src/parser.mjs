@@ -295,21 +295,29 @@ const prepend = (one, rest) =>
     })(),
   )
 
+const evExpr = 'evExpr'
+const evStat = 'evStat'
+
 const hoister = ctx => {
   const collected = []
   const hoist = (transpile, node) => {
     const sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
     const assign = [...sym, '=']
-    collected.push('let ', ...sym, ';', ...transpile(ctx, node, assign, hoist))
+    collected.push(
+      'let ',
+      ...sym,
+      ';',
+      ...transpile(ctx, node, assign, hoist, evStat),
+    )
     return sym
   }
   return [hoist, collected]
 }
 
 const hoistable = transpile =>
-  function* transpileHoistable(ctx, node, assign) {
+  function* transpileHoistable(ctx, node, assign, _hoist, evKind) {
     const [hoist, hoisted] = hoister(ctx)
-    const postHoist = [...transpile(ctx, node, assign, hoist)]
+    const postHoist = [...transpile(ctx, node, assign, hoist, evKind)]
     yield* hoisted
     yield* postHoist
   }
@@ -332,9 +340,9 @@ function* transpileNodeObject(ctx, node, hoist) {
   yield '{'
   for (let i = 0; i < node.length; i += 2) {
     yield '['
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
     yield ']:'
-    yield* transpileNodeExpr(ctx, node[i + 1], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i + 1], null, hoist, evExpr)
     yield ','
   }
   yield '}'
@@ -343,7 +351,7 @@ function* transpileNodeObject(ctx, node, hoist) {
 function* transpileNodeArray(ctx, node, hoist) {
   yield '['
   for (const i of node) {
-    yield* transpileNodeExpr(ctx, i, null, hoist)
+    yield* transpileNodeExpr(ctx, i, null, hoist, evExpr)
     yield ','
   }
   yield ']'
@@ -376,7 +384,7 @@ function* transpileSpecialAssign(ctx, assign) {
   }
 }
 
-function* transpileNodeUnknown(ctx, node, assign, hoist) {
+function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr) {
   // completely ignore comments
   if (node.kind === 'comment') {
     return
@@ -384,7 +392,7 @@ function* transpileNodeUnknown(ctx, node, assign, hoist) {
 
   // list will handle it's own assign, all others are expressions
   if (node.kind === 'list') {
-    yield* transpileNodeList(ctx, node, assign, hoist)
+    yield* transpileNodeList(ctx, node, assign, hoist, evExpr)
     return
   }
 
@@ -479,7 +487,7 @@ const transpileBuiltinDef = hoistable(function* transpileBuiltinDef(
   yield ' '
   yield* transpileNodeSymbol(ctx, node[1])
   yield '='
-  yield* transpileNodeExpr(ctx, node[2], null, hoist)
+  yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
   yield ';'
 })
 
@@ -494,13 +502,13 @@ const transpileSpecialBody = hoistable(function* transpileSpecialBody(
     if (i === node.length - 1) {
       a = assign
     }
-    yield* transpileNodeStatement(ctx, node[i], a, hoist)
+    yield* transpileNodeStatement(ctx, node[i], a, hoist, evStat)
     yield ';'
   }
 })
 
-function* transpileBuiltinDo(ctx, node, assign) {
-  yield* transpileSpecialBody(ctx, node.slice(1), assign)
+function* transpileBuiltinDo(ctx, node, assign, hoist, evKind) {
+  yield* transpileSpecialBody(ctx, node.slice(1), assign, hoist, evKind)
 }
 
 function* transpileSpecialDestructure(ctx, node) {
@@ -601,7 +609,7 @@ const makeFnTranspiler = (preArgs, postArgs) =>
     yield* transpileSpecialFnArgs(ctx, args)
     yield postArgs
     yield '{'
-    yield* transpileSpecialBody(ctx, rest, 'return ')
+    yield* transpileSpecialBody(ctx, rest, 'return ', null, evStat)
     yield '}'
   }
 
@@ -610,16 +618,16 @@ const transpileBuiltinFnArrowAsync = makeFnTranspiler('async', '=>')
 const transpileBuiltinFnGenerator = makeFnTranspiler('function*', '')
 const transpileBuiltinFnAsyncGenerator = makeFnTranspiler('async function*', '')
 
-function* transpileBuiltinOp(ctx, node, assign, hoist) {
+function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   const sp = splitter(node[0].value)
   for (let i = 1; i < node.length; i++) {
     yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
   }
 }
 
-function* transpileBuiltinOpUnary(ctx, node, assign, hoist) {
+function* transpileBuiltinOpUnary(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   if (node.length === 2) {
     yield node[0].value
@@ -627,37 +635,37 @@ function* transpileBuiltinOpUnary(ctx, node, assign, hoist) {
   const sp = splitter(node[0].value)
   for (let i = 1; i < node.length; i++) {
     yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
   }
 }
 
-function* transpileBuiltinStr(ctx, node, assign, hoist) {
+function* transpileBuiltinStr(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   const sp = splitter('+')
   for (let i = 1; i < node.length; i++) {
     yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evStat)
   }
 }
 
-function* transpileBuiltinCmp(ctx, node, assign, hoist) {
+function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
-  yield* transpileNodeExpr(ctx, node[1], null, hoist)
+  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   const op = node[0].value
   yield op === '=' ? '===' : op
-  yield* transpileNodeExpr(ctx, node[2], null, hoist)
+  yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
 }
 
-function* transpileBuiltinLet(ctx, node, assign, hoist) {
+function* transpileBuiltinLet(ctx, node, assign, hoist, evKind) {
   if (node[1].kind === 'symbol') {
-    yield* transpileBuiltinDef(ctx, node, assign, hoist)
+    yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind)
     return
   }
-  yield* transpileBuiltinLetMulti(ctx, node, assign, hoist)
+  yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind)
 }
 
-function* transpileBuiltinLetMulti(ctx, node, assign, hoist) {
-  if (!assign && hoist) {
+function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
+  if (evKind === evExpr) {
     yield* hoist(transpileBuiltinLetMulti, node)
     return
   }
@@ -683,7 +691,7 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist) {
 
     // assign to simple symbol
     const assign = [...sym, '=']
-    yield* transpileNodeStatement(ctx, node[1][i + 1], assign, hoist)
+    yield* transpileNodeStatement(ctx, node[1][i + 1], assign, hoist, evStat)
     yield ';'
 
     // if destructuring, then we need to assign our generated symbol now
@@ -695,53 +703,59 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist) {
       yield ';'
     }
   }
-  yield* transpileSpecialBody(ctx, node.slice(2), assign)
+  yield* transpileSpecialBody(ctx, node.slice(2), assign, hoist, evStat)
   yield '}'
   ctx.bindings.pop()
 }
 
-function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist) {
+function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield node[0].value
   if (node.length !== 1) {
     yield ' '
-    yield* transpileNodeExpr(ctx, node[1], null, hoist)
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   }
 }
 
-function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist) {
+function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist, _evKind) {
   if (node.length === 1) {
     yield node[0].value
   } else {
-    yield* transpileNodeStatement(ctx, node[1], [node[0].value, ' '], hoist)
+    yield* transpileNodeStatement(
+      ctx,
+      node[1],
+      [node[0].value, ' '],
+      hoist,
+      evStat,
+    )
   }
 }
 
-function* transpileBuiltinFor(ctx, node, _assign, hoist) {
+function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
   const binding = node[1]
   yield 'for(let '
   yield* transpileNodeSymbol(ctx, binding[0])
   yield '='
-  yield* transpileNodeExpr(ctx, binding[1], null, hoist)
+  yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr)
   yield ';'
   yield* transpileNodeSymbol(ctx, binding[0])
   yield '<'
-  yield* transpileNodeExpr(ctx, binding[2], null, hoist)
+  yield* transpileNodeExpr(ctx, binding[2], null, hoist, evExpr)
   yield ';'
   yield* transpileNodeSymbol(ctx, binding[0])
   if (binding.length === 3) {
     yield '++'
   } else {
     yield '+='
-    yield* transpileNodeExpr(ctx, binding[3], null, hoist)
+    yield* transpileNodeExpr(ctx, binding[3], null, hoist, evExpr)
   }
   yield '){'
-  yield* transpileSpecialBody(ctx, node.slice(2))
+  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
   yield '}'
 }
 
 const makeForTranspiler = (prefix, middle) =>
-  function* transpileBuiltinForSpecial(ctx, node, _assign, hoist) {
+  function* transpileBuiltinForSpecial(ctx, node, _assign, hoist, evKind) {
     const binding = node[1]
     yield prefix
     yield '(let '
@@ -749,9 +763,9 @@ const makeForTranspiler = (prefix, middle) =>
     yield ' '
     yield middle
     yield ' '
-    yield* transpileNodeExpr(ctx, binding[1], null, hoist)
+    yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr)
     yield '){'
-    yield* transpileSpecialBody(ctx, node.slice(2))
+    yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
     yield '}'
   }
 
@@ -759,8 +773,8 @@ const transpileBuiltinForOf = makeForTranspiler('for', 'of')
 const transpileBuiltinForIn = makeForTranspiler('for', 'in')
 const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
 
-function* transpileBuiltinIf(ctx, node, assign, hoist) {
-  if (!assign && hoist) {
+function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
+  if (evKind === evExpr) {
     yield* hoist(transpileBuiltinIf, node)
     return
   }
@@ -770,33 +784,33 @@ function* transpileBuiltinIf(ctx, node, assign, hoist) {
   for (let i = 1; i < node.length; i += 2) {
     if (finalElse && i === node.length - 1) {
       yield 'else{'
-      yield* transpileNodeStatement(ctx, node[i], assign)
+      yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat)
       yield '}'
       return
     }
     yield elif()
     yield 'if('
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
     yield '){'
-    yield* transpileNodeStatement(ctx, node[i + 1], assign)
+    yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat)
     yield '}'
   }
 }
 
-function* transpileBuiltinCase(ctx, node, assign, hoist) {
-  if (!assign && hoist) {
+function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
+  if (evKind === evExpr) {
     yield* hoist(transpileBuiltinCase, node)
     return
   }
 
   const finalDefault = node.length % 2 === 1
   yield 'switch ('
-  yield* transpileNodeExpr(ctx, node[1], null, hoist)
+  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   yield '){'
   for (let i = 2; i < node.length; i += 2) {
     if (finalDefault && i === node.length - 1) {
       yield 'default:'
-      yield* transpileNodeStatement(ctx, node[i], assign)
+      yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat)
       yield ';'
       if (assign !== 'return ') {
         yield 'break'
@@ -806,9 +820,9 @@ function* transpileBuiltinCase(ctx, node, assign, hoist) {
     }
 
     yield 'case '
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
     yield ':'
-    yield* transpileNodeStatement(ctx, node[i + 1], assign)
+    yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat)
     yield ';'
     if (assign !== 'return ') {
       yield 'break;'
@@ -817,17 +831,23 @@ function* transpileBuiltinCase(ctx, node, assign, hoist) {
   yield '}'
 }
 
-function* transpileBuiltinDot(ctx, node, assign, hoist) {
+function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
-  yield* transpileNodeExpr(ctx, node[1], null, hoist)
+  yield* transpileNodeExpr(ctx, node[1], null, hoist, evKind)
   for (let i = 2; i < node.length; i++) {
     yield '['
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
     yield ']'
   }
 }
 
-function* transpileHashLambda(ctx, node) {
+function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
+  if (!assign && evKind === evExpr) {
+    yield* hoist(transpileHashLambda, node)
+    return
+  }
+
+  yield* transpileSpecialAssign(ctx, assign)
   const args = []
   const argMap = n => {
     if (Array.isArray(n)) {
@@ -856,13 +876,13 @@ function* transpileHashLambda(ctx, node) {
     yield* transpileNodeSymbol(ctx, arg)
   }
   yield ')=>{'
-  yield* transpileSpecialBody(ctx, node[1], 'return ')
+  yield* transpileSpecialBody(ctx, node[1], 'return ', hoist, evStat)
   yield '}'
 }
 
-function* transpileBuiltinHash(ctx, node) {
+function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
   if (node[1].kind === 'list') {
-    yield* transpileHashLambda(ctx, node)
+    yield* transpileHashLambda(ctx, node, assign, hoist, evKind)
     return
   }
   throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
@@ -871,7 +891,7 @@ function* transpileBuiltinHash(ctx, node) {
 function* serializeNode(ctx, node, hoist) {
   if (Array.isArray(node)) {
     if (node[0].value === 'unquote') {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist)
+      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
       return
     }
 
@@ -897,7 +917,7 @@ function* serializeNode(ctx, node, hoist) {
   yield JSON.stringify(node)
 }
 
-function* transpileBuiltinQuote(ctx, node, assign, hoist) {
+function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* serializeNode(ctx, node[1], hoist)
 }
@@ -968,12 +988,12 @@ const macros = (() => {
     if (!node) {
       return ctx.macros.scopes[0]
     }
-    ;[...transpileNodeStatement(ctx, node)]
+    ;[...transpileNodeStatement(ctx, node, null, null, evStat)]
   }
 })()
 
 // function, method or constructor call
-function* transpileSpecialCall(ctx, node, assign, hoist) {
+function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   let argStart = 1
   if (node[0].kind === 'symbol') {
@@ -982,52 +1002,52 @@ function* transpileSpecialCall(ctx, node, assign, hoist) {
       yield 'new '
       yield mangleSym(call.slice(0, -1)) // drop the tailing .
     } else if (call.startsWith('.')) {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist)
+      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
       yield mangleSym(call)
       argStart = 2
     } else {
       yield mangleSym(call)
     }
   } else {
-    yield* transpileNodeExpr(ctx, node[0], null, hoist)
+    yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr)
   }
   const comma = splitter(',')
   yield '('
   for (let i = argStart; i < node.length; i++) {
     yield comma()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist)
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
   }
   yield ')'
 }
 
-function* transpileNodeList(ctx, node, assign, hoist) {
+function* transpileNodeList(ctx, node, assign, hoist, evKind) {
   const call = node[0].value
   const binding = ctx.bindings.get(call)
   if (binding === true) {
-    yield* transpileSpecialCall(ctx, node, assign, hoist)
+    yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
     return
   }
   if (binding) {
-    yield* binding(ctx, node, assign, hoist)
+    yield* binding(ctx, node, assign, hoist, evKind)
     return
   }
   const macro = ctx.macros.get(call)
   if (macro) {
-    yield* transpileNodeUnknown(ctx, macro(...node), assign, hoist)
+    yield* transpileNodeUnknown(ctx, macro(...node), assign, hoist, evKind)
     return
   }
-  yield* transpileSpecialCall(ctx, node, assign, hoist)
+  yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
 }
 
-function* transpileTypeof(ctx, node, assign, hoist) {
+function* transpileTypeof(ctx, node, assign, hoist, _evKind) {
   yield 'typeof '
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist)
+  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
 }
 
-function* transpileSet(ctx, node, assign, hoist) {
-  yield* transpileNodeUnknown(ctx, node[1], assign, hoist)
+function* transpileSet(ctx, node, assign, hoist, _evKind) {
+  yield* transpileNodeUnknown(ctx, node[1], assign, hoist, evExpr)
   yield '='
-  yield* transpileNodeExpr(ctx, node[2], assign, hoist)
+  yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
 }
 
 export function* transpile(code, config) {
@@ -1038,7 +1058,7 @@ export function* transpile(code, config) {
     if (!node) {
       return
     }
-    yield* transpileNodeStatement(ctx, node)
+    yield* transpileNodeStatement(ctx, node, null, null, evStat)
     yield ';'
   }
 }

@@ -253,7 +253,7 @@ test('builtin: let without assign', () => {
         b)
        null)
     `),
-    `const run=()=>{let gensym__0;{let a;a=0;let b;b=inc(a);console.log(a);gensym__0=b;}gensym__0;return null;};`,
+    `const run=()=>{{let a;a=0;let b;b=inc(a);console.log(a);b;};return null;};`,
   )
 })
 test('builtin: let as arg', () => {
@@ -534,7 +534,7 @@ test('macro: -> with symbol', () => {
 test('macro: when', () => {
   assert.equal(
     tostr('(when true (prn :hello) (prn :world))'),
-    'let gensym__0;if(true){prn("hello");gensym__0=prn("world");}gensym__0;',
+    'if(true){prn("hello");prn("world");};',
   )
 })
 test('macro: array?', () => {
