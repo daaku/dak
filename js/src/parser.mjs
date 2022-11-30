@@ -6,6 +6,48 @@ const builtinMacros = `
 (macro array? [v]
   '(Array.isArray ,v))
 
+(macro boolean? [v]
+  '(= (typeof ,v) :boolean))
+
+(macro object? [v]
+  '(= (typeof ,v) :object))
+
+(macro number? [v]
+  '(= (typeof ,v) :number))
+
+(macro string? [v]
+  '(= (typeof ,v) :string))
+
+(macro zero? [v]
+  '(= ,v 0))
+
+(macro pos? [v]
+  '(> ,v 0))
+
+(macro neg? [v]
+  '(< ,v 0))
+
+(macro true? [v]
+  '(= ,v true))
+
+(macro false? [v]
+  '(= ,v false))
+
+(macro undefined? [v]
+  '(= (typeof ,v) :undefined))
+
+(macro defined? [v]
+  '(not= (typeof ,v) :undefined))
+
+(macro null? [v]
+  '(= ,v null))
+
+(macro inc [v]
+  '(+ ,v 1))
+
+(macro dec [v]
+  '(- ,v 1))
+
 (macro when [cond ...body]
   '(if ,cond
      (do ,...body)))
