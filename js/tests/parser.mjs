@@ -305,6 +305,16 @@ test('builtin: let with destructuring', () => {
     `const run=()=>{{let {a,b}=foo();return [a,b,];};};`,
   )
 })
+test('builtin: let with gensym + destructuring', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (let [{:keys [a b]} (do (println :hello) (foo))]
+        [a b]))
+    `),
+    `const run=()=>{{let gensym__0;println("hello");gensym__0=foo();;let {a,b}=gensym__0;return [a,b,];};};`,
+  )
+})
 test('builtin: throw', () => {
   assert.equal(tostr('(throw (error "foo"))'), 'throw error("foo");')
 })
