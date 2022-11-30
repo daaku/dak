@@ -637,7 +637,7 @@ const makeOpTranspiler = (op, unary = false) =>
   function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
     yield* transpileSpecialAssign(ctx, assign)
     if (unary && node.length === 2) {
-      yield node[0].value
+      yield op
     }
     const sp = splitter(op)
     for (let i = 1; i < node.length; i++) {
@@ -646,11 +646,23 @@ const makeOpTranspiler = (op, unary = false) =>
     }
   }
 
+const makeUnaryOpTranspiler = op =>
+  function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign)
+    yield op
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+  }
+
+const cmpRemap = {
+  '=': '===',
+  'not=': '!==',
+}
+
 function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   const op = node[0].value
-  yield op === '=' ? '===' : op
+  yield cmpRemap[op] ?? op
   yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
 }
 
@@ -969,8 +981,21 @@ const builtins = {
   '/': makeOpTranspiler('/'),
   '**': makeOpTranspiler('**'),
   '%': makeOpTranspiler('%'),
+  '<<': makeOpTranspiler('<<'),
+  '>>': makeOpTranspiler('>>'),
+  'bit-and': makeOpTranspiler('&'),
+  'bit-or': makeOpTranspiler('|'),
+  'bit-not': makeUnaryOpTranspiler('~'),
+  'bit-xor': makeOpTranspiler('^'),
+  '||': makeOpTranspiler('||'),
+  or: makeOpTranspiler('||'),
+  '&&': makeOpTranspiler('&&'),
+  and: makeOpTranspiler('&&'),
+  not: makeUnaryOpTranspiler('!'),
   '=': transpileBuiltinCmp,
   '==': transpileBuiltinCmp,
+  '!=': transpileBuiltinCmp,
+  'not=': transpileBuiltinCmp,
   '<': transpileBuiltinCmp,
   '>': transpileBuiltinCmp,
   '<=': transpileBuiltinCmp,

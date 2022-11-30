@@ -527,11 +527,50 @@ test('builtin: op **', () => {
 test('builtin: op %', () => {
   assert.equal(tostr('(% 1 2 3)'), '1%2%3;')
 })
+test('builtin: op <<', () => {
+  assert.equal(tostr('(<< 1 2 3)'), '1<<2<<3;')
+})
+test('builtin: op >>', () => {
+  assert.equal(tostr('(>> 1 2 3)'), '1>>2>>3;')
+})
+test('builtin: op bit-and', () => {
+  assert.equal(tostr('(bit-and 1 2 3)'), '1&2&3;')
+})
+test('builtin: op bit-or', () => {
+  assert.equal(tostr('(bit-or 1 2 3)'), '1|2|3;')
+})
+test('builtin: op bit-xor', () => {
+  assert.equal(tostr('(bit-xor 1 2 3)'), '1^2^3;')
+})
+test('builtin: op ||', () => {
+  assert.equal(tostr('(|| 1 2 3)'), '1||2||3;')
+})
+test('builtin: op or', () => {
+  assert.equal(tostr('(or 1 2 3)'), '1||2||3;')
+})
+test('builtin: op &&', () => {
+  assert.equal(tostr('(&& 1 2 3)'), '1&&2&&3;')
+})
+test('builtin: op and', () => {
+  assert.equal(tostr('(and 1 2 3)'), '1&&2&&3;')
+})
+test('builtin: unary bit-not', () => {
+  assert.equal(tostr('(bit-not 1)'), '~1;')
+})
+test('builtin: unary not', () => {
+  assert.equal(tostr('(not 1)'), '!1;')
+})
 test('builtin: cmp =', () => {
   assert.equal(tostr('(= a b)'), 'a===b;')
 })
+test('builtin: cmp not=', () => {
+  assert.equal(tostr('(not= a b)'), 'a!==b;')
+})
 test('builtin: cmp ==', () => {
   assert.equal(tostr('(== a b)'), 'a==b;')
+})
+test('builtin: cmp !=', () => {
+  assert.equal(tostr('(!= a b)'), 'a!=b;')
 })
 test('builtin: cmp <', () => {
   assert.equal(tostr('(< a b)'), 'a<b;')
