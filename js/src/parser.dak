@@ -22,7 +22,7 @@
     (for [end start len]
       (case (. input end)
         "\"" (return [(input.substring start end) (inc end) lines])
-        "\n" (set! lines (inc lines)))))
+        "\n" (set lines (inc lines)))))
   (throw (Error. "unterminated string")))
 
 (fn read-symbol [input len start expected]
@@ -33,7 +33,7 @@
       (let [c (. input end)]
         (if (or (single.includes c) (whitespace.includes c))
           (break)))
-      (set! end (inc end)))
+      (set end (inc end)))
     [(input.substring start end) end]))
 
 (fn read-eol [input len start]
