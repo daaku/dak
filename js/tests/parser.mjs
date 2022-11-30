@@ -268,7 +268,7 @@ test('builtin: let', () => {
         (console.log a)
         b))
     `),
-    `const run=()=>{{let a=0;let b=inc(a);console.log(a);return b;};};`,
+    `const run=()=>{{let a=0;let b=a+1;console.log(a);return b;};};`,
   )
 })
 test('builtin: let without assign', () => {
@@ -281,7 +281,7 @@ test('builtin: let without assign', () => {
         b)
        null)
     `),
-    `const run=()=>{{let a=0;let b=inc(a);console.log(a);b;};return null;};`,
+    `const run=()=>{{let a=0;let b=a+1;console.log(a);b;};return null;};`,
   )
 })
 test('builtin: let as arg', () => {
@@ -292,7 +292,7 @@ test('builtin: let as arg', () => {
                    b (inc a)]
                (+ a b))))
     `),
-    `const run=(a)=>{return a;};let gensym__0;{let a=0;let b=inc(a);gensym__0=a+b;};run(gensym__0);;`,
+    `const run=(a)=>{return a;};let gensym__0;{let a=0;let b=a+1;gensym__0=a+b;};run(gensym__0);;`,
   )
 })
 test('builtin: let with destructuring', () => {
@@ -399,7 +399,7 @@ test('builtin: case return position', () => {
       "baz" :boo
       :otherwise))
     `),
-    `const run=()=>{switch (inc(1)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
+    `const run=()=>{switch (1+1){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
   )
 })
 test('builtin: case assign', () => {
@@ -412,7 +412,7 @@ test('builtin: case assign', () => {
                 :otherwise)]
         v))
     `),
-    `const run=()=>{{let v;switch (inc(1)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
+    `const run=()=>{{let v;switch (1+1){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
   )
 })
 test('builtin: do', () => {
