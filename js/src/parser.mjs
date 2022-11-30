@@ -1009,7 +1009,7 @@ const builtins = {
   if: transpileBuiltinIf,
   '.': transpileBuiltinDot,
   typeof: transpileTypeof,
-  'set!': transpileSet,
+  set: transpileSet,
   hash: transpileBuiltinHash,
   quote: transpileBuiltinQuote,
   macro: transpileSpecialMacro,

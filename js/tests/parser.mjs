@@ -560,8 +560,8 @@ test('lambda with assign', () => {
 test('builtin: typeof', () => {
   assert.equal(tostr('(typeof 1)'), 'typeof 1;')
 })
-test('builtin: set!', () => {
-  assert.equal(tostr('(set! a 1)'), 'a=1;')
+test('builtin: set', () => {
+  assert.equal(tostr('(set a 1)'), 'a=1;')
 })
 test('macro: ->', () => {
   assert.equal(
