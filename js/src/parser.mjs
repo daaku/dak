@@ -689,6 +689,7 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
   yield '{'
   for (let i = 0; i < node[1].length; i += 2) {
     const binding = node[1][i]
+
     // for non destructuring (simple) assignments, use symbol directly.
     // for destructuring, assign to gensym first.
     let sym
@@ -699,14 +700,33 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
       sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
     }
 
+    // generated the statement and check if we can assign directly
+    // assign to simple symbol
+    const assign = [...sym, '=']
+    const one = [
+      ...transpileNodeStatement(ctx, node[1][i + 1], assign, hoist, evStat),
+    ]
+
+    if (one[0] === assign[0]) {
+      // we can directly destructure, forget the gensym
+      if (binding.kind !== 'symbol') {
+        yield 'let '
+        yield* transpileSpecialDestructure(ctx, binding)
+        yield '='
+        yield* one.slice(2)
+      } else {
+        yield 'let '
+        yield* one
+      }
+      yield ';'
+      continue
+    }
+
     // declare the simple symbol
     yield 'let '
     yield* sym
     yield ';'
-
-    // assign to simple symbol
-    const assign = [...sym, '=']
-    yield* transpileNodeStatement(ctx, node[1][i + 1], assign, hoist, evStat)
+    yield* one
     yield ';'
 
     // if destructuring, then we need to assign our generated symbol now

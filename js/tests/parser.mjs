@@ -268,7 +268,7 @@ test('builtin: let', () => {
         (console.log a)
         b))
     `),
-    `const run=()=>{{let a;a=0;let b;b=inc(a);console.log(a);return b;};};`,
+    `const run=()=>{{let a=0;let b=inc(a);console.log(a);return b;};};`,
   )
 })
 test('builtin: let without assign', () => {
@@ -281,7 +281,7 @@ test('builtin: let without assign', () => {
         b)
        null)
     `),
-    `const run=()=>{{let a;a=0;let b;b=inc(a);console.log(a);b;};return null;};`,
+    `const run=()=>{{let a=0;let b=inc(a);console.log(a);b;};return null;};`,
   )
 })
 test('builtin: let as arg', () => {
@@ -292,7 +292,7 @@ test('builtin: let as arg', () => {
                    b (inc a)]
                (+ a b))))
     `),
-    `const run=(a)=>{return a;};let gensym__0;{let a;a=0;let b;b=inc(a);gensym__0=a+b;};run(gensym__0);;`,
+    `const run=(a)=>{return a;};let gensym__0;{let a=0;let b=inc(a);gensym__0=a+b;};run(gensym__0);;`,
   )
 })
 test('builtin: let with destructuring', () => {
@@ -302,7 +302,7 @@ test('builtin: let with destructuring', () => {
       (let [{:keys [a b]} (foo)]
         [a b]))
     `),
-    `const run=()=>{{let gensym__0;gensym__0=foo();let {a,b}=gensym__0;return [a,b,];};};`,
+    `const run=()=>{{let {a,b}=foo();return [a,b,];};};`,
   )
 })
 test('builtin: throw', () => {
