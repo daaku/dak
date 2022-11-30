@@ -625,6 +625,74 @@ test('builtin: typeof', () => {
 test('builtin: set', () => {
   assert.equal(tostr('(set a 1)'), 'a=1;')
 })
+test('builtin: try/catch/finally with return', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (try
+        (prn :hello)
+        42
+        (catch e
+          43)
+        (finally
+          (prn :final))))
+    `),
+    `const run=()=>{try{prn("hello");return 42;}catch(e){return 43;}finally{prn("final");};};`,
+  )
+})
+test('builtin: try/catch/finally without assign', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (try
+        (prn :hello)
+        (catch e
+          (prn :world))
+        (finally
+          (prn :final)))
+       true)
+    `),
+    `const run=()=>{try{prn("hello");}catch(e){prn("world");}finally{prn("final");};return true;};`,
+  )
+})
+test('builtin: try/catch', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (try
+        (prn :hello)
+        (catch e
+          (prn :world)))
+       true)
+    `),
+    `const run=()=>{try{prn("hello");}catch(e){prn("world");};return true;};`,
+  )
+})
+test('builtin: try/finally', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (try
+        (prn :hello)
+        (finally
+          (prn :world)))
+       true)
+    `),
+    `const run=()=>{try{prn("hello");}finally{prn("world");};return true;};`,
+  )
+})
+test('builtin: try/catch with hoist', () => {
+  assert.equal(
+    tostr(`
+    (fn run []
+      (+ 1 (try
+              42
+              (catch e
+                43))))
+    `),
+    `const run=()=>{let gensym__0;try{gensym__0=42;}catch(e){gensym__0=43;};return 1+gensym__0;};`,
+  )
+})
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
@@ -725,6 +793,13 @@ test(
 test(
   'unexpected hash',
   testErr('#"foo"', '<anonymous>:1:2: unexpected hash "string"'),
+)
+test(
+  'try without catch or finally',
+  testErr(
+    '(try :foo)',
+    '<anonymous>:1:1: at least one of catch or finally must be provided',
+  ),
 )
 
 test.run()
