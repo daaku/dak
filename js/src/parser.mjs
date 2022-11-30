@@ -633,35 +633,18 @@ const transpileBuiltinFnArrowAsync = makeFnTranspiler('async', '=>')
 const transpileBuiltinFnGenerator = makeFnTranspiler('function*', '')
 const transpileBuiltinFnAsyncGenerator = makeFnTranspiler('async function*', '')
 
-function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  const sp = splitter(node[0].value)
-  for (let i = 1; i < node.length; i++) {
-    yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+const makeOpTranspiler = (op, unary = false) =>
+  function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign)
+    if (unary && node.length === 2) {
+      yield node[0].value
+    }
+    const sp = splitter(op)
+    for (let i = 1; i < node.length; i++) {
+      yield sp()
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+    }
   }
-}
-
-function* transpileBuiltinOpUnary(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  if (node.length === 2) {
-    yield node[0].value
-  }
-  const sp = splitter(node[0].value)
-  for (let i = 1; i < node.length; i++) {
-    yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-  }
-}
-
-function* transpileBuiltinStr(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  const sp = splitter('+')
-  for (let i = 1; i < node.length; i++) {
-    yield sp()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evStat)
-  }
-}
 
 function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
@@ -979,13 +962,13 @@ const builtins = {
   'fn@': transpileBuiltinFnArrowAsync,
   'fn*': transpileBuiltinFnGenerator,
   'fn@*': transpileBuiltinFnAsyncGenerator,
-  str: transpileBuiltinStr,
-  '+': transpileBuiltinOpUnary,
-  '-': transpileBuiltinOpUnary,
-  '*': transpileBuiltinOp,
-  '/': transpileBuiltinOp,
-  '**': transpileBuiltinOp,
-  '%': transpileBuiltinOp,
+  str: makeOpTranspiler('+'),
+  '+': makeOpTranspiler('+', true),
+  '-': makeOpTranspiler('-', true),
+  '*': makeOpTranspiler('*'),
+  '/': makeOpTranspiler('/'),
+  '**': makeOpTranspiler('**'),
+  '%': makeOpTranspiler('%'),
   '=': transpileBuiltinCmp,
   '==': transpileBuiltinCmp,
   '<': transpileBuiltinCmp,
