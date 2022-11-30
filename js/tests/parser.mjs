@@ -574,11 +574,14 @@ test('builtin: op &&', () => {
 test('builtin: op and', () => {
   assert.equal(tostr('(and 1 2 3)'), '1&&2&&3;')
 })
-test('builtin: unary bit-not', () => {
+test('builtin: prefix bit-not', () => {
   assert.equal(tostr('(bit-not 1)'), '~1;')
 })
-test('builtin: unary not', () => {
+test('builtin: prefix not', () => {
   assert.equal(tostr('(not 1)'), '!1;')
+})
+test('builtin: suffix ++', () => {
+  assert.equal(tostr('(++ a)'), 'a++;')
 })
 test('builtin: cmp =', () => {
   assert.equal(tostr('(= a b)'), 'a===b;')

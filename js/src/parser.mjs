@@ -646,11 +646,18 @@ const makeOpTranspiler = (op, unary = false) =>
     }
   }
 
-const makeUnaryOpTranspiler = op =>
-  function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
+const makePrefixOpTranspiler = op =>
+  function* transpileBuiltinPrefixOp(ctx, node, assign, hoist, _evKind) {
     yield* transpileSpecialAssign(ctx, assign)
     yield op
     yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+  }
+
+const makeSuffixOpTranspiler = op =>
+  function* transpileBuiltinSuffixOp(ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign)
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+    yield op
   }
 
 const cmpRemap = {
@@ -993,17 +1000,34 @@ const builtins = {
   '/': makeOpTranspiler('/'),
   '**': makeOpTranspiler('**'),
   '%': makeOpTranspiler('%'),
+  '+=': makeOpTranspiler('+='),
+  '-=': makeOpTranspiler('-='),
+  '&=': makeOpTranspiler('&='),
+  '|=': makeOpTranspiler('|='),
+  '/=': makeOpTranspiler('/='),
+  '*=': makeOpTranspiler('*='),
+  '**=': makeOpTranspiler('**='),
+  '<<=': makeOpTranspiler('<<='),
+  '>>=': makeOpTranspiler('>>='),
+  '>>>=': makeOpTranspiler('>>>='),
+  '||=': makeOpTranspiler('||='),
+  '??=': makeOpTranspiler('??='),
+  '%=': makeOpTranspiler('%='),
+  '??': makeOpTranspiler('??'),
   '<<': makeOpTranspiler('<<'),
   '>>': makeOpTranspiler('>>'),
+  '>>>': makeOpTranspiler('>>>'),
+  '++': makeSuffixOpTranspiler('++'),
+  '--': makeSuffixOpTranspiler('--'),
   'bit-and': makeOpTranspiler('&'),
   'bit-or': makeOpTranspiler('|'),
-  'bit-not': makeUnaryOpTranspiler('~'),
+  'bit-not': makePrefixOpTranspiler('~'),
   'bit-xor': makeOpTranspiler('^'),
   '||': makeOpTranspiler('||'),
   or: makeOpTranspiler('||'),
   '&&': makeOpTranspiler('&&'),
   and: makeOpTranspiler('&&'),
-  not: makeUnaryOpTranspiler('!'),
+  not: makePrefixOpTranspiler('!'),
   '=': transpileBuiltinCmp,
   '==': transpileBuiltinCmp,
   '!=': transpileBuiltinCmp,
