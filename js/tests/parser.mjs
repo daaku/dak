@@ -425,6 +425,26 @@ test('builtin: do', () => {
     `add(1,1);42;;`,
   )
 })
+test('builtin: while', () => {
+  assert.equal(
+    tostr(`
+    (while (= a 1)
+      (println a)
+      (set a (+ a 1)))
+    `),
+    `while(a===1){println(a);a=a+1;};`,
+  )
+})
+test('builtin: while hoisted', () => {
+  assert.equal(
+    tostr(`
+    (yield (while (= a 1)
+             (println a)
+             (set a (+ a 1))))
+    `),
+    `let gensym__0;while(a===1){println(a);a=a+1;};yield gensym__0;`,
+  )
+})
 test('builtin: if hoisted', () => {
   assert.equal(
     tostr(`

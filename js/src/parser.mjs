@@ -827,6 +827,18 @@ function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
   }
 }
 
+function* transpileBuiltinWhile(ctx, node, _assign, hoist, evKind) {
+  if (evKind === evExpr) {
+    yield* hoist(transpileBuiltinWhile, node)
+    return
+  }
+  yield 'while('
+  yield* transpileNodeExpr(ctx, node[1], null, evExpr)
+  yield '){'
+  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
+  yield '}'
+}
+
 function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr && !assign) {
     yield* hoist(transpileBuiltinCase, node)
@@ -1015,6 +1027,7 @@ const builtins = {
   case: transpileBuiltinCase,
   do: transpileBuiltinDo,
   if: transpileBuiltinIf,
+  while: transpileBuiltinWhile,
   '.': transpileBuiltinDot,
   typeof: transpileTypeof,
   set: transpileSet,
