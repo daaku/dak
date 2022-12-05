@@ -654,19 +654,29 @@ function* transpileSpecialFnArgs(ctx, node) {
 
 const makeFnTranspiler = (preArgs, postArgs) =>
   function* transpileBuiltinFn(ctx, node) {
-    let [, args, ...rest] = node
-    if (args.kind === 'symbol') {
+    let index = 1
+    if (node[index].kind === 'symbol') {
+      if (node[index].value === '^:export') {
+        yield 'export '
+        index++
+      }
       yield 'const '
-      ctx.bindings.add(args.value)
-      yield* transpileNodeSymbol(ctx, args)
+      ctx.bindings.add(node[index].value)
+      yield* transpileNodeSymbol(ctx, node[index])
       yield '='
-      ;[, , args, ...rest] = node
+      index++
     }
     yield preArgs
-    yield* transpileSpecialFnArgs(ctx, args)
+    yield* transpileSpecialFnArgs(ctx, node[index])
     yield postArgs
     yield '{'
-    yield* transpileSpecialBody(ctx, rest, 'return ', null, evStat)
+    yield* transpileSpecialBody(
+      ctx,
+      node.slice(index + 1),
+      'return ',
+      null,
+      evStat,
+    )
     yield '}'
   }
 

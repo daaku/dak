@@ -171,6 +171,14 @@ test('builtin: fn', () => {
     `const err=(expected,offset)=>{return "expected "+expected+" at position "+offset;};`,
   )
 })
+test('builtin: export fn', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:export i [a] a)
+    `),
+    `export const i=(a)=>{return a;};`,
+  )
+})
 test('fn with array destructuring', () => {
   assert.equal(
     tostr(`
