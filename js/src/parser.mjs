@@ -523,25 +523,41 @@ const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
   assign,
   hoist,
 ) {
-  ctx.bindings.add(node[1].value)
+  let symIndex = 1
+  let valIndex = 2
+  if (node[1].value === '^:export') {
+    symIndex++
+    valIndex++
+    yield 'export '
+  }
+  ctx.bindings.add(node[symIndex].value)
   yield node[0].value
   yield ' '
-  yield* transpileNodeSymbol(ctx, node[1])
+  yield* transpileNodeSymbol(ctx, node[symIndex])
   yield '='
-  yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
+  yield* transpileNodeExpr(ctx, node[valIndex], null, hoist, evExpr)
   yield ';'
 })
 
 function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
-  ctx.bindings.add(node[1].value)
+  let symIndex = 1
+  let valIndex = 2
+  if (node[1].value === '^:export') {
+    symIndex++
+    valIndex++
+    yield 'export '
+  }
+  ctx.bindings.add(node[symIndex].value)
   // if we hoisted, then split the let, otherwise assign expression directly
   const [hoist, hoisted] = hoister(ctx)
-  const assign = [...transpileNodeSymbol(ctx, node[1]), '=']
-  const postHoist = [...transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)]
+  const assign = [...transpileNodeSymbol(ctx, node[symIndex]), '=']
+  const postHoist = [
+    ...transpileNodeExpr(ctx, node[valIndex], assign, hoist, evExpr),
+  ]
   yield node[0].value
   yield ' '
   if (hoisted.length !== 0 || postHoist[0] != assign[0]) {
-    yield* transpileNodeSymbol(ctx, node[1])
+    yield* transpileNodeSymbol(ctx, node[symIndex])
     yield ';'
     yield* hoisted
   }

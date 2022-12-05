@@ -118,6 +118,9 @@ test('builtin: import', () => {
 test('builtin: const', () => {
   assert.equal(tostr('(const a 42)'), 'const a=42;;')
 })
+test('builtin: export const', () => {
+  assert.equal(tostr('(const ^:export a 42)'), 'export const a=42;;')
+})
 test('builtin: const with hoist', () => {
   assert.equal(
     tostr(`
@@ -133,6 +136,9 @@ test('builtin: var', () => {
 })
 test('builtin: let', () => {
   assert.equal(tostr('(let a 42)'), 'let a=42;')
+})
+test('builtin: export let', () => {
+  assert.equal(tostr('(let ^:export a 42)'), 'export let a=42;')
 })
 test('builtin: let with direct assign', () => {
   assert.equal(
