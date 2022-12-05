@@ -1,6 +1,6 @@
 import prettier from "https://unpkg.com/prettier@2.7.1/esm/standalone.mjs";
 import parserBabel from "https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs";
-import { transpileStr } from "../js/src/parser.mjs";
+import { transpileStr } from "../packages/transpiler/src/transpiler.mjs";
 
 const autoEval = document.getElementById("autoEval");
 const fmt = document.getElementById("fmt");

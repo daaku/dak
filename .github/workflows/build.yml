@@ -10,8 +10,6 @@ jobs:
         with:
           node-version: 16
           cache: npm
-          cache-dependency-path: js/package.json
+          cache-dependency-path: '**/package.json'
       - run: npm install
-        working-directory: js
-      - run: npm run cover
-        working-directory: js
+      - run: npm run cover --workspaces --if-present

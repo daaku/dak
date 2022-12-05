@@ -1,3 +1,4 @@
-/js/bun.lockb
-/js/coverage
-/js/node_modules
+/bun.lockb
+/node_modules
+/package-lock.json
+/packages/*/coverage

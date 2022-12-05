@@ -1,4 +1,4 @@
-import { transpile, transpileStr } from '../src/parser.mjs'
+import { transpile, transpileStr } from '../src/transpiler.mjs'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
