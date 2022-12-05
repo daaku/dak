@@ -8,13 +8,13 @@
 (fn@ ^:export resolve [specifier context next]
   (if (specifier.endsWith ext)
     {:shortCircuit true
-     :url (. (URL. specifier (?? context.parentURL base-url)))}
+     :url (. (URL. specifier (?? context.parentURL base-url)) :href)}
     (next specifier)))
 
 (fn@ ^:export load [url context next]
   (if (url.endsWith ext)
     {:shortCircuit true
      :format :module
-     :source (transpile (.toString (. @(next url context) :source))
-                        {:filepath url})}
+     :source (transpileStr (.toString (. @(next url context) :source))
+                           {:filepath url})}
     (next url)))
