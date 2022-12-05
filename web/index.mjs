@@ -71,7 +71,7 @@ const refresh = async () => {
     // if we get here we're doing raw mode
     jsCode.value = js;
   } catch (e) {
-    logErr("compile", e);
+    logErr("transpile", e);
   }
 };
 
