@@ -1,6 +1,6 @@
 import prettier from "https://unpkg.com/prettier@2.7.1/esm/standalone.mjs";
 import parserBabel from "https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs";
-import { transpile } from "../js/src/parser.mjs";
+import { transpileStr } from "../js/src/parser.mjs";
 
 const autoEval = document.getElementById("autoEval");
 const fmt = document.getElementById("fmt");
@@ -34,7 +34,7 @@ const refresh = async () => {
   output.replaceChildren();
 
   try {
-    const js = "".concat(...transpile(dakCode.value, { filename: "main.dak" }));
+    const js = transpileStr(dakCode.value, { filename: "main.dak" });
 
     if (autoEval.checked) {
       (async () => {

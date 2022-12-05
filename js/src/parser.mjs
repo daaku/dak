@@ -1221,3 +1221,6 @@ export function* transpile(code, config) {
     yield ';'
   }
 }
+
+export const transpileStr = (code, config) =>
+  ''.concat(...transpile(code, config))
