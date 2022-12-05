@@ -1,4 +1,4 @@
-import { tokens, transpile } from '../src/parser.mjs'
+import { transpile } from '../src/parser.mjs'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -9,7 +9,6 @@ const tostr = (code, log) => {
       pieces.push(p)
     }
   } catch (e) {
-    //console.log([...tokens({}, code)])
     if (log) {
       console.error(pieces.join(''))
     }

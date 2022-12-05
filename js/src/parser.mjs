@@ -179,7 +179,7 @@ const readEOL = (ctx, input, len, pos) => {
   return input.substring(start, end)
 }
 
-export function* tokens(ctx, input) {
+function* tokens(ctx, input) {
   let pos = { offset: 0, line: 0, column: 0 }
   let len = input.length
   let value, start
