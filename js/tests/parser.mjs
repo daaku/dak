@@ -1,4 +1,4 @@
-import { transpile } from '../src/parser.mjs'
+import { transpile, transpileStr } from '../src/parser.mjs'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -17,6 +17,9 @@ const tostr = (code, log) => {
   return pieces.join('')
 }
 
+test('transpileStr', () => {
+  assert.equal(transpileStr(':hello'), '"hello";')
+})
 test('string escape', () => {
   assert.equal(tostr('"\\t"'), '"\\t";')
 })
