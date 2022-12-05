@@ -6,6 +6,7 @@
   "homepage": "https://daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
   "exports": {
     ".": {
       "import": "./src/transpiler.mjs"
@@ -20,7 +21,6 @@
     "url": "https://github.com/daaku/dak/issues",
     "email": "bugs@daklang.com"
   },
-  "type": "module",
   "scripts": {
     "test": "uvu",
     "cover": "c8 -r html -r text uvu"

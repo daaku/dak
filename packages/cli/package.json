@@ -6,6 +6,7 @@
   "homepage": "https://daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/daaku/dak",
@@ -15,7 +16,6 @@
     "url": "https://github.com/daaku/dak/issues",
     "email": "bugs@daklang.com"
   },
-  "type": "module",
   "prettier": {
     "arrowParens": "avoid",
     "semi": false,
