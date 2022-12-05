@@ -1,0 +1,20 @@
+(import ["node:process" [cwd]]
+        ["node:url" [pathToFileURL]]
+        ["@daklang/transpiler" [transpile-str]])
+
+(const base-url (. (pathToFileURL (str (cwd) "/")) :href))
+(const ext ".dak")
+
+(fn@ ^:export resolve [specifier context next]
+  (if (specifier.endsWith ext)
+    {:shortCircuit true
+     :url (. (URL. specifier (?? context.parentURL base-url)))}
+    (next specifier)))
+
+(fn@ ^:export load [url context next]
+  (if (url.endsWith ext)
+    {:shortCircuit true
+     :format :module
+     :source (transpile (.toString (. @(next url context) :source))
+                        {:filepath url})}
+    (next url)))
