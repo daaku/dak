@@ -1,38 +1,31 @@
 {
-  "name": "@daklang/transpiler",
+  "name": "@daklang/cli",
   "version": "0.1.0",
-  "description": "Transpiler package for Dak",
+  "description": "CLI for Dak",
   "keywords": ["lisp", "clojure", "fennel"],
   "homepage": "https://daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
-  "exports": {
-    ".": {
-      "import": "./src/transpiler.mjs"
-    }
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/daaku/dak",
-    "directory": "packages/transpiler"
+    "directory": "packages/cli"
   },
   "bugs": {
     "url": "https://github.com/daaku/dak/issues",
     "email": "bugs@daklang.com"
   },
   "type": "module",
-  "scripts": {
-    "test": "uvu",
-    "cover": "c8 -r html -r text uvu"
-  },
   "prettier": {
     "arrowParens": "avoid",
     "semi": false,
     "singleQuote": true,
     "trailingComma": "all"
   },
-  "devDependencies": {
-    "c8": "^7.12.0",
-    "uvu": "^0.5.6"
+  "dependencies": {
+    "@daklang/transpiler": "^0.1.0"
+  },
+  "bin": {
+    "dak": "./cli.mjs"
   }
 }

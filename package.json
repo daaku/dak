@@ -1,6 +1,7 @@
 {
   "name": "@daklang",
   "workspaces": [
-    "packages/transpiler"
+    "packages/transpiler",
+    "packages/cli"
   ]
 }
