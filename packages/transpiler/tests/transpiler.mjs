@@ -536,6 +536,9 @@ test('builtin: await', () => {
 test('builtin: await method call', () => {
   assert.equal(tostr(`@(make :promise)`), `await make("promise");`)
 })
+test('builtin: await expr', () => {
+  assert.equal(tostr(`(a @(make :promise))`), `a((await make("promise")));`)
+})
 test('builtin: op str', () => {
   assert.equal(tostr('(str :a :b :c)'), '"a"+"b"+"c";')
 })

@@ -813,12 +813,18 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
   ctx.bindings.pop()
 }
 
-function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist, _evKind) {
+function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
+  if (evKind === evExpr) {
+    yield '('
+  }
   yield node[0].value
   if (node.length !== 1) {
     yield ' '
     yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+  }
+  if (evKind === evExpr) {
+    yield ')'
   }
 }
 
