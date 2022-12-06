@@ -89,6 +89,9 @@ test('value call', () => {
     `const run=(a)=>{return Array["isArray"](a);};`,
   )
 })
+test('anonymous fn call', () => {
+  assert.equal(tostr('((fn [a] a) 1)'), `((a)=>{return a;})(1);`)
+})
 test('call nested hoisted', () => {
   assert.equal(
     tostr('(do (String. (Number. (if true 42 43))))'),
@@ -245,7 +248,7 @@ test('builtin: anonymous fn', () => {
     (fn [v]
       (v 42))
     `),
-    `(v)=>{return v(42);};`,
+    `((v)=>{return v(42);});`,
   )
 })
 test('builtin: anonymous fn@', () => {
@@ -254,7 +257,7 @@ test('builtin: anonymous fn@', () => {
     (fn@ [v]
       @(v 42))
     `),
-    `async(v)=>{return await v(42);};`,
+    `(async(v)=>{return await v(42);});`,
   )
 })
 test('builtin: anonymous fn*', () => {
@@ -263,7 +266,7 @@ test('builtin: anonymous fn*', () => {
     (fn* [v]
       (yield v))
     `),
-    `function*(v){return yield v;};`,
+    `(function*(v){return yield v;});`,
   )
 })
 test('builtin: anonymous fn@*', () => {
@@ -272,7 +275,7 @@ test('builtin: anonymous fn@*', () => {
     (fn@* [v]
       (yield v))
     `),
-    `async function*(v){return yield v;};`,
+    `(async function*(v){return yield v;});`,
   )
 })
 test('builtin: let', () => {

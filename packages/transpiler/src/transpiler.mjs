@@ -681,6 +681,8 @@ const makeFnTranspiler = (preArgs, postArgs) =>
       yield* transpileNodeSymbol(ctx, node[index])
       yield '='
       index++
+    } else {
+      yield '('
     }
     yield preArgs
     yield* transpileSpecialFnArgs(ctx, node[index])
@@ -694,6 +696,9 @@ const makeFnTranspiler = (preArgs, postArgs) =>
       evStat,
     )
     yield '}'
+    if (index === 1) {
+      yield ')'
+    }
   }
 
 const transpileBuiltinFnArrow = makeFnTranspiler('', '=>')
