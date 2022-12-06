@@ -20,12 +20,6 @@
     "clojure",
     "fennel"
   ],
-  "prettier": {
-    "arrowParens": "avoid",
-    "semi": false,
-    "singleQuote": true,
-    "trailingComma": "all"
-  },
   "dependencies": {
     "@daklang/transpiler": "^0.1.0"
   },
