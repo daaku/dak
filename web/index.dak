@@ -1,0 +1,54 @@
+(import ["https://unpkg.com/prettier@2.7.1/esm/standalone.mjs" prettier]
+        ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parser-babel]
+        ["../packages/transpiler/src/transpiler.mjs" [transpile-str]])
+
+(const auto-eval? (document.getElementById :auto-eval))
+(const fmt (document.getElementById :fmt))
+(const dak-code (document.getElementById :dak-code))
+(const js-code (document.getElementById :js-code))
+(const output (document.getElementById :output))
+
+(fn primitive? [v] (= v (Object v)))
+
+(set globalThis.prn
+  (fn [...rest]
+    (console.log ...rest)
+    (for-of [thing rest]
+      (let [child (document.createElement :pre)]
+        (set child.innerText
+          (if (primitive? thing)
+            (String thing)
+            (JSON.stringify thing)))
+        (output.appendChild child)))))
+
+(fn log-err [prefix err]
+  (console.error err)
+  (let [child (document.createElement :pre)]
+    (set child.innerText (str prefix ": " (?? err.message err)))
+    (output.appendChild child)))
+
+(fn@ refresh []
+  (output.replaceChildren)
+  (try
+    (let [js (transpile-str dak-code.value {:filename "main.dak"})]
+      (when auto-eval?.checked
+        ((fn@ []
+          (try
+            @(.constructor (Object.getPrototypeOf (fn@ [])) js)
+            (catch e
+              (log-err :eval e))))))
+      (set js-code.value
+        (try
+          (case fmt.value
+            :pretty (prettier.format js {:parser :babel :plugins [parser-babel]})
+            :minify (. @(Terser.minify js) :code)
+            js)
+          (catch e
+            (log-err fmt.value e)
+            js))))
+    (catch e
+      (log-err fmt.value e))))
+
+(set auto-eval?.onchange refresh)
+(set dak-code.oninput refresh)
+(set fmt.onchange refresh)
