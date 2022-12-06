@@ -2,7 +2,6 @@
   "name": "@daklang/transpiler",
   "version": "0.1.0",
   "description": "Transpiler package for Dak",
-  "keywords": ["lisp", "clojure", "fennel"],
   "homepage": "https://daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
@@ -21,6 +20,11 @@
     "url": "https://github.com/daaku/dak/issues",
     "email": "bugs@daklang.com"
   },
+  "keywords": [
+    "lisp",
+    "clojure",
+    "fennel"
+  ],
   "scripts": {
     "test": "uvu",
     "cover": "c8 -r html -r text uvu"
