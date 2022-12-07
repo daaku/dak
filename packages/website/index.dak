@@ -34,7 +34,7 @@
       (when auto-eval?.checked
         ((fn@ []
           (try
-            @(.constructor (Object.getPrototypeOf (fn@ [])) js)
+            @((.constructor (Object.getPrototypeOf (fn@ [])) js))
             (catch e
               (log-err :eval e))))))
       (set js-code.value
