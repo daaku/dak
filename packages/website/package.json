@@ -1,8 +1,20 @@
 {
-  "name": "website",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@daklang/website",
+  "version": "0.1.0",
+  "description": "Website package for Dak",
+  "homepage": "https://daklang.com/",
+  "license": "MIT",
+  "author": "Naitik Shah <n@daaku.org>",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daaku/dak",
+    "directory": "packages/website"
+  },
+  "bugs": {
+    "url": "https://github.com/daaku/dak/issues",
+    "email": "bugs@daklang.com"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
