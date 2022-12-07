@@ -2,6 +2,7 @@
   "name": "@daklang",
   "workspaces": [
     "packages/transpiler",
-    "packages/cli"
+    "packages/cli",
+    "packages/loader"
   ]
 }

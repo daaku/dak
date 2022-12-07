@@ -1,0 +1,36 @@
+{
+  "name": "@daklang/loader",
+  "version": "0.1.0",
+  "description": "ESM Loader for Dak",
+  "homepage": "https://daklang.com/",
+  "license": "MIT",
+  "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/loader.mjs"
+    }
+  },
+  "scripts": {
+    "prepare": "mkdir dist && dak < loader.dak > dist/loader.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daaku/dak",
+    "directory": "packages/loader"
+  },
+  "bugs": {
+    "url": "https://github.com/daaku/dak/issues",
+    "email": "bugs@daklang.com"
+  },
+  "keywords": [
+    "lisp",
+    "clojure",
+    "fennel",
+    "esm",
+    "loader"
+  ],
+  "dependencies": {
+    "@daklang/transpiler": "^0.1.0"
+  }
+}
