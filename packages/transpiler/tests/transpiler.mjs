@@ -132,6 +132,12 @@ test('builtin: const', () => {
 test('builtin: export const', () => {
   assert.equal(tostr('(const ^:export a 42)'), 'export const a=42;;')
 })
+test('builtin: export default const', () => {
+  assert.equal(
+    tostr('(const ^:export ^:default a 42)'),
+    'export default const a=42;;',
+  )
+})
 test('builtin: const with hoist', () => {
   assert.equal(
     tostr(`
@@ -150,6 +156,12 @@ test('builtin: let', () => {
 })
 test('builtin: export let', () => {
   assert.equal(tostr('(let ^:export a 42)'), 'export let a=42;')
+})
+test('builtin: export default let', () => {
+  assert.equal(
+    tostr('(let ^:export ^:default a 42)'),
+    'export default let a=42;',
+  )
 })
 test('builtin: let with direct assign', () => {
   assert.equal(
@@ -194,6 +206,22 @@ test('builtin: export fn', () => {
     (fn ^:export i [a] a)
     `),
     `export const i=(a)=>{return a;};`,
+  )
+})
+test('builtin: export default fn', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:export ^:default i [a] a)
+    `),
+    `export default const i=(a)=>{return a;};`,
+  )
+})
+test('builtin: export default anonymous fn', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:export ^:default [a] a)
+    `),
+    `export default ((a)=>{return a;});`,
   )
 })
 test('fn with array destructuring', () => {

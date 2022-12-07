@@ -522,42 +522,45 @@ function* transpileBuiltinImport(ctx, node) {
   }
 }
 
+function exportDefault(ctx, node) {
+  if (node[1].value !== '^:export') {
+    return [[], 1]
+  }
+  const prefix = ['export ']
+  let index = 2
+  if (node[2].value === '^:default') {
+    prefix.push('default ')
+    index++
+  }
+  return [prefix, index]
+}
+
 const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
   ctx,
   node,
   assign,
   hoist,
 ) {
-  let symIndex = 1
-  let valIndex = 2
-  if (node[1].value === '^:export') {
-    symIndex++
-    valIndex++
-    yield 'export '
-  }
+  let [prefix, symIndex] = exportDefault(ctx, node)
+  yield* prefix
   ctx.bindings.add(node[symIndex].value)
   yield node[0].value
   yield ' '
   yield* transpileNodeSymbol(ctx, node[symIndex])
   yield '='
-  yield* transpileNodeExpr(ctx, node[valIndex], null, hoist, evExpr)
+  yield* transpileNodeExpr(ctx, node[symIndex + 1], null, hoist, evExpr)
   yield ';'
 })
 
 function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
-  let symIndex = 1
-  let valIndex = 2
-  if (node[1].value === '^:export') {
-    symIndex++
-    valIndex++
-    yield 'export '
-  }
+  let [prefix, symIndex] = exportDefault(ctx, node)
+  yield* prefix
   ctx.bindings.add(node[symIndex].value)
   // if we hoisted, then split the let, otherwise assign expression directly
   const [hoist, hoisted] = hoister(ctx)
   const assign = [...transpileNodeSymbol(ctx, node[symIndex]), '=']
   const postHoist = [
-    ...transpileNodeExpr(ctx, node[valIndex], assign, hoist, evExpr),
+    ...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr),
   ]
   yield node[0].value
   yield ' '
@@ -675,18 +678,17 @@ function* transpileSpecialFnArgs(ctx, node) {
 
 const makeFnTranspiler = (preArgs, postArgs) =>
   function* transpileBuiltinFn(ctx, node) {
-    let index = 1
+    let [prefix, index] = exportDefault(ctx, node)
+    yield* prefix
+    let wrapped = false
     if (node[index].kind === 'symbol') {
-      if (node[index].value === '^:export') {
-        yield 'export '
-        index++
-      }
       yield 'const '
       ctx.bindings.add(node[index].value)
       yield* transpileNodeSymbol(ctx, node[index])
       yield '='
       index++
     } else {
+      wrapped = true
       yield '('
     }
     yield preArgs
@@ -701,7 +703,7 @@ const makeFnTranspiler = (preArgs, postArgs) =>
       evStat,
     )
     yield '}'
-    if (index === 1) {
+    if (wrapped) {
       yield ')'
     }
   }
