@@ -17,6 +17,14 @@ const tostr = (code, log) => {
   return pieces.join('')
 }
 
+test('shebang is dropped', () => {
+  assert.equal(
+    tostr(`#!foo
+    :bar
+    `),
+    `"bar";`,
+  )
+})
 test('transpileStr', () => {
   assert.equal(transpileStr(':hello'), '"hello";')
 })

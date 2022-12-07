@@ -196,6 +196,11 @@ function* tokens(ctx, input) {
       pos.column++
       continue
     }
+    // shebang is dropped
+    if (pos.offset === 0 && c === '#' && input[1] === '!') {
+      readEOL(ctx, input, len, pos)
+      continue
+    }
     if (single.includes(c)) {
       ctx.pos = { ...pos }
       yield { kind: c, pos: { ...pos } }
