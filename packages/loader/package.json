@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "prepare": "mkdir dist && dak < loader.dak > dist/loader.mjs"
+    "prepare": "mkdir -p dist && node ../cli/main.mjs < loader.dak > dist/loader.mjs"
   },
   "repository": {
     "type": "git",
