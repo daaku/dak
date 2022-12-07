@@ -1,0 +1,29 @@
+{
+  "name": "@daklang/rollup",
+  "version": "0.1.0",
+  "description": "ESM Loader for Dak",
+  "homepage": "https://daklang.com/",
+  "license": "MIT",
+  "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/rollup.mjs"
+    }
+  },
+  "scripts": {
+    "prepare": "mkdir -p dist && node ../cli/main.mjs < rollup.dak > dist/rollup.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daaku/dak",
+    "directory": "packages/rollup"
+  },
+  "bugs": {
+    "url": "https://github.com/daaku/dak/issues",
+    "email": "bugs@daklang.com"
+  },
+  "dependencies": {
+    "@daklang/transpiler": "^0.1.0"
+  }
+}

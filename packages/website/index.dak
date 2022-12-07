@@ -1,6 +1,6 @@
 (import ["https://unpkg.com/prettier@2.7.1/esm/standalone.mjs" prettier]
         ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parser-babel]
-        ["../packages/transpiler/src/transpiler.mjs" [transpile-str]])
+        ["@daklang/transpiler" [transpile-str]])
 
 (const auto-eval? (document.getElementById :auto-eval))
 (const fmt (document.getElementById :fmt))

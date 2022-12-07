@@ -1,0 +1,12 @@
+(import ["@daklang/transpiler" [transpile-str]])
+
+(const ext ".dak")
+
+     (console.log :in-plugin)
+(fn ^:export dakPlugin []
+  {:name :dak-lang
+   :transform
+   (fn [src id]
+     (console.log :in-transform)
+     (when (id.endsWith ext)
+       {:code (transpile-str src {:filename id})}))})

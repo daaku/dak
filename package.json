@@ -3,6 +3,8 @@
   "workspaces": [
     "packages/transpiler",
     "packages/cli",
-    "packages/loader"
+    "packages/loader",
+    "packages/rollup",
+    "packages/website"
   ]
 }
