@@ -16,6 +16,7 @@
   (if (url.endsWith ext)
     {:shortCircuit true
      :format :module
-     :source (transpileStr (.toString @(-> url fileURLToPath read-file))
-                           {:filepath url})}
+     :source (. (transpile-str (-> url fileURLToPath read-file await .toString)
+                               {:filepath url})
+                :code)}
     (next url)))

@@ -30,7 +30,7 @@
 (fn@ refresh []
   (output.replaceChildren)
   (try
-    (let [js (transpile-str dak-code.value {:filename "main.dak"})]
+    (let [js (. (transpile-str dak-code.value {:filename "main.dak"}) :code)]
       (when auto-eval?.checked
         ((fn@ []
           (try

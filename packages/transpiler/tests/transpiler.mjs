@@ -6,7 +6,7 @@ const tostr = (code, log) => {
   const pieces = []
   try {
     for (const p of transpile(code)) {
-      pieces.push(p)
+      pieces.push(typeof p === 'string' ? p : p[0])
     }
   } catch (e) {
     if (log) {
@@ -26,7 +26,7 @@ test('shebang is dropped', () => {
   )
 })
 test('transpileStr', () => {
-  assert.equal(transpileStr(':hello'), '"hello";')
+  assert.equal(transpileStr(':hello').code, '"hello";')
 })
 test('string escape', () => {
   assert.equal(tostr('"\\t"'), '"\\t";')

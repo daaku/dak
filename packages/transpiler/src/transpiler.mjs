@@ -1,3 +1,5 @@
+import { SourceMapGenerator } from 'source-map-js/lib/source-map-generator.js'
+
 const symbolBreaker = ['(', ')', '[', ']', '{', '}']
 const single = [...symbolBreaker, '@', '#', ':', "'", '~', '`', ',']
 const whitespace = [' ', '\r', '\n', '\t']
@@ -72,6 +74,14 @@ const err = (ctx, { pos = {} }, msg) => {
   )
   e.pos = pos
   return e
+}
+
+const partsStr = gen => {
+  const parts = []
+  for (const part of gen) {
+    parts.push(typeof part === 'string' ? part : part[0])
+  }
+  return parts.join('')
 }
 
 const bindings = initial => {
@@ -151,12 +161,12 @@ const readSymbol = (ctx, input, len, pos) => {
   let end
   for (end = start; end < len; end++) {
     const c = input[end]
+    if (symbolBreaker.includes(c) || whitespace.includes(c)) {
+      break
+    }
     if (c === '\n') {
       pos.line++
       pos.column = 0
-    }
-    if (symbolBreaker.includes(c) || whitespace.includes(c)) {
-      break
     }
     pos.offset++
     pos.column++
@@ -383,7 +393,7 @@ const splitter = s => {
 }
 
 function* transpileNodeObject(ctx, node, hoist) {
-  yield '{'
+  yield ['{', node]
   for (let i = 0; i < node.length; i += 2) {
     yield '['
     yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
@@ -395,7 +405,7 @@ function* transpileNodeObject(ctx, node, hoist) {
 }
 
 function* transpileNodeArray(ctx, node, hoist) {
-  yield '['
+  yield ['[', node]
   for (const i of node) {
     yield* transpileNodeExpr(ctx, i, null, hoist, evExpr)
     yield ','
@@ -404,7 +414,7 @@ function* transpileNodeArray(ctx, node, hoist) {
 }
 
 function* transpileNodeString(ctx, token) {
-  yield '"'
+  yield ['"', token]
   yield token.value
   yield '"'
 }
@@ -421,12 +431,16 @@ const mangleSym = sym =>
     .replaceAll(/-(.)/g, (_match, c) => c.toUpperCase())
 
 function* transpileNodeSymbol(ctx, token) {
-  yield mangleSym(token.value)
+  yield [mangleSym(token.value), token]
 }
 
 function* transpileSpecialAssign(ctx, assign) {
   if (assign) {
-    yield* assign
+    if (typeof assign === 'string') {
+      yield assign
+    } else {
+      yield* assign
+    }
   }
 }
 
@@ -499,7 +513,7 @@ function* transpileBuiltinImportOne(ctx, node) {
         break
     }
   }
-  yield 'import '
+  yield ['import ', node]
   yield* outer.join(',')
   if (inner.length !== 0) {
     if (outer.length !== 0) {
@@ -544,7 +558,7 @@ const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
   let [prefix, symIndex] = exportDefault(ctx, node)
   yield* prefix
   ctx.bindings.add(node[symIndex].value)
-  yield node[0].value
+  yield [node[0].value, node[0]]
   yield ' '
   yield* transpileNodeSymbol(ctx, node[symIndex])
   yield '='
@@ -562,7 +576,7 @@ function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
   const postHoist = [
     ...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr),
   ]
-  yield node[0].value
+  yield [node[0].value, node[0]]
   yield ' '
   if (hoisted.length !== 0 || postHoist[0] != assign[0]) {
     yield* transpileNodeSymbol(ctx, node[symIndex])
@@ -1094,15 +1108,13 @@ function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
 }
 
 function* transpileSpecialMacro(ctx, node) {
-  const args = node[2].map(v =>
-    [...transpileSpecialDestructure(ctx, v)].join(''),
-  )
+  const args = node[2].map(v => partsStr(transpileSpecialDestructure(ctx, v)))
   ctx.macros.add(
     node[1].value,
     new Function(
       '_macroName',
       ...args,
-      [...transpileSpecialBody(ctx, node.slice(3), 'return ')].join(''),
+      partsStr(transpileSpecialBody(ctx, node.slice(3), 'return ')),
     ),
   )
 }
@@ -1202,14 +1214,14 @@ function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
   if (node[0].kind === 'symbol') {
     const call = node[0].value
     if (call.endsWith('.')) {
-      yield 'new '
-      yield mangleSym(call.slice(0, -1)) // drop the tailing .
+      yield ['new ', node[0]]
+      yield [mangleSym(call.slice(0, -1)), node[0]] // drop the tailing .
     } else if (call.startsWith('.')) {
       yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-      yield mangleSym(call)
+      yield [mangleSym(call), node[0]]
       argStart = 2
     } else {
-      yield mangleSym(call)
+      yield [mangleSym(call), node[0]]
     }
   } else {
     yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr)
@@ -1253,7 +1265,7 @@ function* transpileSet(ctx, node, assign, hoist, _evKind) {
   yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
 }
 
-export function* transpile(code, config) {
+export function* transpile(code, config = {}) {
   const ctx = newCtx(config, macros)
   const input = uninterrupt(tokens(ctx, code))
   while (true) {
@@ -1266,5 +1278,42 @@ export function* transpile(code, config) {
   }
 }
 
-export const transpileStr = (code, config) =>
-  ''.concat(...transpile(code, config))
+export const transpileStr = (code, config = {}) => {
+  const source = config.filename ?? '<anonymous>'
+  const parts = []
+  const map = new SourceMapGenerator()
+  let column = 0
+  for (const out of transpile(code, config)) {
+    let part, partToken
+    if (typeof out === 'string') {
+      part = out
+    } else {
+      ;[part, partToken] = out
+    }
+    if (typeof partToken?.pos?.line === 'number') {
+      const mapping = {
+        source,
+        original: {
+          line: partToken.pos.line + 1,
+          column: partToken.pos.column,
+        },
+        generated: {
+          line: 1,
+          column,
+        },
+        name:
+          partToken.kind === 'symbol' && !partToken.value.includes('.')
+            ? mangleSym(partToken.value)
+            : null,
+      }
+      map.addMapping(mapping)
+    }
+    column += part.length
+    parts.push(part)
+  }
+  map.setSourceContent(source, code)
+  return {
+    code: parts.join(''),
+    map: map.toJSON(),
+  }
+}

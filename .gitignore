@@ -2,3 +2,4 @@
 /package-lock.json
 /packages/*/coverage
 /packages/*/dist
+/packages/website/node_modules
