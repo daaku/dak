@@ -321,6 +321,7 @@ const astOne = (ctx, input) => {
         throw err(ctx, value, 'invalid keyword')
       }
       sym.kind = 'string'
+      sym.pos = value.pos
       return sym
   }
   /* c8 ignore next */
@@ -500,7 +501,7 @@ function* transpileBuiltinImportOne(ctx, node) {
       case 'string':
         // :as
         if (c.value !== 'as') {
-          throw err(ctx, c, 'unexpected import')
+          throw err(ctx, c, `unexpected import string "${c.value}"`)
         }
         const next = node[++i]
         outer.push('* as ' + mangleSym(next.value))
@@ -540,10 +541,10 @@ function exportDefault(ctx, node) {
   if (node[1].value !== '^:export') {
     return [[], 1]
   }
-  const prefix = ['export ']
+  const prefix = [['export ', node[1]]]
   let index = 2
   if (node[2].value === '^:default') {
-    prefix.push('default ')
+    prefix.push(['default ', node[2]])
     index++
   }
   return [prefix, index]
@@ -615,7 +616,7 @@ function* transpileSpecialDestructure(ctx, node) {
       yield* transpileNodeSymbol(ctx, node)
       break
     case 'array':
-      yield '['
+      yield ['[', node]
       for (const inner of node) {
         yield* transpileSpecialDestructure(ctx, inner)
         yield ','
@@ -894,14 +895,14 @@ function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
 const makeForTranspiler = (prefix, middle) =>
   function* transpileBuiltinForSpecial(ctx, node, _assign, hoist, evKind) {
     const binding = node[1]
-    yield prefix
+    yield [prefix, node[0]]
     yield '(let '
     yield* transpileNodeSymbol(ctx, binding[0])
-    yield ' '
+    yield [' ', node[0]]
     yield middle
     yield ' '
     yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr)
-    yield '){'
+    yield ['){', node[0]]
     yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
     yield '}'
   }
@@ -1221,7 +1222,7 @@ function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
       yield [mangleSym(call), node[0]]
       argStart = 2
     } else {
-      yield [mangleSym(call), node[0]]
+      yield [mangleSym(call), node]
     }
   } else {
     yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr)

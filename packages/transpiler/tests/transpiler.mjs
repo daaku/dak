@@ -822,14 +822,14 @@ test(
   'destructure unexpected',
   testErr(
     '(let [:foo :bar] :bar)',
-    '<anonymous>:1:8: unexpected destructure "string"',
+    '<anonymous>:1:7: unexpected destructure "string"',
   ),
 )
 test(
   'destructure unexpected op',
   testErr(
     '(let [{:foo [bar]} :bar] :bar)',
-    '<anonymous>:1:9: unexpected destructuring map op "foo"',
+    '<anonymous>:1:8: unexpected destructuring map op "foo"',
   ),
 )
 test(
@@ -841,12 +841,15 @@ test(
 )
 test('invalid keyword', testErr('::a', '<anonymous>:1:1: invalid keyword'))
 test(
-  'unexpected import',
+  'unexpected import with method call',
   testErr('(import [:a (a)])', '<anonymous>:1:13: unexpected import'),
 )
 test(
-  'unexpected import',
-  testErr('(import [:a :foo])', '<anonymous>:1:14: unexpected import'),
+  'unexpected import with keyword',
+  testErr(
+    '(import [:a :foo])',
+    '<anonymous>:1:13: unexpected import string "foo"',
+  ),
 )
 test(
   'unexpected hash',
