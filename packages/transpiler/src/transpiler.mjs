@@ -697,7 +697,7 @@ const makeFnTranspiler = (preArgs, postArgs) =>
     yield* prefix
     let wrapped = false
     if (node[index].kind === 'symbol') {
-      yield 'const '
+      yield ['const ', node]
       ctx.bindings.add(node[index].value)
       yield* transpileNodeSymbol(ctx, node[index])
       yield '='
@@ -764,7 +764,7 @@ function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   const op = node[0].value
-  yield cmpRemap[op] ?? op
+  yield [cmpRemap[op] ?? op, node[0]]
   yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
 }
 
@@ -807,12 +807,12 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
     if (one[0] === assign[0]) {
       // we can directly destructure, forget the gensym
       if (binding.kind !== 'symbol') {
-        yield 'let '
+        yield ['let ', node]
         yield* transpileSpecialDestructure(ctx, binding)
         yield '='
         yield* one.slice(2)
       } else {
-        yield 'let '
+        yield ['let ', node]
         yield* one
       }
       yield ';'
