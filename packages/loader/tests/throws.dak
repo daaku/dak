@@ -1,0 +1,10 @@
+(fn three []
+  (throw (Error "from three")))
+
+(fn two []
+  (three))
+
+(fn@ one []
+  (two))
+
+@(one)

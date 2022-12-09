@@ -1313,8 +1313,16 @@ export const transpileStr = (code, config = {}) => {
     parts.push(part)
   }
   map.setSourceContent(source, code)
+  const mapJSON = map.toJSON()
+  if (config.sourcemap === 'inline') {
+    parts.push(
+      '\n',
+      '//# sourceMappingURL=data:application/json;base64,',
+      Buffer.from(JSON.stringify(mapJSON), 'utf8').toString('base64'),
+    )
+  }
   return {
     code: parts.join(''),
-    map: map.toJSON(),
+    map: mapJSON,
   }
 }
