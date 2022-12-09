@@ -24,6 +24,6 @@
     "@daklang/transpiler": "^0.1.0"
   },
   "devDependencies": {
-    "vite": "^3.2.3"
+    "vite": "^4.0.0"
   }
 }
