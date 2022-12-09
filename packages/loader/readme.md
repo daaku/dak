@@ -7,5 +7,5 @@ having to first transpile them.
 
 ```sh
 echo '(console.log :hello)' > hello.dak
-node --loader @daklang/loader hello.dak
+node --no-warnings --enable-source-maps --loader @daklang/loader hello.dak
 ```
