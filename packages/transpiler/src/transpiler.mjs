@@ -514,7 +514,7 @@ function* transpileBuiltinImportOne(ctx, node) {
     }
   }
   yield ['import ', node]
-  yield* outer.join(',')
+  yield outer.join(',')
   if (inner.length !== 0) {
     if (outer.length !== 0) {
       yield ','
