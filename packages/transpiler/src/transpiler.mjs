@@ -1046,6 +1046,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   }
 
   yield* transpileSpecialAssign(ctx, assign)
+  let restArg
   const args = []
   const argMap = n => {
     if (Array.isArray(n)) {
@@ -1053,6 +1054,13 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
       return
     }
     if (n.kind !== 'symbol') {
+      return
+    }
+    if (n.value.startsWith('...$')) {
+      if (!restArg) {
+        restArg = ctx.gensym('lambda_rest')
+      }
+      n.value = `${restArg.value}${n.value.slice(4)}`
       return
     }
     if (!n.value.startsWith('$')) {
@@ -1080,6 +1088,11 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   for (const arg of args) {
     yield comma()
     yield* transpileNodeSymbol(ctx, arg)
+  }
+  if (restArg) {
+    yield comma()
+    yield '...'
+    yield* transpileNodeSymbol(ctx, restArg)
   }
   yield ')=>{'
   yield* transpileNodeStatement(ctx, node[1], 'return ', hoist, evStat)

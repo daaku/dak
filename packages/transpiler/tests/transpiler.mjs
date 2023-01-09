@@ -677,6 +677,12 @@ test('lambda with $ dot', () => {
     `(lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)};`,
   )
 })
+test('lambda with rest ...$', () => {
+  assert.equal(
+    tostr(`#(...$.map console.log)`),
+    `(...lambda_rest__0)=>{return lambda_rest__0.map(console.log)};`,
+  )
+})
 test('lambda with assign', () => {
   assert.equal(
     tostr(`(#(do [$]) 42)`),
