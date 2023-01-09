@@ -63,6 +63,13 @@ const builtinMacros = `
                  f)
                '(,f ,c)))
            v))
+
+(macro if-let [[form tst] then el]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,then)
+       ,el)))
 `
 
 const err = (ctx, { pos = {} }, msg) => {
@@ -112,8 +119,8 @@ const newCtx = (config, macros) => {
     ...config,
     bindings: bindings(builtins),
     macros: bindings(macros),
-    gensym() {
-      return { kind: 'symbol', value: `gensym__${gensym++}`, pos: {} }
+    gensym(prefix = 'gensym') {
+      return { kind: 'symbol', value: `${prefix}__${gensym++}`, pos: {} }
     },
   }
 }
@@ -1102,7 +1109,26 @@ function* serializeNode(ctx, node, hoist) {
   yield JSON.stringify(node)
 }
 
+const applyGensym = (ctx, existing, node) => {
+  if (Array.isArray(node)) {
+    node.map(applyGensym.bind(null, ctx, existing))
+  } else {
+    if (node.kind === 'symbol' && node.value.endsWith('#')) {
+      const name = node.value
+      const found = existing[name]
+      if (found) {
+        node.value = found
+      } else {
+        const gen = ctx.gensym('macro').value
+        existing[name] = gen
+        node.value = gen
+      }
+    }
+  }
+}
+
 function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
+  applyGensym(ctx, {}, node)
   yield* transpileSpecialAssign(ctx, assign)
   yield* serializeNode(ctx, node[1], hoist)
 }

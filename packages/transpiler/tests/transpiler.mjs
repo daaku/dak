@@ -788,6 +788,17 @@ test('macro: hoist unquote', () => {
     ';v.push(1);return v;;',
   )
 })
+test('macro: if-let', () => {
+  assert.equal(
+    tostr(`
+    (fn []
+      (if-let [[a b] [1 2]]
+        (+ a b)
+        0))
+  `),
+    '(()=>{{let macro__0=[1,2,];if(macro__0){{let [a,b,]=macro__0;return a+b;}}else{return 0};};});',
+  )
+})
 
 const testErr = (input, msg) => () => {
   let output
