@@ -79,9 +79,9 @@ const builtinMacros = `
 
 (macro doto [x ...forms]
   '(let [gx# ,x]
-     ,...(forms.map #(if (= $.kind :list)
-                       '(,(. $ 0) gx# ,...($.splice 1))
-                       '(,$ gx#)))
+     ,(... (forms.map #(if (= $.kind :list)
+                         '(,(. $ 0) gx# ,(... ($.splice 1)))
+                         '(,$ gx#))))
      gx#))
 `
 
@@ -311,10 +311,6 @@ const astOne = (ctx, input) => {
     case 'string':
       return value
     case 'symbol':
-      // ... is special, it affects the sibling
-      if (value.value === '...') {
-        return astShorthand(ctx, value, '...', input)
-      }
       return value
     case '(':
       return setKind([...astUntil(ctx, input, ')')], 'list', value)
