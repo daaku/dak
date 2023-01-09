@@ -70,6 +70,12 @@ const builtinMacros = `
        (let [,form temp#]
          ,then)
        ,el)))
+
+(macro when-let [[form tst] ...body]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,...body))))
 `
 
 const err = (ctx, { pos = {} }, msg) => {

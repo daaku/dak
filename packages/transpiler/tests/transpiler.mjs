@@ -799,6 +799,17 @@ test('macro: if-let', () => {
     '(()=>{{let macro__0=[1,2,];if(macro__0){{let [a,b,]=macro__0;return a+b;}}else{return 0};};});',
   )
 })
+test('macro: when-let', () => {
+  assert.equal(
+    tostr(`
+    (fn []
+      (when-let [[a b] [1 2]]
+        (+ a b)
+        42))
+  `),
+    '(()=>{{let macro__1=[1,2,];if(macro__1){{let [a,b,]=macro__1;a+b;return 42;}};};});',
+  )
+})
 
 const testErr = (input, msg) => () => {
   let output
