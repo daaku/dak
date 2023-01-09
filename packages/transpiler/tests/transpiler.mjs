@@ -667,13 +667,19 @@ test('builtin: cmp <=', () => {
 })
 test('lambda', () => {
   assert.equal(
-    tostr(`#([(if $ true false) $2 :$3])`),
+    tostr(`#(do [(if $ true false) $2 :$3])`),
     `(lambda__0,lambda__1)=>{let hoist__2;if(lambda__0){hoist__2=true}else{hoist__2=false};return [hoist__2,lambda__1,"$3",];};`,
+  )
+})
+test('lambda with $ dot', () => {
+  assert.equal(
+    tostr(`#($.a $2.b)`),
+    `(lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)};`,
   )
 })
 test('lambda with assign', () => {
   assert.equal(
-    tostr(`(#([$]) 42)`),
+    tostr(`(#(do [$]) 42)`),
     `let hoist__0;hoist__0=(lambda__1)=>{return [lambda__1,];};hoist__0(42);`,
   )
 })

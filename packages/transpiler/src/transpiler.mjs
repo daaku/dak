@@ -1055,15 +1055,23 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
     if (n.kind !== 'symbol') {
       return
     }
-    let arg
-    if (n.value === '$') {
-      arg = 0
-    } else if (n.value.startsWith('$')) {
-      arg = parseInt(n.value.slice(1), 10) - 1
-    } else {
+    if (!n.value.startsWith('$')) {
       return
     }
-    n.value = (args[arg] ?? (args[arg] = ctx.gensym('lambda'))).value
+
+    // check if we have a dot, indicates we're replacing part of a symbol
+    // like $2.replace
+    const sym = n.value
+    const dot = sym.indexOf('.')
+    const target = dot === -1 ? sym : sym.slice(0, dot)
+
+    let arg = 0
+    if (target !== '$') {
+      arg = parseInt(target.slice(1), 10) - 1
+    }
+
+    const replace = (args[arg] ?? (args[arg] = ctx.gensym('lambda'))).value
+    n.value = dot === -1 ? replace : `${replace}${sym.slice(dot)}`
   }
   argMap(node[1])
 
@@ -1074,7 +1082,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
     yield* transpileNodeSymbol(ctx, arg)
   }
   yield ')=>{'
-  yield* transpileSpecialBody(ctx, node[1], 'return ', hoist, evStat)
+  yield* transpileNodeStatement(ctx, node[1], 'return ', hoist, evStat)
   yield '}'
 }
 
