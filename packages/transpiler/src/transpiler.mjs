@@ -363,7 +363,7 @@ const evStat = 'evStat'
 const hoister = ctx => {
   const collected = []
   const hoist = (transpile, node) => {
-    const sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
+    const sym = [...transpileNodeSymbol(ctx, ctx.gensym('hoist'))]
     const assign = [...sym, '=']
     collected.push(
       'let ',
@@ -800,7 +800,7 @@ function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
       ctx.bindings.add(binding.value)
       sym = [...transpileNodeSymbol(ctx, binding)]
     } else {
-      sym = [...transpileNodeSymbol(ctx, ctx.gensym())]
+      sym = [...transpileNodeSymbol(ctx, ctx.gensym('let_multi'))]
     }
 
     // generated the statement and check if we can assign directly
@@ -1057,7 +1057,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
     } else {
       return
     }
-    n.value = (args[arg] ?? (args[arg] = ctx.gensym())).value
+    n.value = (args[arg] ?? (args[arg] = ctx.gensym('lambda'))).value
   }
   argMap(node[1])
 
