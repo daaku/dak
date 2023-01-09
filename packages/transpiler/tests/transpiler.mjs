@@ -668,25 +668,25 @@ test('builtin: cmp <=', () => {
 test('lambda', () => {
   assert.equal(
     tostr(`#(do [(if $ true false) $2 :$3])`),
-    `(lambda__0,lambda__1)=>{let hoist__2;if(lambda__0){hoist__2=true}else{hoist__2=false};return [hoist__2,lambda__1,"$3",];};`,
+    `((lambda__0,lambda__1)=>{let hoist__2;if(lambda__0){hoist__2=true}else{hoist__2=false};return [hoist__2,lambda__1,"$3",];});`,
   )
 })
 test('lambda with $ dot', () => {
   assert.equal(
     tostr(`#($.a $2.b)`),
-    `(lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)};`,
+    `((lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)});`,
   )
 })
 test('lambda with rest ...$', () => {
   assert.equal(
     tostr(`#(...$.map console.log)`),
-    `(...lambda_rest__0)=>{return lambda_rest__0.map(console.log)};`,
+    `((...lambda_rest__0)=>{return lambda_rest__0.map(console.log)});`,
   )
 })
 test('lambda with assign', () => {
   assert.equal(
     tostr(`(#(do [$]) 42)`),
-    `let hoist__0;hoist__0=(lambda__1)=>{return [lambda__1,];};hoist__0(42);`,
+    `((lambda__0)=>{return [lambda__0,];})(42);`,
   )
 })
 test('builtin: typeof', () => {
@@ -820,6 +820,18 @@ test('macro: when-let', () => {
         42))
   `),
     '(()=>{{let macro__1=[1,2,];if(macro__1){{let [a,b,]=macro__1;a+b;return 42;}};};});',
+  )
+})
+test('macro: doto', () => {
+  assert.equal(
+    tostr(`
+    (fn []
+      (doto []
+        (.push 1)
+        (.push 2)
+        .pop))
+  `),
+    '(()=>{{let macro__2=[];macro__2.push(1);macro__2.push(2);macro__2.pop();return macro__2;};});',
   )
 })
 

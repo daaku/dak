@@ -76,6 +76,13 @@ const builtinMacros = `
      (if temp#
        (let [,form temp#]
          ,...body))))
+
+(macro doto [x ...forms]
+  '(let [gx# ,x]
+     ,...(forms.map #(if (= $.kind :list)
+                       '(,(. $ 0) gx# ,...($.splice 1))
+                       '(,$ gx#)))
+     gx#))
 `
 
 const err = (ctx, { pos = {} }, msg) => {
@@ -304,6 +311,10 @@ const astOne = (ctx, input) => {
     case 'string':
       return value
     case 'symbol':
+      // ... is special, it affects the sibling
+      if (value.value === '...') {
+        return astShorthand(ctx, value, '...', input)
+      }
       return value
     case '(':
       return setKind([...astUntil(ctx, input, ')')], 'list', value)
@@ -1003,6 +1014,11 @@ function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
   }
 }
 
+function* transpileBuiltinRest(ctx, node, assign, hoist, evKind) {
+  yield '...'
+  yield* transpileNodeStatement(ctx, node[1], assign, hoist, evKind)
+}
+
 function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
     yield* hoist(transpileBuiltinTry, node)
@@ -1040,11 +1056,6 @@ function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
 }
 
 function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
-  if (!assign && evKind === evExpr) {
-    yield* hoist(transpileHashLambda, node)
-    return
-  }
-
   yield* transpileSpecialAssign(ctx, assign)
   let restArg
   const args = []
@@ -1084,7 +1095,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   argMap(node[1])
 
   const comma = splitter(',')
-  yield '('
+  yield '(('
   for (const arg of args) {
     yield comma()
     yield* transpileNodeSymbol(ctx, arg)
@@ -1096,7 +1107,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   }
   yield ')=>{'
   yield* transpileNodeStatement(ctx, node[1], 'return ', hoist, evStat)
-  yield '}'
+  yield '})'
 }
 
 function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
@@ -1240,6 +1251,7 @@ const builtins = {
   if: transpileBuiltinIf,
   while: transpileBuiltinWhile,
   '.': transpileBuiltinDot,
+  '...': transpileBuiltinRest,
   typeof: transpileTypeof,
   set: transpileSet,
   hash: transpileBuiltinHash,
