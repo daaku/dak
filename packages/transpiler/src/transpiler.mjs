@@ -63,7 +63,6 @@ const builtinMacros = `
                  f)
                '(,f ,c)))
            v))
-
 `
 
 const err = (ctx, { pos = {} }, msg) => {
