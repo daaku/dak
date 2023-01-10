@@ -57,7 +57,7 @@ const builtinMacros = `
 (macro -> [v ...forms]
   (.reduce forms
            (fn [c f]
-             (if (array? f)
+             (if (= f.kind :list)
                (do
                  (.splice f 1 0 c)
                  f)
