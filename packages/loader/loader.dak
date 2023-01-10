@@ -1,7 +1,7 @@
 (import ["node:process" [cwd]]
         ["node:url" [pathToFileURL fileURLToPath]]
-        ["node:fs/promises" [read-file]]
-        ["@daklang/transpiler" [transpile-str]])
+        ["node:fs/promises" [readFile]]
+        ["@daklang/transpiler" [transpileStr]])
 
 (const base-url (. (pathToFileURL (str (cwd) "/")) :href))
 (const ext ".dak")
@@ -16,8 +16,8 @@
   (if (url.endsWith ext)
     {:shortCircuit true
      :format :module
-     :source (. (transpile-str (-> url fileURLToPath read-file await .toString)
-                               {:filename url
-                                :sourcemap :inline})
+     :source (. (transpileStr (-> url fileURLToPath readFile await .toString)
+                              {:filename url
+                               :sourcemap :inline})
                 :code)}
     (next url)))
