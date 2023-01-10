@@ -73,6 +73,15 @@ test('data structures', () => {
     '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],};',
   )
 })
+test('object with symbol rest', () => {
+  assert.equal(tostr('{:a 1 ...b :c 2 ...d}'), '{["a"]:1,...b,["c"]:2,...d,};')
+})
+test('object with method rest', () => {
+  assert.equal(
+    tostr('{:a 1 (... (b 2)) :c 3 (... (d 4))}'),
+    '{["a"]:1,...b(2),["c"]:3,...d(4),};',
+  )
+})
 test('regexp', () => {
   assert.equal(
     tostr('(.match #/fo[o]|"bar"/ig :foo)'),
@@ -876,13 +885,6 @@ test(
   testErr(
     '(let [{:foo [bar]} :bar] :bar)',
     '<anonymous>:1:8: unexpected destructuring map op "foo"',
-  ),
-)
-test(
-  'map uneven forms map',
-  testErr(
-    '{:a}',
-    '<anonymous>:1:1: object literal must contain even number of forms',
   ),
 )
 test('invalid keyword', testErr('::a', '<anonymous>:1:1: invalid keyword'))

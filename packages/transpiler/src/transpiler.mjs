@@ -360,15 +360,7 @@ const astOne = (ctx, input) => {
     case '[':
       return setKind([...astUntil(ctx, input, ']')], 'array', value)
     case '{':
-      const o = setKind([...astUntil(ctx, input, '}')], 'object', value)
-      if (o.length % 2 === 1) {
-        throw err(
-          ctx,
-          value,
-          'object literal must contain even number of forms',
-        )
-      }
-      return o
+      return setKind([...astUntil(ctx, input, '}')], 'object', value)
     case "'":
       return astShorthand(ctx, value, 'quote', input)
     case ',':
@@ -457,11 +449,26 @@ const splitter = s => {
 
 function* transpileNodeObject(ctx, node, hoist) {
   yield ['{', node]
-  for (let i = 0; i < node.length; i += 2) {
-    yield '['
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-    yield ']:'
-    yield* transpileNodeExpr(ctx, node[i + 1], null, hoist, evExpr)
+  for (let i = 0; i < node.length; i += 1) {
+    // ...foo
+    if (node[i].kind === 'symbol' && node[i].value.startsWith('...')) {
+      yield* transpileNodeSymbol(ctx, node[i])
+    }
+    // (... (foo :bar))
+    else if (
+      node[i].kind === 'list' &&
+      node[i][0].kind === 'symbol' &&
+      node[i][0].value === '...'
+    ) {
+      yield '...'
+      yield* transpileNodeExpr(ctx, node[i][1], null, hoist, evExpr)
+    } else {
+      yield '['
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+      yield ']:'
+      yield* transpileNodeExpr(ctx, node[i + 1], null, hoist, evExpr)
+      i++ // we consumed the value too
+    }
     yield ','
   }
   yield '}'
