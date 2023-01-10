@@ -1,6 +1,6 @@
 (import ["https://unpkg.com/prettier@2.7.1/esm/standalone.mjs" prettier]
-        ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parser-babel]
-        ["@daklang/transpiler" [transpile-str]])
+        ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
+        ["@daklang/transpiler" [transpileStr]])
 
 (const auto-eval? (document.getElementById :auto-eval))
 (const fmt (document.getElementById :fmt))
@@ -30,7 +30,7 @@
 (fn@ refresh []
   (output.replaceChildren)
   (try
-    (let [js (. (transpile-str dak-code.value {:filename "main.dak"}) :code)]
+    (let [js (. (transpileStr dak-code.value {:filename "main.dak"}) :code)]
       (when auto-eval?.checked
         ((fn@ []
           (try
@@ -40,7 +40,7 @@
       (set js-code.value
         (try
           (case fmt.value
-            :pretty (prettier.format js {:parser :babel :plugins [parser-babel]})
+            :pretty (prettier.format js {:parser :babel :plugins [parserBabel]})
             :minify (. @(Terser.minify js) :code)
             js)
           (catch e

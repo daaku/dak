@@ -495,7 +495,7 @@ const mangleSym = sym =>
     .replaceAll('>', '_GT_')
     .replaceAll('<', '_LT_')
     .replaceAll('=', '_EQ_')
-    .replaceAll(/-(.)/g, (_match, c) => c.toUpperCase())
+    .replaceAll('-', '_DASH_')
 
 function* transpileNodeSymbol(ctx, token) {
   yield [mangleSym(token.value), token]
