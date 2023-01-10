@@ -79,6 +79,12 @@ test('data structures', () => {
     '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],};',
   )
 })
+test('regexp', () => {
+  assert.equal(
+    tostr('(.match #/fo[o]|"bar"/ig :foo)'),
+    '/fo[o]|"bar"/ig.match("foo");',
+  )
+})
 test('function call', () => {
   assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,});')
 })

@@ -167,8 +167,39 @@ const readString = (ctx, input, len, pos) => {
           pos.line++
           pos.column = 0
         } else {
+          // TODO: why is this +2?
           pos.column += 2
         }
+        break
+    }
+  }
+  throw err(ctx, { pos }, 'unterminated string')
+}
+
+const isLetter = c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+
+const readRegexp = (ctx, input, len, pos) => {
+  let start = pos.offset + 1
+  for (let end = start; end < len; end++) {
+    pos.offset++
+    pos.column++
+    switch (input[end]) {
+      case '/':
+        pos.offset++
+        pos.column++
+        // flags
+        end++
+        for (; end < len; end++) {
+          if (!isLetter(input[end])) {
+            return input.substring(start - 1, end)
+          }
+          pos.offset++
+          pos.column++
+        }
+      case '\\':
+        end++
+        pos.offset++
+        pos.column++
         break
     }
   }
@@ -231,10 +262,20 @@ function* tokens(ctx, input) {
       continue
     }
     if (single.includes(c)) {
-      ctx.pos = { ...pos }
-      yield { kind: c, pos: { ...pos } }
-      pos.offset++
-      pos.column++
+      // special case #// for regexp
+      if (c === '#' && input[pos.offset + 1] === '/') {
+        pos.offset++
+        pos.column++
+        start = { ...pos }
+        value = readRegexp(ctx, input, len, pos)
+        ctx.pos = { ...start }
+        yield { kind: 'regexp', value, pos: start }
+      } else {
+        ctx.pos = { ...pos }
+        yield { kind: c, pos: { ...pos } }
+        pos.offset++
+        pos.column++
+      }
       continue
     }
     switch (c) {
@@ -309,6 +350,8 @@ const astOne = (ctx, input) => {
     case 'comment':
       return value
     case 'string':
+      return value
+    case 'regexp':
       return value
     case 'symbol':
       return value
@@ -439,6 +482,10 @@ function* transpileNodeString(ctx, token) {
   yield '"'
 }
 
+function* transpileNodeRegExp(ctx, token) {
+  yield token.value
+}
+
 const mangleSym = sym =>
   sym
     .replaceAll('!', '_BANG_')
@@ -483,6 +530,9 @@ function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr) {
       break
     case 'array':
       yield* transpileNodeArray(ctx, node, hoist)
+      break
+    case 'regexp':
+      yield* transpileNodeRegExp(ctx, node)
       break
     case 'string':
       yield* transpileNodeString(ctx, node)
