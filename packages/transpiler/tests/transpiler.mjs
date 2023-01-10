@@ -37,12 +37,6 @@ test('string with escaped newline', () => {
 test('string with unescaped newline', () => {
   assert.equal(tostr('"hello\nworld"'), '"hello\\\nworld";')
 })
-test('symbol: dash special case', () => {
-  assert.equal(tostr('foo-bar'), 'fooBar;')
-})
-test('symbol: dash special case 2x', () => {
-  assert.equal(tostr('foo-bar-baz'), 'fooBarBaz;')
-})
 test('symbol: replaces all', () => {
   assert.equal(tostr('>>'), '_GT__GT_;')
 })
@@ -124,7 +118,7 @@ test('comments', () => {
 test('builtin: import', () => {
   assert.equal(
     tostr(`
-    (import ["./named.js" [A B c-d]]
+    (import ["./named.js" [A B cD]]
             ["./default.js" TheDefault {A MyA D MyD} [E F]]
             ["./index.css"]
             ["./as.js" :as TheNamed])
