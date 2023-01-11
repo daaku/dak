@@ -79,17 +79,17 @@ test('nested arrays', () => {
 })
 test('data structures', () => {
   assert.equal(
-    tostr('{:a 1 :b [1 2] :c [3 4]}'),
-    '{["a"]:1,["b"]:[1,2,],["c"]:[3,4,],};',
+    tostr('{:a 1 :b [1 2] :c [3 4] "d e" 5}'),
+    '{a:1,b:[1,2,],c:[3,4,],["d e"]:5,};',
   )
 })
 test('object with symbol rest', () => {
-  assert.equal(tostr('{:a 1 ...b :c 2 ...d}'), '{["a"]:1,...b,["c"]:2,...d,};')
+  assert.equal(tostr('{:a 1 ...b :c 2 ...d}'), '{a:1,...b,c:2,...d,};')
 })
 test('object with method rest', () => {
   assert.equal(
     tostr('{:a 1 (... (b 2)) :c 3 (... (d 4))}'),
-    '{["a"]:1,...b(2),["c"]:3,...d(4),};',
+    '{a:1,...b(2),c:3,...d(4),};',
   )
 })
 test('regexp', () => {
@@ -99,10 +99,10 @@ test('regexp', () => {
   )
 })
 test('function call', () => {
-  assert.equal(tostr('(a {:b c})'), 'a({["b"]:c,});')
+  assert.equal(tostr('(a {:b c})'), 'a({b:c,});')
 })
 test('method call', () => {
-  assert.equal(tostr('(.a b {:c d})'), 'b.a({["c"]:d,});')
+  assert.equal(tostr('(.a b {:c d})'), 'b.a({c:d,});')
 })
 test('constructor call', () => {
   assert.equal(tostr('(String. 42)'), 'new String(42);')
@@ -113,7 +113,7 @@ test('multiple: list', () => {
 test('value call', () => {
   assert.equal(
     tostr('(fn run [a] ((. Array :isArray) a))'),
-    `const run=(a)=>{return Array["isArray"](a);};`,
+    `const run=(a)=>{return Array.isArray(a);};`,
   )
 })
 test('anonymous fn call', () => {
@@ -590,6 +590,9 @@ test('builtin: dot hoist', () => {
 })
 test('builtin: ?.', () => {
   assert.equal(tostr('(?. foo bar baz)'), 'foo?.[bar]?.[baz];')
+})
+test('builtin: ?. with strings', () => {
+  assert.equal(tostr('(?. foo :bar "baz boo")'), 'foo?.bar?.["baz boo"];')
 })
 test('builtin: await', () => {
   assert.equal(tostr(`@42`), `await 42;`)

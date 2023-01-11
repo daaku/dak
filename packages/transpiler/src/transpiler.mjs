@@ -443,6 +443,12 @@ const splitter = s => {
   }
 }
 
+// be conservative
+const isValidIdentifier = s => s.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/)
+
+const canLiteralIdentifier = node =>
+  node.kind === 'string' && isValidIdentifier(node.value)
+
 function* transpileNodeObject(ctx, node, hoist) {
   yield ['{', node]
   for (let i = 0; i < node.length; i += 1) {
@@ -458,9 +464,14 @@ function* transpileNodeObject(ctx, node, hoist) {
       yield '...'
       yield* transpileNodeExpr(ctx, node[i][1], null, hoist, evExpr)
     } else {
-      yield '['
-      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-      yield ']:'
+      if (canLiteralIdentifier(node[i])) {
+        yield [node[i].value, node[i]]
+      } else {
+        yield '['
+        yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+        yield ']'
+      }
+      yield ':'
       yield* transpileNodeExpr(ctx, node[i + 1], null, hoist, evExpr)
       i++ // we consumed the value too
     }
@@ -1074,9 +1085,14 @@ function* transpileBuiltinQuestionDot(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   for (let i = 2; i < node.length; i++) {
-    yield '?.['
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-    yield ']'
+    yield '?.'
+    if (canLiteralIdentifier(node[i])) {
+      yield [node[i].value, node[i]]
+    } else {
+      yield '['
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+      yield ']'
+    }
   }
 }
 
@@ -1084,9 +1100,14 @@ function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
   for (let i = 2; i < node.length; i++) {
-    yield '['
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-    yield ']'
+    if (canLiteralIdentifier(node[i])) {
+      yield '.'
+      yield [node[i].value, node[i]]
+    } else {
+      yield '['
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+      yield ']'
+    }
   }
 }
 
