@@ -28,6 +28,13 @@ test('shebang is dropped', () => {
 test('transpileStr', () => {
   assert.equal(transpileStr(':hello').code, '"hello";')
 })
+test('transpileStr sourcemap: inline', () => {
+  assert.ok(
+    transpileStr(':hello', { sourcemap: 'inline' }).code.includes(
+      'sourceMappingURL=data:application/json;base64',
+    ),
+  )
+})
 test('string escape', () => {
   assert.equal(tostr('"\\t"'), '"\\t";')
 })
