@@ -1070,6 +1070,16 @@ function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
   yield '}'
 }
 
+function* transpileBuiltinQuestionDot(ctx, node, assign, hoist, evKind) {
+  yield* transpileSpecialAssign(ctx, assign)
+  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+  for (let i = 2; i < node.length; i++) {
+    yield '?.['
+    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+    yield ']'
+  }
+}
+
 function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
@@ -1317,6 +1327,7 @@ const builtins = {
   if: transpileBuiltinIf,
   while: transpileBuiltinWhile,
   '.': transpileBuiltinDot,
+  '?.': transpileBuiltinQuestionDot,
   '...': transpileBuiltinRest,
   typeof: transpileTypeof,
   set: transpileSet,

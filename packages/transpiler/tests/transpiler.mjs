@@ -588,6 +588,9 @@ test('builtin: dot hoist', () => {
     `const run=()=>{let hoist__0;if(true){hoist__0=42};return foo[hoist__0];};`,
   )
 })
+test('builtin: ?.', () => {
+  assert.equal(tostr('(?. foo bar baz)'), 'foo?.[bar]?.[baz];')
+})
 test('builtin: await', () => {
   assert.equal(tostr(`@42`), `await 42;`)
 })

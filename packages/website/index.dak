@@ -2,7 +2,7 @@
         ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
         ["@daklang/transpiler" [transpileStr]])
 
-(const auto-eval? (document.getElementById :auto-eval))
+(const auto-eval (document.getElementById :auto-eval))
 (const fmt (document.getElementById :fmt))
 (const dak-code (document.getElementById :dak-code))
 (const js-code (document.getElementById :js-code))
@@ -31,7 +31,7 @@
   (output.replaceChildren)
   (try
     (let [js (. (transpileStr dak-code.value {:filename "main.dak"}) :code)]
-      (when auto-eval?.checked
+      (when auto-eval.checked
         ((fn@ []
           (try
             @((.constructor (Object.getPrototypeOf (fn@ [])) js))
@@ -49,6 +49,6 @@
     (catch e
       (log-err fmt.value e))))
 
-(set auto-eval?.onchange refresh)
+(set auto-eval.onchange refresh)
 (set dak-code.oninput refresh)
 (set fmt.onchange refresh)
