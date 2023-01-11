@@ -488,16 +488,34 @@ function* transpileNodeRegExp(ctx, token) {
   yield token.value
 }
 
-const mangleSym = sym =>
-  sym
-    .replaceAll('!', '_BANG_')
-    .replaceAll('?', '_QMARK_')
-    .replaceAll('*', '_STAR_')
-    .replaceAll('+', '_PLUS_')
-    .replaceAll('>', '_GT_')
-    .replaceAll('<', '_LT_')
-    .replaceAll('=', '_EQ_')
-    .replaceAll('-', '_DASH_')
+const mangleChars = {
+  '!': '_BANG_',
+  '?': '_QMARK_',
+  '*': '_STAR_',
+  '+': '_PLUS_',
+  '>': '_GT_',
+  '<': '_LT_',
+  '=': '_EQ_',
+  '-': '_DASH_',
+}
+
+const mangleSym = sym => {
+  const parts = []
+  let start = 0
+  for (let end = 0; end < sym.length; end++) {
+    const c = sym[end]
+    const found = mangleChars[c]
+    if (found && (c !== '?' || sym[end + 1] !== '.')) {
+      parts.push(sym.slice(start, end), found)
+      start = end + 1
+    }
+  }
+  if (start === 0) {
+    return sym
+  }
+  parts.push(sym.slice(start, sym.length))
+  return parts.join('')
+}
 
 function* transpileNodeSymbol(ctx, token) {
   yield [mangleSym(token.value), token]

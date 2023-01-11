@@ -53,6 +53,9 @@ test('symbol: bang', () => {
 test('symbol: qmark', () => {
   assert.equal(tostr('foo?'), 'foo_QMARK_;')
 })
+test('symbol: qmark option chaining', () => {
+  assert.equal(tostr('foo?.bar'), 'foo?.bar;')
+})
 test('symbol: star', () => {
   assert.equal(tostr('foo*'), 'foo_STAR_;')
 })
