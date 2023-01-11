@@ -30,7 +30,7 @@ test('transpileStr', () => {
 })
 test('transpileStr sourcemap: inline', () => {
   assert.ok(
-    transpileStr(':hello', { sourcemap: 'inline' }).code.includes(
+    transpileStr('hello', { sourcemap: 'inline' }).code.includes(
       'sourceMappingURL=data:application/json;base64',
     ),
   )
