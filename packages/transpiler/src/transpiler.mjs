@@ -214,10 +214,6 @@ const readSymbol = (ctx, input, len, pos) => {
     if (symbolBreaker.includes(c) || whitespace.includes(c)) {
       break
     }
-    if (c === '\n') {
-      pos.line++
-      pos.column = 0
-    }
     pos.offset++
     pos.column++
   }
