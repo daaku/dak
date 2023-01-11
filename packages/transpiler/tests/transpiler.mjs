@@ -870,6 +870,10 @@ test(
   'unterminated keyword',
   testErr('(foo :', '<anonymous>:1:6: unterminated form'),
 )
+test(
+  'unterminated regex',
+  testErr('(#/foo', '<anonymous>:1:6: unterminated regex'),
+)
 test('unterminated map', testErr('{', '<anonymous>:1:1: unterminated form'))
 test('unterminated array', testErr('[', '<anonymous>:1:1: unterminated form'))
 test('unterminated list', testErr('(do ', '<anonymous>:1:2: unterminated form'))

@@ -203,7 +203,7 @@ const readRegexp = (ctx, input, len, pos) => {
         break
     }
   }
-  throw err(ctx, { pos }, 'unterminated string')
+  throw err(ctx, { pos }, 'unterminated regex')
 }
 
 const readSymbol = (ctx, input, len, pos) => {
