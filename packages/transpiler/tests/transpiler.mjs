@@ -84,8 +84,8 @@ test('object with method rest', () => {
 })
 test('regexp', () => {
   assert.equal(
-    tostr('(.match #/fo[o]|"bar"/ig :foo)'),
-    '/fo[o]|"bar"/ig.match("foo");',
+    tostr('(.match #/fo[o]\\/|"bar"/ig :foo)'),
+    '/fo[o]\\/|"bar"/ig.match("foo");',
   )
 })
 test('function call', () => {
