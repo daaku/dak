@@ -453,9 +453,8 @@ function* transpileNodeObject(ctx, node, hoist) {
     // ...foo
     if (node[i].kind === 'symbol' && node[i].value.startsWith('...')) {
       yield* transpileNodeSymbol(ctx, node[i])
-    }
-    // (... (foo :bar))
-    else if (
+    } else if (
+      // (... (foo :bar))
       node[i].kind === 'list' &&
       node[i][0].kind === 'symbol' &&
       node[i][0].value === '...'
