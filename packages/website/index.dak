@@ -28,6 +28,7 @@
     (output.appendChild child)))
 
 (fn@ refresh []
+  (console.clear)
   (output.replaceChildren)
   (try
     (let [js (. (transpileStr dak-code.value {:filename "main.dak"}) :code)]
