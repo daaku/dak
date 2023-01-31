@@ -831,6 +831,7 @@ const transpileBuiltinFnAsyncGenerator = makeFnTranspiler('async function*', '')
 const makeOpTranspiler = (op, unary = false) =>
   function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
     yield* transpileSpecialAssign(ctx, assign)
+    yield '('
     if (unary && node.length === 2) {
       yield op
     }
@@ -839,20 +840,25 @@ const makeOpTranspiler = (op, unary = false) =>
       yield sp()
       yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
     }
+    yield ')'
   }
 
 const makePrefixOpTranspiler = op =>
   function* transpileBuiltinPrefixOp(ctx, node, assign, hoist, _evKind) {
     yield* transpileSpecialAssign(ctx, assign)
+    yield '('
     yield op
     yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
+    yield ')'
   }
 
 const makeSuffixOpTranspiler = op =>
   function* transpileBuiltinSuffixOp(ctx, node, assign, hoist, _evKind) {
     yield* transpileSpecialAssign(ctx, assign)
+    yield '('
     yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
     yield op
+    yield ')'
   }
 
 const cmpRemap = {

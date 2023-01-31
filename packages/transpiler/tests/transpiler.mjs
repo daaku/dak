@@ -216,7 +216,7 @@ test('builtin: fn', () => {
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
     `),
-    `const err=(expected,offset)=>{return "expected "+expected+" at position "+offset;};`,
+    `const err=(expected,offset)=>{return ("expected "+expected+" at position "+offset);};`,
   )
 })
 test('builtin: export fn', () => {
@@ -342,7 +342,7 @@ test('builtin: let', () => {
         (console.log a)
         b))
     `),
-    `const run=()=>{{let a=0;let b=a+1;console.log(a);return b;};};`,
+    `const run=()=>{{let a=0;let b=(a+1);console.log(a);return b;};};`,
   )
 })
 test('builtin: let without assign', () => {
@@ -355,7 +355,7 @@ test('builtin: let without assign', () => {
         b)
        null)
     `),
-    `const run=()=>{{let a=0;let b=a+1;console.log(a);b;};return null;};`,
+    `const run=()=>{{let a=0;let b=(a+1);console.log(a);b;};return null;};`,
   )
 })
 test('builtin: let as arg', () => {
@@ -366,7 +366,7 @@ test('builtin: let as arg', () => {
                    b (inc a)]
                (+ a b))))
     `),
-    `const run=(a)=>{return a;};let hoist__0;{let a=0;let b=a+1;hoist__0=a+b;};run(hoist__0);;`,
+    `const run=(a)=>{return a;};let hoist__0;{let a=0;let b=(a+1);hoist__0=(a+b);};run(hoist__0);;`,
   )
 })
 test('builtin: let with destructuring', () => {
@@ -473,7 +473,7 @@ test('builtin: case return position', () => {
       "baz" :boo
       :otherwise))
     `),
-    `const run=()=>{switch (1+1){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
+    `const run=()=>{switch ((1+1)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`,
   )
 })
 test('builtin: case assign', () => {
@@ -486,7 +486,7 @@ test('builtin: case assign', () => {
                 :otherwise)]
         v))
     `),
-    `const run=()=>{{let v;switch (1+1){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
+    `const run=()=>{{let v;switch ((1+1)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
   )
 })
 test('builtin: do', () => {
@@ -506,7 +506,7 @@ test('builtin: while', () => {
       (println a)
       (set a (+ a 1)))
     `),
-    `while(a===1){println(a);a=a+1;};`,
+    `while(a===1){println(a);a=(a+1);};`,
   )
 })
 test('builtin: while hoisted', () => {
@@ -516,7 +516,7 @@ test('builtin: while hoisted', () => {
              (println a)
              (set a (+ a 1))))
     `),
-    `let hoist__0;while(a===1){println(a);a=a+1;};yield hoist__0;`,
+    `let hoist__0;while(a===1){println(a);a=(a+1);};yield hoist__0;`,
   )
 })
 test('builtin: if hoisted', () => {
@@ -604,67 +604,67 @@ test('builtin: await expr', () => {
   assert.equal(tostr(`(a @(make :promise))`), `a((await make("promise")));`)
 })
 test('builtin: op str', () => {
-  assert.equal(tostr('(str :a :b :c)'), '"a"+"b"+"c";')
+  assert.equal(tostr('(str :a :b :c)'), '("a"+"b"+"c");')
 })
 test('builtin: op +', () => {
-  assert.equal(tostr('(+ 1 2 3)'), '1+2+3;')
+  assert.equal(tostr('(+ 1 2 3)'), '(1+2+3);')
 })
 test('builtin: op + unary', () => {
-  assert.equal(tostr('(+ 1)'), '+1;')
+  assert.equal(tostr('(+ 1)'), '(+1);')
 })
 test('builtin: op -', () => {
-  assert.equal(tostr('(- 1 2 3)'), '1-2-3;')
+  assert.equal(tostr('(- 1 2 3)'), '(1-2-3);')
 })
 test('builtin: op - unary', () => {
-  assert.equal(tostr('(- 1)'), '-1;')
+  assert.equal(tostr('(- 1)'), '(-1);')
 })
 test('builtin: op *', () => {
-  assert.equal(tostr('(* 1 2 3)'), '1*2*3;')
+  assert.equal(tostr('(* 1 2 3)'), '(1*2*3);')
 })
 test('builtin: op /', () => {
-  assert.equal(tostr('(/ 1 2 3)'), '1/2/3;')
+  assert.equal(tostr('(/ 1 2 3)'), '(1/2/3);')
 })
 test('builtin: op **', () => {
-  assert.equal(tostr('(** 1 2 3)'), '1**2**3;')
+  assert.equal(tostr('(** 1 2 3)'), '(1**2**3);')
 })
 test('builtin: op %', () => {
-  assert.equal(tostr('(% 1 2 3)'), '1%2%3;')
+  assert.equal(tostr('(% 1 2 3)'), '(1%2%3);')
 })
 test('builtin: op <<', () => {
-  assert.equal(tostr('(<< 1 2 3)'), '1<<2<<3;')
+  assert.equal(tostr('(<< 1 2 3)'), '(1<<2<<3);')
 })
 test('builtin: op >>', () => {
-  assert.equal(tostr('(>> 1 2 3)'), '1>>2>>3;')
+  assert.equal(tostr('(>> 1 2 3)'), '(1>>2>>3);')
 })
 test('builtin: op bit-and', () => {
-  assert.equal(tostr('(bit-and 1 2 3)'), '1&2&3;')
+  assert.equal(tostr('(bit-and 1 2 3)'), '(1&2&3);')
 })
 test('builtin: op bit-or', () => {
-  assert.equal(tostr('(bit-or 1 2 3)'), '1|2|3;')
+  assert.equal(tostr('(bit-or 1 2 3)'), '(1|2|3);')
 })
 test('builtin: op bit-xor', () => {
-  assert.equal(tostr('(bit-xor 1 2 3)'), '1^2^3;')
+  assert.equal(tostr('(bit-xor 1 2 3)'), '(1^2^3);')
 })
 test('builtin: op ||', () => {
-  assert.equal(tostr('(|| 1 2 3)'), '1||2||3;')
+  assert.equal(tostr('(|| 1 2 3)'), '(1||2||3);')
 })
 test('builtin: op or', () => {
-  assert.equal(tostr('(or 1 2 3)'), '1||2||3;')
+  assert.equal(tostr('(or 1 2 3)'), '(1||2||3);')
 })
 test('builtin: op &&', () => {
-  assert.equal(tostr('(&& 1 2 3)'), '1&&2&&3;')
+  assert.equal(tostr('(&& 1 2 3)'), '(1&&2&&3);')
 })
 test('builtin: op and', () => {
-  assert.equal(tostr('(and 1 2 3)'), '1&&2&&3;')
+  assert.equal(tostr('(and 1 2 3)'), '(1&&2&&3);')
 })
 test('builtin: prefix bit-not', () => {
-  assert.equal(tostr('(bit-not 1)'), '~1;')
+  assert.equal(tostr('(bit-not 1)'), '(~1);')
 })
 test('builtin: prefix not', () => {
-  assert.equal(tostr('(not 1)'), '!1;')
+  assert.equal(tostr('(not 1)'), '(!1);')
 })
 test('builtin: suffix ++', () => {
-  assert.equal(tostr('(++ a)'), 'a++;')
+  assert.equal(tostr('(++ a)'), '(a++);')
 })
 test('builtin: cmp =', () => {
   assert.equal(tostr('(= a b)'), 'a===b;')
@@ -794,19 +794,19 @@ test('builtin: try/catch with hoist', () => {
               (catch e
                 43))))
     `),
-    `const run=()=>{let hoist__0;try{hoist__0=42;}catch(e){hoist__0=43;};return 1+hoist__0;};`,
+    `const run=()=>{let hoist__0;try{hoist__0=42;}catch(e){hoist__0=43;};return (1+hoist__0);};`,
   )
 })
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
-    '"hello".toUpperCase()+" world";',
+    '("hello".toUpperCase()+" world");',
   )
 })
 test('macro: -> with symbol', () => {
   assert.equal(
     tostr('(-> :hello .toUpperCase (str " world"))'),
-    '"hello".toUpperCase()+" world";',
+    '("hello".toUpperCase()+" world");',
   )
 })
 test('macro: when', () => {
@@ -842,7 +842,7 @@ test('macro: if-let', () => {
         (+ a b)
         0))
   `),
-    '(()=>{{let macro__0=[1,2,];if(macro__0){{let [a,b,]=macro__0;return a+b;}}else{return 0};};});',
+    '(()=>{{let macro__0=[1,2,];if(macro__0){{let [a,b,]=macro__0;return (a+b);}}else{return 0};};});',
   )
 })
 test('macro: when-let', () => {
@@ -853,7 +853,7 @@ test('macro: when-let', () => {
         (+ a b)
         42))
   `),
-    '(()=>{{let macro__1=[1,2,];if(macro__1){{let [a,b,]=macro__1;a+b;return 42;}};};});',
+    '(()=>{{let macro__1=[1,2,];if(macro__1){{let [a,b,]=macro__1;(a+b);return 42;}};};});',
   )
 })
 test('macro: doto', () => {
