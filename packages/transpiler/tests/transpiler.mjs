@@ -720,6 +720,15 @@ test('builtin: typeof', () => {
 test('builtin: set', () => {
   assert.equal(tostr('(set a 1)'), 'a=1;')
 })
+test('builtin: set returns', () => {
+  assert.equal(
+    tostr(`
+    (fn run [a]
+      (set a.b 1))
+    `),
+    `const run=(a)=>{return a.b=1;};`,
+  )
+})
 test('builtin: try/catch/finally with return', () => {
   assert.equal(
     tostr(`

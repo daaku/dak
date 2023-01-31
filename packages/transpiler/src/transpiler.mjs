@@ -1423,9 +1423,12 @@ function* transpileTypeof(ctx, node, assign, hoist, _evKind) {
 }
 
 function* transpileSet(ctx, node, assign, hoist, _evKind) {
-  yield* transpileNodeUnknown(ctx, node[1], assign, hoist, evExpr)
-  yield '='
-  yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
+  const newAssign = [
+    ...transpileSpecialAssign(ctx, assign),
+    ...transpileNodeSymbol(ctx, node[1]),
+    '=',
+  ]
+  yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr)
 }
 
 export function* transpile(code, config = {}) {
