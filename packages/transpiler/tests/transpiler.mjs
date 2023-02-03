@@ -39,10 +39,10 @@ test('string escape', () => {
   assert.equal(tostr('"\\t"'), '"\\t";')
 })
 test('string with escaped newline', () => {
-  assert.equal(tostr('"\\\n"'), '"\\\n";')
+  assert.equal(tostr('"\\n"'), '"\\n";')
 })
 test('string with unescaped newline', () => {
-  assert.equal(tostr('"hello\nworld"'), '"hello\\\nworld";')
+  assert.equal(tostr('"hello\nworld"'), '"hello\\nworld";')
 })
 test('symbol: replaces all', () => {
   assert.equal(tostr('>>'), '_GT__GT_;')

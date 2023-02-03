@@ -157,7 +157,7 @@ const readString = (ctx, input, len, pos) => {
       case '\n':
         pos.line++
         pos.column = 0
-        buf.push(input.substring(start, end), '\\\n')
+        buf.push(input.substring(start, end), '\\n')
         start = end + 1
         break
       case '\\':
