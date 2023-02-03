@@ -406,7 +406,7 @@ const evStat = 'evStat'
 
 const hoister = ctx => {
   const collected = []
-  const hoist = (transpile, node) => {
+  const hoist = (transpile, node, givenAssign) => {
     const sym = [...transpileNodeSymbol(ctx, ctx.gensym('hoist'))]
     const assign = [...sym, '=']
     collected.push(
@@ -416,7 +416,7 @@ const hoister = ctx => {
       ...transpile(ctx, node, assign, hoist, evStat),
       ';',
     )
-    return sym
+    return [...transpileSpecialAssign(ctx, givenAssign), ...sym]
   }
   return [hoist, collected]
 }
@@ -884,7 +884,7 @@ function* transpileBuiltinLet(ctx, node, assign, hoist, evKind) {
 
 function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinLetMulti, node)
+    yield* hoist(transpileBuiltinLetMulti, node, assign)
     return
   }
 
@@ -1019,7 +1019,7 @@ const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
 
 function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinIf, node)
+    yield* hoist(transpileBuiltinIf, node, assign)
     return
   }
 
@@ -1041,9 +1041,9 @@ function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
   }
 }
 
-function* transpileBuiltinWhile(ctx, node, _assign, hoist, evKind) {
+function* transpileBuiltinWhile(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinWhile, node)
+    yield* hoist(transpileBuiltinWhile, node, assign)
     return
   }
   yield 'while('
@@ -1055,7 +1055,7 @@ function* transpileBuiltinWhile(ctx, node, _assign, hoist, evKind) {
 
 function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr && !assign) {
-    yield* hoist(transpileBuiltinCase, node)
+    yield* hoist(transpileBuiltinCase, node, assign)
     return
   }
 
@@ -1124,7 +1124,7 @@ function* transpileBuiltinRest(ctx, node, assign, hoist, evKind) {
 
 function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinTry, node)
+    yield* hoist(transpileBuiltinTry, node, assign)
     return
   }
   let end = node.length

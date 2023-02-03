@@ -729,6 +729,12 @@ test('builtin: set returns', () => {
     `const run=(a)=>{return a.b=1;};`,
   )
 })
+test('builtin: set: hoist', () => {
+  assert.equal(
+    tostr('(set a (if true 1 2))'),
+    'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};a=hoist__0;',
+  )
+})
 test('builtin: try/catch/finally with return', () => {
   assert.equal(
     tostr(`
