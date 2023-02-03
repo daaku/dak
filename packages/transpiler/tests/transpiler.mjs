@@ -735,6 +735,12 @@ test('builtin: set: hoist', () => {
     'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};a=hoist__0;',
   )
 })
+test('builtin: set: double + hoist', () => {
+  assert.equal(
+    tostr('(set b (set a (if true 1 2)))'),
+    'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};b=a=hoist__0;',
+  )
+})
 test('builtin: try/catch/finally with return', () => {
   assert.equal(
     tostr(`
