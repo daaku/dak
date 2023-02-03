@@ -211,7 +211,7 @@ const readSymbol = (ctx, input, len, pos) => {
   let end
   for (end = start; end < len; end++) {
     const c = input[end]
-    if (symbolBreaker.includes(c) || whitespace.includes(c)) {
+    if (symbolBreaker.includes(c) || whitespace.includes(c) || c === ';') {
       break
     }
     pos.offset++

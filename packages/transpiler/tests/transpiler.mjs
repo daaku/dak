@@ -137,6 +137,9 @@ test('comments', () => {
 test('comment at EOF', () => {
   assert.equal(tostr('a\n;'), 'a;;')
 })
+test('comment middle line', () => {
+  assert.equal(tostr('a;b'), 'a;;')
+})
 test('builtin: import', () => {
   assert.equal(
     tostr(`
