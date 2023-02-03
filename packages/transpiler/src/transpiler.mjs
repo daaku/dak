@@ -792,8 +792,9 @@ function* transpileSpecialFnArgs(ctx, node) {
 }
 
 const makeFnTranspiler = (preArgs, postArgs) =>
-  function* transpileBuiltinFn(ctx, node) {
+  function* transpileBuiltinFn(ctx, node, assign) {
     let [prefix, index] = exportDefault(ctx, node)
+    yield* transpileSpecialAssign(ctx, assign)
     yield* prefix
     let wrapped = false
     if (node[index].kind === 'symbol') {

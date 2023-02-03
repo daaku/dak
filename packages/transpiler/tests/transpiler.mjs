@@ -339,6 +339,14 @@ test('builtin: anonymous fn@*', () => {
     `(async function*(v){return yield v;});`,
   )
 })
+test('builtin: anonymous fn to const', () => {
+  assert.equal(
+    tostr(`
+    (const a (fn [b] (inc b)))
+    `),
+    `const a=((b)=>{return (b+1);});;`,
+  )
+})
 test('builtin: let', () => {
   assert.equal(
     tostr(`
@@ -745,6 +753,19 @@ test('builtin: set: double + hoist', () => {
   assert.equal(
     tostr('(set b (set a (if true 1 2)))'),
     'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};b=a=hoist__0;',
+  )
+})
+test('builtin: set property number', () => {
+  assert.equal(tostr(`(set globalThis.answer 42)`), `globalThis.answer=42;`)
+})
+test('builtin: set property fn', () => {
+  assert.equal(
+    tostr(`
+    (set globalThis.prn
+         (fn [a]
+           (console.log a)))
+    `),
+    `globalThis.prn=((a)=>{return console.log(a);});`,
   )
 })
 test('builtin: try/catch/finally with return', () => {
