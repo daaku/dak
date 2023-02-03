@@ -134,6 +134,9 @@ test('comments', () => {
     `;"use strict";;`,
   )
 })
+test('comment at EOF', () => {
+  assert.equal(tostr('a\n;'), 'a;;')
+})
 test('builtin: import', () => {
   assert.equal(
     tostr(`

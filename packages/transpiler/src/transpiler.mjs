@@ -221,7 +221,7 @@ const readSymbol = (ctx, input, len, pos) => {
 }
 
 const readEOL = (ctx, input, len, pos) => {
-  let start = pos.offset + 1
+  let start = pos.offset
   let end
   for (end = start; end < len; end++) {
     pos.offset++
