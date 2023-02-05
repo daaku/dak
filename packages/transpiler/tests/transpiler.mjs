@@ -71,6 +71,15 @@ test('symbol: lt', () => {
 test('symbol: eq', () => {
   assert.equal(tostr('='), '_EQ_;')
 })
+test('symbol: floats', () => {
+  assert.equal(tostr('3.1415926'), '3.1415926;')
+  assert.equal(tostr('.123456789'), '.123456789;')
+  assert.equal(tostr('3.1E+12'), '3.1E+12;')
+  assert.equal(tostr('.1e-23'), '.1e-23;')
+})
+test('symbol: dot prop', () => {
+  assert.equal(tostr('.a-b'), '.a_DASH_b;')
+})
 test('plain keyword', () => {
   assert.equal(tostr(':foo'), '"foo";')
 })

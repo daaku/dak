@@ -514,6 +514,15 @@ const mangleChars = {
 }
 
 const mangleSym = sym => {
+  // dont mangle numbers
+  let first = sym[0]
+  if (first === '.') {
+    first = sym.at(1)
+  }
+  if (first >= '0' && first <= '9') {
+    return sym
+  }
+
   const parts = []
   let start = 0
   for (let end = 0; end < sym.length; end++) {
