@@ -8,7 +8,7 @@
 (const js-code (document.getElementById :js-code))
 (const output (document.getElementById :output))
 
-(fn primitive? [v] (= v (Object v)))
+(fn primitive? [v] (or (bigint? v) (= v (Object v))))
 
 (set globalThis.prn
   (fn [...rest]

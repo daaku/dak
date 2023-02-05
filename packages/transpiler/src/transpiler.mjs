@@ -17,6 +17,9 @@ const builtinMacros = `
 (macro number? [v]
   '(= (typeof ,v) :number))
 
+(macro bigint? [v]
+  '(= (typeof ,v) :bigint))
+
 (macro string? [v]
   '(= (typeof ,v) :string))
 
