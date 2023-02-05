@@ -1016,7 +1016,7 @@ const makeForTranspiler = (prefix, middle) =>
     const binding = node[1]
     yield [prefix, node[0]]
     yield '(let '
-    yield* transpileNodeSymbol(ctx, binding[0])
+    yield* transpileSpecialDestructure(ctx, binding[0])
     yield [' ', node[0]]
     yield middle
     yield ' '

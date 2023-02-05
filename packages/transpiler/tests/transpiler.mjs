@@ -469,6 +469,15 @@ test('builtin: for-of', () => {
     `for(let v of vs){console.log(v);};`,
   )
 })
+test('builtin: for-of with destructure', () => {
+  assert.equal(
+    tostr(`
+    (for-of [[a b] vs]
+      (console.log a b))
+    `),
+    `for(let [a,b,] of vs){console.log(a,b);};`,
+  )
+})
 test('builtin: for-in', () => {
   assert.equal(
     tostr(`
