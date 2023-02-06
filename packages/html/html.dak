@@ -1,0 +1,55 @@
+(const entities {"&" "&amp;"
+                 "<" "&lt;"
+                 ">" "&gt;"
+                 "\"" "&34;"
+                 "'" "&#39;"})
+(fn entities-replace [c] (. entities c))
+
+(const self-closing
+  (Set. [:area :base :br :col :command :embed :hr :img :input :keygen :link
+         :meta :param :source :track :wbr]))
+
+(fn escape [s]
+  (s.replace #/[&<>"']/g entities-replace))
+
+(fn str-attrs [attrs]
+  (let [s []]
+    (for-of [[k v] (Object.entries attrs)]
+      (s.push " " k "=\"" (escape v) "\""))
+    (s.join "")))
+
+(fn attrs? [thing]
+  (and thing (object? thing) (not (array? thing))))
+
+(const tag-re #/(?<tag>[^#.]+)(?<id>#[^#.]+)?(?<klass>\.[^#]+)?/)
+
+(fn klass-prep [k]
+  (-> k (.slice 1) (.replace "." " ")))
+
+(fn tag-attrs [given-tag attrs]
+  (let [{:keys [tag id klass]} (. (tag-re.exec given-tag) :groups)]
+    (when klass
+      (set attrs.class
+        (let [existing attrs.class]
+          (if (array? existing) (str (klass-prep klass) " " (existing.join " "))
+              (string? existing) (str (klass-prep klass) " " existing)
+              (klass-prep klass)))))
+    (when id
+      (set attrs.id (id.slice 1)))
+    [tag attrs]))
+
+(fn end-tag [tag]
+  (if (self-closing.has tag) "" (str "</" tag ">")))
+
+(fn html [el]
+  (if (string? el) (escape el)
+      (let [given-tag (. el 0)
+            second (. el 1)
+            has-attrs (attrs? second)
+            [tag attrs] (tag-attrs given-tag (if has-attrs second {}))
+            body (el.slice (if has-attrs 2 1))]
+        (str "<" tag (str-attrs attrs) ">"
+             (.join (body.map html) "")
+             (end-tag tag)))))
+
+(console.log (html [:div.foo {:onclick "alert&"} "hello & world"]))
