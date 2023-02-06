@@ -1,0 +1,17 @@
+; Welcome to a Tour of Dak. The Dak code is editable.
+; Play around with it.
+
+; The tour is not meant as a tutorial or reference, but
+; serves to provide a quick overview of various syntactic
+; and language features.
+
+; Some notes about the tour.
+
+; These lines starting with semicolons are comments.
+; Anything from the semicolon until the end of the line
+; is considered to be part of the comment.
+
+; The playground makes a special function globally
+; available named "prn". This function puts it's values
+; in the output section below, and also logs it to the
+; browser console.

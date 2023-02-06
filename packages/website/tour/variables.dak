@@ -1,0 +1,31 @@
+; Dak supports the standard declarations as you would expect.
+(var answer 42)
+(const name "deep thought")
+(let machine {:planet :earth})
+(prn answer name machine.planet)
+
+; Set can be used to alter the values (where allowed):
+(set answer 43)
+(set machine.planet :destroyed)
+(prn answer name machine.planet)
+
+; Property access works using dot as shown above.
+; For dynamic property names, the dot operator can be used.
+(set prop-name :planet)
+(prn (. machine prop-name))
+
+; Typically in Lisps a let block is prefered to scope variables.
+(let [author "Adams"
+      programmer "Lunkwill"]
+  (prn author programmer))
+
+; You might have noticed prop-name above is an identifier
+; that is otherwise invalid. Dak allows for a range of
+; additional characters. Remember, these get transpiled into
+; compatible names, so they are not meant for code that will
+; interoperate with JavaScript.
+(let [is-true? true
+      bad! false
+      in> 0
+      out< 1]
+  (prn is-true? bad! in> out<))
