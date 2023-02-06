@@ -1236,7 +1236,7 @@ function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
 
 function* serializeNode(ctx, node, hoist) {
   if (Array.isArray(node)) {
-    if (node[0].value === 'unquote') {
+    if (node[0]?.value === 'unquote') {
       yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
       return
     }
@@ -1289,14 +1289,11 @@ function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
 
 function* transpileSpecialMacro(ctx, node) {
   const args = node[2].map(v => partsStr(transpileSpecialDestructure(ctx, v)))
-  ctx.macros.add(
-    node[1].value,
-    new Function(
-      '_macroName',
-      ...args,
-      partsStr(transpileSpecialBody(ctx, node.slice(3), 'return ')),
-    ),
-  )
+  const body = partsStr(transpileSpecialBody(ctx, node.slice(3), 'return '))
+  // if (node[1]?.value === 'deftest') {
+  //   console.log(body)
+  // }
+  ctx.macros.add(node[1].value, new Function('_macroName', ...args, body))
 }
 
 const builtins = {

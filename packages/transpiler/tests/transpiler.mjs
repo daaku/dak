@@ -925,6 +925,16 @@ test('macro: doto', () => {
     '(()=>{{let macro__2=[];macro__2.push(1);macro__2.push(2);macro__2.pop();return macro__2;};});',
   )
 })
+test.only('macro: with fn', () => {
+  assert.equal(
+    tostr(`
+    (macro deftest [name ...body]
+      '(test ,name (fn [] ,...body)))
+    (deftest :foo :bar)
+  `),
+    ';test("foo",(()=>{return "bar";}));',
+  )
+})
 
 const testErr = (input, msg) => () => {
   let output
