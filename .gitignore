@@ -2,4 +2,5 @@
 /package-lock.json
 /packages/*/coverage
 /packages/*/dist
+/packages/vscode/*.vsix
 /packages/website/node_modules
