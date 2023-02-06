@@ -1,9 +1,31 @@
 (import [:uvu [test]]
         [:uvu/assert :as assert]
-        ["../html.dak" [html]])
+        [:../html.dak [html]])
 
-(test :hello
-  (fn []
-    (assert.match (html [:div "hello world"]) "<div>hello world</div>")))
+(macro deftest [name ...body]
+  '(test ,name (fn [] ,...body)))
+
+(deftest :plain-string
+  (assert.equal (html "hello") "hello"))
+
+(deftest :meta-charset
+  (assert.equal (html [:meta {:charset :utf8}])
+                      "<meta charset=\"utf8\">"))
+
+(deftest :multiple-body-strings
+  (assert.equal (html [:a "Hello" " " "World"])
+                      "<a>Hello World</a>"))
+
+(deftest :escape-attr
+  (assert.equal (html [:a {:href "/?a=1&b=2"} "Go"])
+                      "<a href=\"/?a=1&amp;b=2\">Go</a>"))
+
+(deftest :escape-body
+  (assert.equal (html [:a "&<>\"'"])
+                      "<a>&amp;&lt;&gt;&34;&#39;</a>"))
+
+(deftest :tag-id-class
+  (assert.equal (html [:a#foo.a.b {:class :c} "Hello"])
+                "<a class=\"a b c\" id=\"foo\">Hello</a>"))
 
 (test.run)
