@@ -41,7 +41,7 @@
 (fn end-tag [tag]
   (if (self-closing.has tag) "" (str "</" tag ">")))
 
-(fn html [el]
+(fn ^:export html [el]
   (if (string? el) (escape el)
       (let [given-tag (. el 0)
             second (. el 1)
@@ -51,5 +51,3 @@
         (str "<" tag (str-attrs attrs) ">"
              (.join (body.map html) "")
              (end-tag tag)))))
-
-(console.log (html [:div.foo {:onclick "alert&"} "hello & world"]))

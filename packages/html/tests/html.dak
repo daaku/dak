@@ -1,0 +1,9 @@
+(import [:uvu [test]]
+        [:uvu/assert :as assert]
+        ["../html.dak" [html]])
+
+(test :hello
+  (fn []
+    (assert.match (html [:div "hello world"]) "<div>hello world</div>")))
+
+(test.run)
