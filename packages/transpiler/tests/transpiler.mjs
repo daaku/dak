@@ -925,7 +925,7 @@ test('macro: doto', () => {
     '(()=>{{let macro__2=[];macro__2.push(1);macro__2.push(2);macro__2.pop();return macro__2;};});',
   )
 })
-test.only('macro: with fn', () => {
+test('macro: with fn', () => {
   assert.equal(
     tostr(`
     (macro deftest [name ...body]
