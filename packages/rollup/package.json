@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "prepare": "mkdir -p dist && node ../cli/main.mjs < rollup.dak > dist/rollup.mjs"
+    "prepare": "mkdir -p dist && node ../cli/transpile.mjs < rollup.dak > dist/rollup.mjs"
   },
   "repository": {
     "type": "git",

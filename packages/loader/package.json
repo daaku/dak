@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "prepare": "mkdir -p dist && node ../cli/main.mjs < loader.dak > dist/loader.mjs",
+    "prepare": "mkdir -p dist && node ../cli/transpile.mjs < loader.dak > dist/loader.mjs",
     "bundle": "esbuild --platform=node --bundle --format=esm --minify dist/loader.mjs",
     "test": "uvu",
     "cover": "c8 -r html -r text uvu"

@@ -19,7 +19,12 @@
     "dak",
     "html"
   ],
+  "scripts": {
+    "test": "dak tests/html.dak",
+    "cover": "c8 -e .dak -r html -r text dak tests/html.dak"
+  },
   "devDependencies": {
+    "@daklang/cli": "0.1.0",
     "uvu": "^0.5.6"
   }
 }

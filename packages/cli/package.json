@@ -24,6 +24,7 @@
     "@daklang/transpiler": "^0.1.0"
   },
   "bin": {
-    "dak": "./main.mjs"
+    "dak": "./dak",
+    "dak-transpile": "./transpile.mjs"
   }
 }
