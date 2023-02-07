@@ -1,3 +1,5 @@
+#!/usr/bin/env dak
+
 (import [:uvu [test]]
         [:uvu/assert [equal]]
         [:../html.dak [html]])

@@ -1,10 +1,10 @@
 {
-  "name": "@daklang",
   "workspaces": [
     "packages/transpiler",
     "packages/cli",
     "packages/loader",
     "packages/rollup",
+    "packages/html",
     "packages/website"
   ]
 }
