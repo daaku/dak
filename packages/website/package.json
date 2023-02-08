@@ -16,14 +16,13 @@
     "email": "bugs@daklang.com"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak"
   },
   "dependencies": {
     "@daklang/transpiler": "^0.1.0"
   },
   "devDependencies": {
-    "vite": "^4.0.0"
+    "chokidar": "^3.5.3",
+    "esbuild": "^0.17.6"
   }
 }

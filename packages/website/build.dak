@@ -1,0 +1,111 @@
+(import [:esbuild :as esbuild]
+        [:node:fs/promises [readFile writeFile mkdir]]
+        [:node:path [relative dirname]]
+        ["@daklang/transpiler" [transpileStr]]
+        ["@daklang/html" [doc]])
+
+(const dakPlugin
+  {:name :dak
+   :setup
+   (fn [build]
+     (build.onLoad
+       {:filter #/\.dak$/}
+       (fn@ [{:keys [path]}]
+         {:contents (. (transpileStr
+                         @(readFile path :utf8)
+                         {:filename (relative (process.cwd) path)
+                          :sourcemap :inline})
+                       :code)})))})
+
+(fn@ esbuild-context [config]
+  @(esbuild.context {:entryPoints ["assets/favicon.svg"
+                                   "assets/index.css"
+                                   "assets/index.dak"]
+                     :bundle true
+                     :outdir "dist"
+                     :metafile true
+                     :assetNames "assets/[name]-[hash]"
+                     :entryNames "assets/[name]-[hash]"
+                     :loader {:.svg :file}
+                     :sourcemap true
+                     :plugins [dakPlugin]}))
+
+(fn asset-original-name [p]
+  (-> p
+    (.replace #/^\/assets\// "")
+    (.replace #/-.{8}(\.\w+)/ "$1")))
+
+(fn assets-map [outputs]
+  (let [assets {}]
+    (-> outputs Object.keys
+        (.filter #(not ($.endsWith ".map")))
+        (.map #(if ($.startsWith "dist/") ($.substring 4) $))
+        (.forEach #(set (. assets (asset-original-name $)) $)))
+    assets))
+
+(fn@ esbuild-prod [config]
+  (let [ctx @(esbuild-context config)
+        assets (assets-map (. @(ctx.rebuild) :metafile :outputs))]
+    @(ctx.dispose)
+    assets))
+
+(fn play-ui [assets {:or {title "Dak Playground" code ""}}]
+  (doc {:lang :en}
+   [:head
+    [:meta {:charset :utf-8}]
+    [:title title]
+    [:meta {:name :viewport :content "width=device-width,initial-scale=1"}]
+    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
+    [:link {:rel :icon :type "image/svg+xml" :href (. assets "favicon.svg")}]]
+   [:body
+    [:header
+     [:h1 title]
+     [:div
+      [:input#auto-eval {:type :checkbox :checked true}]
+      [:label {:for :auto-eval} "Eval"]
+      [:select#fmt [:option {:value :pretty} "Pretty"]
+                   [:option {:value :raw} "Raw"]
+                   [:option {:value :minify} "Minify"]]]]
+    [:div.code
+     [:textarea {:id :dak-code
+                 :placeholder "Write some Dak..."
+                 :autocorrect :off
+                 :autocomplete :off
+                 :autocapitalize :none
+                 :spellcheck false
+                 :autofocus true}]
+     [:textarea {:id :js-code
+                 :placeholder "Output will show here."
+                 :autocorrect :off
+                 :autocomplete :off
+                 :autocapitalize :none
+                 :spellcheck false}]]
+    [:div#output]
+    [:script {:src "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"}]
+    [:script {:src "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"}]
+    [:script {:type :module :src (. assets "index.js")}]]))
+
+(fn tour-title [s]
+  (-> s
+    (.replace "-" " ")
+    (.replace #/\w\S*/g #(str (-> $ (.charAt 0) .toUpperCase)
+                              (-> $ (.substring 1) .toLowerCase)))
+    (str ": Dak Playground")))
+
+(fn@ play-build [config assets name]
+  (let [source-file (str "tour/" name ".dak")
+        out-file (str "dist/tour/" name "/index.html")
+        title (tour-title name)
+        code @(readFile source-file "utf-8")]
+    (mkdir (dirname out-file) {:recursive true})
+    (writeFile out-file (play-ui assets {:title title :code code}))))
+
+(const tour [:welcome :literals :variables])
+
+(fn@ main []
+  (let [config {}
+        assets @(esbuild-prod config)]
+    (console.log assets)
+    @(Promise.all (tour.map #(play-build config assets $)))))
+
+@(main)
