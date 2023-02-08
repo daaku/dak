@@ -6,6 +6,11 @@
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/html.mjs"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/daaku/dak",
@@ -20,6 +25,7 @@
     "html"
   ],
   "scripts": {
+    "prepare": "mkdir -p dist && node ../cli/transpile.mjs < html.dak > dist/html.mjs",
     "test": "dak tests/html.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/html.dak"
   },
