@@ -12,10 +12,19 @@
 (fn escape [s]
   (s.replace #/[&<>"']/g entities-replace))
 
+(fn str-val [v]
+  (case (typeof v)
+    :undefined ""
+    :null ""
+    :string (escape v)
+    :number (String v)
+    :boolean (String v)
+    (escape (String v))))
+
 (fn str-attrs [attrs]
   (let [s []]
     (for-of [[k v] (Object.entries attrs)]
-      (s.push " " k "=\"" (escape v) "\""))
+      (s.push " " k "=\"" (str-val v) "\""))
     (s.join "")))
 
 (fn attrs? [thing]
