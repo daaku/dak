@@ -65,3 +65,8 @@
         (str "<" tag (str-attrs attrs) ">"
              (.join (body.map html) "")
              (end-tag tag)))))
+
+(fn ^:export doc [attrs ...els]
+  (str "<!doctype html>"
+       (html [:html attrs ...els])
+       "\n"))

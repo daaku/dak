@@ -2,7 +2,7 @@
 
 (import [:uvu [test]]
         [:uvu/assert [equal]]
-        [:../html.dak [html unsafe]])
+        [:../html.dak [html unsafe doc]])
 
 (macro deftest [name data str]
   '(test ,name
@@ -36,5 +36,10 @@
 (deftest :unsafe
   (unsafe "&boom" "<42>")
   "&boom<42>")
+
+(test :doc
+  (fn []
+    (equal (doc {:lang :en} [:strong "hello & world"])
+           "<!doctype html><html lang=\"en\"><strong>hello &amp; world</strong></html>\n")))
 
 (test.run)
