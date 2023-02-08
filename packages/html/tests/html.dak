@@ -2,7 +2,7 @@
 
 (import [:uvu [test]]
         [:uvu/assert [equal]]
-        [:../html.dak [html]])
+        [:../html.dak [html unsafe]])
 
 (macro deftest [name data str]
   '(test ,name
@@ -32,5 +32,9 @@
 (deftest :tag-id-class
   [:a#foo.a.b {:class :c} "Hello"]
   "<a class=\"a b c\" id=\"foo\">Hello</a>")
+
+(deftest :unsafe
+  (unsafe "&boom" "<42>")
+  "&boom<42>")
 
 (test.run)

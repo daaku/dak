@@ -50,8 +50,13 @@
 (fn end-tag [tag]
   (if (self-closing.has tag) "" (str "</" tag ">")))
 
+(const _unsafe (Symbol :unsafe))
+(fn ^:export unsafe [...vs]
+  [_unsafe vs])
+
 (fn ^:export html [el]
   (if (string? el) (escape el)
+      (= (. el 0) _unsafe) (.join (. el 1) "")
       (let [given-tag (. el 0)
             second (. el 1)
             has-attrs (attrs? second)
