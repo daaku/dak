@@ -1,6 +1,10 @@
 (import [:esbuild :as esbuild]
         [:node:fs/promises [readFile writeFile mkdir]]
         [:node:path [relative dirname]]
+        [:node:http [createServer]]
+        [:finalhandler finalhandler]
+        [:serve-static serveStatic]
+        [:chokidar [watch]]
         ["@daklang/transpiler" [transpileStr]]
         ["@daklang/html" [doc]])
 
@@ -45,9 +49,11 @@
     assets))
 
 (fn@ esbuild-prod [config]
+  (console.time :esbuild)
   (let [ctx @(esbuild-context config)
         assets (assets-map (. @(ctx.rebuild) :metafile :outputs))]
     @(ctx.dispose)
+    (console.timeEnd :esbuild)
     assets))
 
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
@@ -109,11 +115,22 @@
   (let [assets @(esbuild-prod config)]
     @(Promise.all (tour.map #(play-build config assets $)))))
 
+(fn set-headers [res path]
+  (when (path.includes "/assets/")
+    (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
+
 (fn@ main-dev [config]
-  (console.log "dev mode"))
+  (main-prod config)
+  (-> ["assets" "tour"]
+      (watch {:ignoreInitial true})
+      (.on :all #(main-prod config)))
+  (let [ss (serveStatic "dist" {:setHeaders set-headers})
+        server (createServer #(ss $1 $2 (finalhandler $1 $2)))]
+    (server.listen config.port)))
 
 (fn@ main []
-  (let [config {:env (or process.env.NODE_ENV "development")}]
+  (let [config {:env (or process.env.NODE_ENV "development")
+                :port 8080}]
     ((if (= config.env :development) main-dev main-prod) config)))
 
 @(main)
