@@ -111,3 +111,9 @@
     @(Promise.all (tour.map #(play-build config assets $)))))
 
 @(main)
+
+;; TODO
+;; - dev server
+;; - live reload
+;; - index page
+;; - tour navigation
