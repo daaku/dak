@@ -17,13 +17,13 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak",
-    "build": "NODE_ENV=production NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak"
+    "build": "NODE_ENV=production NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak",
+    "watch": "watchexec -cr -- npm run --silent dev"
   },
   "dependencies": {
     "@daklang/transpiler": "^0.1.0"
   },
   "devDependencies": {
-    "chokidar": "^3.5.3",
     "esbuild": "^0.17.6",
     "finalhandler": "^1.2.0",
     "serve-static": "^1.15.0"

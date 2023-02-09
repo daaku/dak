@@ -4,7 +4,6 @@
         [:node:http [createServer]]
         [:finalhandler finalhandler]
         [:serve-static serveStatic]
-        [:chokidar [watch]]
         ["@daklang/transpiler" [transpileStr]]
         ["@daklang/html" [doc]])
 
@@ -120,9 +119,6 @@
 
 (fn@ main-dev [config]
   (main-prod config)
-  (-> ["assets" "tour"]
-      (watch {:ignoreInitial true})
-      (.on :all #(main-prod config)))
   (let [ss (serveStatic "dist" {:setHeaders set-headers})
         server (createServer #(ss $1 $2 (finalhandler $1 $2)))]
     (server.listen config.port)))
@@ -135,7 +131,5 @@
 @(main)
 
 ;; TODO
-;; - dev server
-;; - live reload
 ;; - index page
 ;; - tour navigation
