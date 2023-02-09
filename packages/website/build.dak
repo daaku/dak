@@ -22,6 +22,7 @@
                                    "assets/index.css"
                                    "assets/index.dak"]
                      :bundle true
+                     :format :esm
                      :outdir "dist"
                      :metafile true
                      :assetNames "assets/[name]-[hash]"
@@ -73,7 +74,7 @@
                  :autocomplete :off
                  :autocapitalize :none
                  :spellcheck false
-                 :autofocus true}]
+                 :autofocus true} code]
      [:textarea {:id :js-code
                  :placeholder "Output will show here."
                  :autocorrect :off
