@@ -1366,8 +1366,8 @@ const builtins = {
   '.': transpileBuiltinDot,
   '?.': transpileBuiltinQuestionDot,
   '...': transpileBuiltinRest,
-  typeof: transpileTypeof,
-  set: transpileSet,
+  typeof: transpileBuiltinTypeof,
+  set: transpileBuiltinSet,
   hash: transpileBuiltinHash,
   quote: transpileBuiltinQuote,
   macro: transpileSpecialMacro,
@@ -1433,12 +1433,12 @@ function* transpileNodeList(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
 }
 
-function* transpileTypeof(ctx, node, assign, hoist, _evKind) {
+function* transpileBuiltinTypeof(ctx, node, assign, hoist, _evKind) {
   yield 'typeof '
   yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
 }
 
-function* transpileSet(ctx, node, assign, hoist, _evKind) {
+function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
   const newAssign = [
     ...transpileSpecialAssign(ctx, assign),
     ...transpileNodeSymbol(ctx, node[1]),
