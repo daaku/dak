@@ -27,7 +27,7 @@
 
 (deftest :escape-body
   [:a "&<>\"'"]
-  "<a>&amp;&lt;&gt;&34;&#39;</a>")
+  "<a>&amp;&lt;&gt;&#34;&#39;</a>")
 
 (deftest :tag-id-class
   [:a#foo.a.b {:class :c} "Hello"]

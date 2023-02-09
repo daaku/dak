@@ -1,7 +1,7 @@
 (const entities {"&" "&amp;"
                  "<" "&lt;"
                  ">" "&gt;"
-                 "\"" "&34;"
+                 "\"" "&#34;"
                  "'" "&#39;"})
 (fn entities-replace [c] (. entities c))
 
