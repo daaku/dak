@@ -786,6 +786,9 @@ test('builtin: set property fn', () => {
     `globalThis.prn=((a)=>{return console.log(a);});`,
   )
 })
+test('builtin: set dot access', () => {
+  assert.equal(tostr(`(set (. a b c) 42)`), `a[b][c]=42;`)
+})
 test('builtin: try/catch/finally with return', () => {
   assert.equal(
     tostr(`

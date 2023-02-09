@@ -1440,8 +1440,7 @@ function* transpileBuiltinTypeof(ctx, node, assign, hoist, _evKind) {
 
 function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
   const newAssign = [
-    ...transpileSpecialAssign(ctx, assign),
-    ...transpileNodeSymbol(ctx, node[1]),
+    ...transpileNodeExpr(ctx, node[1], assign, hoist, evExpr),
     '=',
   ]
   yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr)
