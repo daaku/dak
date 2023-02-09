@@ -28,7 +28,8 @@
     (output.appendChild child)))
 
 (fn@ refresh []
-  (console.clear)
+  (if globalThis.IS_PRODUCTION
+    (console.clear))
   (output.replaceChildren)
   (try
     (let [js (. (transpileStr dak-code.value {:filename "main.dak"}) :code)]
@@ -54,3 +55,22 @@
 (set dak-code.oninput refresh)
 (set fmt.onchange refresh)
 (refresh)
+
+(when (not globalThis.IS_PRODUCTION)
+  (let token null)
+  (let url "/events?nowait")
+  (fn@ monitor []
+    (try
+      (while true
+        (let [new-token (-> (fetch url) await .text await)]
+          (set url "/events")
+          (when (null? token)
+            (set token new-token)
+            (continue))
+          (when (not= token new-token)
+            (location.reload)
+            (break))))
+      (catch err
+        (set url "/events?nowait")
+        (setTimeout monitor 200))))
+  (monitor))

@@ -25,6 +25,8 @@
                                    "assets/index.css"
                                    "assets/index.dak"]
                      :bundle true
+                     :define {"globalThis.IS_PRODUCTION"
+                              (if (= config.env :production) "true" "false")}
                      :format :esm
                      :outdir "dist"
                      :metafile true
@@ -94,15 +96,15 @@
     (.replace "-" " ")
     (.replace #/\w\S*/g #(str (-> $ (.charAt 0) .toUpperCase)
                               (-> $ (.substring 1) .toLowerCase)))
-    (str ": Dak Playground")))
+    (str ": Dak Tour")))
 
 (fn@ play-build [config assets name]
   (let [source-file (str "tour/" name ".dak")
         out-file (str "dist/tour/" name "/index.html")
         title (tour-title name)
         code @(readFile source-file "utf-8")]
-    (mkdir (dirname out-file) {:recursive true})
-    (writeFile out-file (play-ui assets {:title title :code code}))))
+    @(mkdir (dirname out-file) {:recursive true})
+    @(writeFile out-file (play-ui assets {:title title :code code}))))
 
 (const tour [:welcome :literals :variables])
 
@@ -117,10 +119,17 @@
   (when (path.includes "/assets/")
     (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
 
+(fn dev-server-handler [ss]
+  (let [token (crypto.randomUUID)]
+    (fn [req res]
+      (if (req.url.startsWith "/events")
+        (setTimeout #(res.end token) (if (req.url.endsWith "nowait") 0 55000))
+        (ss req res (finalhandler req res))))))
+
 (fn@ main-dev [config]
   (main-prod config)
   (let [ss (serveStatic "dist" {:setHeaders set-headers})
-        server (createServer #(ss $1 $2 (finalhandler $1 $2)))]
+        server (createServer (dev-server-handler ss))]
     (server.listen config.port)))
 
 (fn@ main []
