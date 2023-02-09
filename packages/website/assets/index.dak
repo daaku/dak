@@ -53,3 +53,4 @@
 (set auto-eval.onchange refresh)
 (set dak-code.oninput refresh)
 (set fmt.onchange refresh)
+(refresh)
