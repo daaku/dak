@@ -93,19 +93,20 @@
     (str ": Dak Playground")))
 
 (fn@ play-build [config assets name]
+  (console.time name)
   (let [source-file (str "tour/" name ".dak")
         out-file (str "dist/tour/" name "/index.html")
         title (tour-title name)
         code @(readFile source-file "utf-8")]
     (mkdir (dirname out-file) {:recursive true})
-    (writeFile out-file (play-ui assets {:title title :code code}))))
+    (writeFile out-file (play-ui assets {:title title :code code})))
+  (console.timeEnd name))
 
 (const tour [:welcome :literals :variables])
 
 (fn@ main []
   (let [config {}
         assets @(esbuild-prod config)]
-    (console.log assets)
     @(Promise.all (tour.map #(play-build config assets $)))))
 
 @(main)
