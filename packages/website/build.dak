@@ -125,16 +125,17 @@
   (main-prod config)
   (let [token (crypto.randomUUID)
         ss (serveStatic "dist" {:setHeaders set-headers})
-        wss (WebSocketServer. {:noServer true})
-        server (createServer #(ss $1 $2 (finalhandler $1 $2)))]
-    (server.on :upgrade
-      (fn [req sock head]
-        (let [{:keys [pathname]} (parseURL req.url)]
-          (if (= pathname "/ws")
-
-            (wss.handleUpgrade req sock head #($.send token))
-            (sock.destroy)))))
-    (server.listen config.port)))
+        wss (WebSocketServer. {:noServer true})]
+    (doto (createServer #(ss $1 $2 (finalhandler $1 $2)))
+      (.on :listening
+        #(console.log (str "Serving at http://localhost:" config.port "/")))
+      (.on :upgrade
+        (fn [req sock head]
+          (let [{:keys [pathname]} (parseURL req.url)]
+            (if (= pathname "/ws")
+              (wss.handleUpgrade req sock head #($.send token))
+              (sock.destroy)))))
+      (.listen config.port))))
 
 (fn@ main []
   (let [config {:env (or process.env.NODE_ENV "development")
