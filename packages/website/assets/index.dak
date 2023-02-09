@@ -1,5 +1,5 @@
-(import ["https://unpkg.com/prettier@2.7.1/esm/standalone.mjs" prettier]
-        ["https://unpkg.com/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
+(import ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs" prettier]
+        ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
         ["@daklang/transpiler" [transpileStr]])
 
 (const auto-eval (document.getElementById :auto-eval))
