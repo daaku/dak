@@ -105,10 +105,16 @@
 
 (const tour [:welcome :literals :variables])
 
-(fn@ main []
-  (let [config {}
-        assets @(esbuild-prod config)]
+(fn@ main-prod [config]
+  (let [assets @(esbuild-prod config)]
     @(Promise.all (tour.map #(play-build config assets $)))))
+
+(fn@ main-dev [config]
+  (console.log "dev mode"))
+
+(fn@ main []
+  (let [config {:env (or process.env.NODE_ENV "development")}]
+    ((if (= config.env :development) main-dev main-prod) config)))
 
 @(main)
 
