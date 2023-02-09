@@ -49,11 +49,9 @@
     assets))
 
 (fn@ esbuild-prod [config]
-  (console.time :esbuild)
   (let [ctx @(esbuild-context config)
         assets (assets-map (. @(ctx.rebuild) :metafile :outputs))]
     @(ctx.dispose)
-    (console.timeEnd :esbuild)
     assets))
 
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
@@ -100,20 +98,21 @@
     (str ": Dak Playground")))
 
 (fn@ play-build [config assets name]
-  (console.time name)
   (let [source-file (str "tour/" name ".dak")
         out-file (str "dist/tour/" name "/index.html")
         title (tour-title name)
         code @(readFile source-file "utf-8")]
     (mkdir (dirname out-file) {:recursive true})
-    (writeFile out-file (play-ui assets {:title title :code code})))
-  (console.timeEnd name))
+    (writeFile out-file (play-ui assets {:title title :code code}))))
 
 (const tour [:welcome :literals :variables])
 
+(const timer-label "Build completed")
 (fn@ main-prod [config]
+  (console.time timer-label)
   (let [assets @(esbuild-prod config)]
-    @(Promise.all (tour.map #(play-build config assets $)))))
+    @(Promise.all (tour.map #(play-build config assets $))))
+  (console.timeEnd timer-label))
 
 (fn set-headers [res path]
   (when (path.includes "/assets/")
