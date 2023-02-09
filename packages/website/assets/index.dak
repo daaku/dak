@@ -58,19 +58,12 @@
 
 (when (not globalThis.IS_PRODUCTION)
   (let token null)
-  (let url "/events?nowait")
   (fn@ monitor []
-    (try
-      (while true
-        (let [new-token (-> (fetch url) await .text await)]
-          (set url "/events")
-          (when (null? token)
-            (set token new-token)
-            (continue))
-          (when (not= token new-token)
-            (location.reload)
-            (break))))
-      (catch err
-        (set url "/events?nowait")
-        (setTimeout monitor 200))))
+    (doto (WebSocket. (str "ws://" location.host "/ws"))
+      (.addEventListener :error #(setTimeout monitor 100))
+      (.addEventListener :close #(setTimeout monitor 100))
+      (.addEventListener :message
+        (fn [event]
+          (if (null? token) (set token event.data)
+              (not= token event.data) (location.reload))))))
   (monitor))

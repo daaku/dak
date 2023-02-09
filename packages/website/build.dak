@@ -2,8 +2,10 @@
         [:node:fs/promises [readFile writeFile mkdir]]
         [:node:path [relative dirname]]
         [:node:http [createServer]]
+        [:node:url {parse parseURL}]
         [:finalhandler finalhandler]
         [:serve-static serveStatic]
+        [:ws [WebSocketServer]]
         ["@daklang/transpiler" [transpileStr]]
         ["@daklang/html" [doc]])
 
@@ -119,17 +121,19 @@
   (when (path.includes "/assets/")
     (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
 
-(fn dev-server-handler [ss]
-  (let [token (crypto.randomUUID)]
-    (fn [req res]
-      (if (req.url.startsWith "/events")
-        (setTimeout #(res.end token) (if (req.url.endsWith "nowait") 0 55000))
-        (ss req res (finalhandler req res))))))
-
 (fn@ main-dev [config]
   (main-prod config)
-  (let [ss (serveStatic "dist" {:setHeaders set-headers})
-        server (createServer (dev-server-handler ss))]
+  (let [token (crypto.randomUUID)
+        ss (serveStatic "dist" {:setHeaders set-headers})
+        wss (WebSocketServer. {:noServer true})
+        server (createServer #(ss $1 $2 (finalhandler $1 $2)))]
+    (server.on :upgrade
+      (fn [req sock head]
+        (let [{:keys [pathname]} (parseURL req.url)]
+          (if (= pathname "/ws")
+
+            (wss.handleUpgrade req sock head #($.send token))
+            (sock.destroy)))))
     (server.listen config.port)))
 
 (fn@ main []

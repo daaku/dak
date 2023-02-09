@@ -26,6 +26,7 @@
   "devDependencies": {
     "esbuild": "^0.17.6",
     "finalhandler": "^1.2.0",
-    "serve-static": "^1.15.0"
+    "serve-static": "^1.15.0",
+    "ws": "^8.12.0"
   }
 }
