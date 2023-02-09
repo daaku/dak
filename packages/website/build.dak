@@ -26,9 +26,9 @@
   @(esbuild.context {:entryPoints ["assets/favicon.svg"
                                    "assets/index.css"
                                    "assets/index.dak"]
-                     :bundle true
                      :define {"globalThis.IS_PRODUCTION"
                               (if (= config.env :production) "true" "false")}
+                     :bundle true
                      :format :esm
                      :outdir "dist"
                      :metafile true
