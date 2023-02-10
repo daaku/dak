@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "NODE_ENV=development NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak",
     "build": "NODE_ENV=production NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' node build.dak",
-    "watch": "watchexec -cr -- npm run --silent dev"
+    "watch": "NODE_ENV=development NODE_OPTIONS='--no-warnings --enable-source-maps --loader @daklang/loader' watchexec -cr -- node build.dak"
   },
   "dependencies": {
     "@daklang/transpiler": "^0.1.0"
