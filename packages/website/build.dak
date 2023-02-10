@@ -6,7 +6,7 @@
         [:serve-static serveStatic]
         [:ws [WebSocketServer]]
         ["@daklang/transpiler" [transpileStr]]
-        ["@daklang/html" [doc]])
+        ["@daklang/html" [doc html unsafe]])
 
 (const dakPlugin
   {:name :dak
@@ -56,6 +56,20 @@
     @(ctx.dispose)
     assets))
 
+(const tour [:welcome :literals :variables])
+
+(fn tour-title [s]
+  (-> s
+    (.replace "-" " ")
+    (.replace #/\w\S*/g #(str (-> $ (.charAt 0) .toUpperCase)
+                              (-> $ (.substring 1) .toLowerCase)))))
+
+(const tour-nav
+  (unsafe (html
+    [:ul#tour (...(tour.map
+      (fn [v]
+        [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))])))
+
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
    [:head
@@ -73,6 +87,7 @@
       [:select#fmt [:option {:value :pretty} "Pretty"]
                    [:option {:value :raw} "Raw"]
                    [:option {:value :minify} "Minify"]]]]
+    tour-nav
     [:div.code
      [:textarea {:id :dak-code
                  :placeholder "Write some Dak..."
@@ -92,25 +107,16 @@
     [:script {:src "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"}]
     [:script {:type :module :src (. assets "index.js")}]]))
 
-(fn tour-title [s]
-  (-> s
-    (.replace "-" " ")
-    (.replace #/\w\S*/g #(str (-> $ (.charAt 0) .toUpperCase)
-                              (-> $ (.substring 1) .toLowerCase)))
-    (str ": Dak Tour")))
-
 (fn@ play-build [config assets name]
   (let [source-file (str "tour/" name ".dak")
         out-file (str "dist/tour/" name "/index.html")
-        title (tour-title name)
+        title (str (tour-title name) ": Dak Tour")
         code @(readFile source-file "utf-8")]
     @(mkdir (dirname out-file) {:recursive true})
     @(writeFile out-file (play-ui assets {:title title :code code}))))
 
 (fn@ play-index [config assets]
   @(writeFile "dist/index.html" (play-ui assets {})))
-
-(const tour [:welcome :literals :variables])
 
 (const timer-label "Build completed")
 (fn@ main-prod [config]
