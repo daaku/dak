@@ -107,13 +107,18 @@
     @(mkdir (dirname out-file) {:recursive true})
     @(writeFile out-file (play-ui assets {:title title :code code}))))
 
+(fn@ play-index [config assets]
+  @(writeFile "dist/index.html" (play-ui assets {})))
+
 (const tour [:welcome :literals :variables])
 
 (const timer-label "Build completed")
 (fn@ main-prod [config]
   (console.time timer-label)
   (let [assets @(esbuild-prod config)]
-    @(Promise.all (tour.map #(play-build config assets $))))
+    @(Promise.all
+      [(play-index config assets)
+       (... (tour.map #(play-build config assets $)))]))
   (console.timeEnd timer-label))
 
 (fn set-headers [res path]
@@ -143,5 +148,4 @@
 @(main)
 
 ;; TODO
-;; - index page
 ;; - tour navigation
