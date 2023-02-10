@@ -66,9 +66,10 @@
 
 (const tour-nav
   (unsafe (html
-    [:ul#tour (...(tour.map
-      (fn [v]
-        [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))])))
+    [:div#tour
+      [:ul#tour (... (tour.map
+        (fn [v]
+          [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))
 
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
@@ -82,6 +83,7 @@
     [:header
      [:h1 title]
      [:div
+      [:span#tour-toggle "Tour"]
       [:input#auto-eval {:type :checkbox :checked true}]
       [:label {:for :auto-eval} "Eval"]
       [:select#fmt [:option {:value :pretty} "Pretty"]

@@ -54,6 +54,9 @@
 (set auto-eval.onchange refresh)
 (set dak-code.oninput refresh)
 (set fmt.onchange refresh)
+(set (. (document.getElementById :tour-toggle) :onclick)
+  (fn []
+    (-> :tour document.getElementById (. :classList) (.toggle :visible))))
 (refresh)
 
 (when (not globalThis.IS_PRODUCTION)
