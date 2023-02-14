@@ -1,4 +1,4 @@
-; Note: this example will error in the online playground
+; NOTE: This example will error in the online playground
 ; since imports in JavaScript can only be at the top
 ; of a file.
 
@@ -12,10 +12,13 @@
 ; Default imports are a symbol for binding after the import:
 (import ["./button.js" Button])
 
-; Namespaced imports using :as can be used as such:
+; Namespaced imports use the :as keyword:
 (import ["./ui.js" :as ui])
 
-; Renaming can be achieved using a object literal containing
-; named pairs:
+; Renaming uses an object literal containing named pairs:
 (import ["./main/ui.js" {Button MainButton Label MainLabel}]
         ["./alt/ui.js" {Button AltButton}])
+
+; Finally, they can be used together:
+(import ["./main/ui.js" TheDefault [Label] {Button MainButton}]
+        [:node:fs [readFile]])

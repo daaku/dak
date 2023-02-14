@@ -593,7 +593,8 @@ const transpileNodeExpr = transpileNodeUnknown
 const transpileNodeStatement = hoistable(transpileNodeUnknown)
 
 function* transpileBuiltinImportOne(ctx, node) {
-  const outer = []
+  let defaultName
+  let asName
   const inner = []
   for (let i = 1; i < node.length; i++) {
     const c = node[i]
@@ -607,16 +608,14 @@ function* transpileBuiltinImportOne(ctx, node) {
         }
         break
       case 'symbol':
-        // default import
-        outer.push(mangleSym(c.value))
+        defaultName = c
         break
       case 'string':
         // :as
         if (c.value !== 'as') {
           throw err(ctx, c, `unexpected import string "${c.value}"`)
         }
-        const next = node[++i]
-        outer.push('* as ' + mangleSym(next.value))
+        asName = node[++i]
         break
       case 'object':
         // rename
@@ -627,16 +626,27 @@ function* transpileBuiltinImportOne(ctx, node) {
     }
   }
   yield ['import ', node]
-  yield outer.join(',')
+  let needFrom = false
+  const comma = splitter(',')
+  if (defaultName) {
+    needFrom = true
+    yield comma()
+    yield* transpileNodeSymbol(ctx, defaultName)
+  }
   if (inner.length !== 0) {
-    if (outer.length !== 0) {
-      yield ','
-    }
+    needFrom = true
+    yield comma()
     yield '{'
     yield inner.join(',')
     yield '}'
   }
-  if (inner.length !== 0 || outer.length !== 0) {
+  if (asName) {
+    needFrom = true
+    yield comma()
+    yield ['* as ', asName]
+    yield* transpileNodeSymbol(ctx, asName)
+  }
+  if (needFrom) {
     yield ' from '
   }
   yield* transpileNodeString(ctx, node[0])
