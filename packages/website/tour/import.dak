@@ -1,0 +1,21 @@
+; Note: this example will error in the online playground
+; since imports in JavaScript can only be at the top
+; of a file.
+
+; Imports an be the simple named kind:
+(import ["node:fs" [readFile writeFile]])
+
+; Keywords can be used for a terser syntax:
+(import [:node:fs [readFile]]
+        [:node:path [dirname]])
+
+; Default imports are a symbol for binding after the import:
+(import ["./button.js" Button])
+
+; Namespaced imports using :as can be used as such:
+(import ["./ui.js" :as ui])
+
+; Renaming can be achieved using a object literal containing
+; named pairs:
+(import ["./main/ui.js" {Button MainButton Label MainLabel}]
+        ["./alt/ui.js" {Button AltButton}])
