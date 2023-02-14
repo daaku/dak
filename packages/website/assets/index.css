@@ -38,6 +38,9 @@ header > div {
 #tour.visible ul {
   visibility: visible;
 }
+#tour-toggle {
+  margin-right: 16px;
+}
 .code {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);

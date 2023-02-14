@@ -83,7 +83,7 @@
     [:header
      [:h1 title]
      [:div
-      [:span#tour-toggle "Tour"]
+      [:button#tour-toggle "\u25B7 Show Tour Index"]
       [:input#auto-eval {:type :checkbox :checked true}]
       [:label {:for :auto-eval} "Eval"]
       [:select#fmt [:option {:value :pretty} "Pretty"]
