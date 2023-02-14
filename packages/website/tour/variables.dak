@@ -13,6 +13,7 @@
 ; For dynamic property names, the dot operator can be used.
 (set prop-name :planet)
 (prn (. machine prop-name))
+(set (. machine prop-name) :destroyed)
 
 ; Typically in Lisps a let block is prefered to scope variables.
 (let [author "Adams"
