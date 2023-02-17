@@ -12,4 +12,5 @@ jobs:
           cache: npm
           cache-dependency-path: '**/package.json'
       - run: npm install
-      - run: npm run cover --workspaces --if-present
+      - name: test
+        run: ./node_modules/.bin/dak workspace-p.dak cover

@@ -1,0 +1,34 @@
+#!/usr/bin/env dak
+
+(import [:node:fs/promises [readFile]]
+        [:node:path [join]]
+        [:node:util [promisify]]
+        [:node:child_process {exec execCB}])
+
+(const exec (promisify execCB))
+
+(fn@ run [ws cmd]
+  (let [sh (-> (join ws "package.json")
+               (readFile :utf8)
+               await
+               JSON.parse
+               (?. :scripts cmd))]
+    (when sh
+      (try
+        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
+          (console.log ">" sh)
+          (console.log stdout)
+          (console.log stderr))
+        (catch e
+          (console.error e))))))
+
+(fn@ main []
+  (set process.env.PATH
+       (str process.env.PATH ":" (join (process.cwd) "./node_modules/.bin")))
+  (let [cmd (. process.argv 2)
+        workspaces (-> @(readFile "package.json" :utf8)
+                       JSON.parse
+                       (. :workspaces))]
+    @(Promise.allSettled (workspaces.map #(run $ cmd)))))
+
+@(main)
