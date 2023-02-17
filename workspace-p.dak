@@ -19,7 +19,9 @@
         (console.log stdout)
         (console.log stderr))
       (catch e
-        (console.error e)))))
+        (console.log "FAIL:" (str ws ">") sh)
+        (console.error e.stdout)
+        (console.error e.stderr)))))
 
 (fn@ main []
   (set process.env.PATH
