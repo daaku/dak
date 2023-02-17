@@ -16,7 +16,7 @@
     (when sh
       (try
         (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
-          (console.log ">" sh)
+          (console.log (str ws ">") sh)
           (console.log stdout)
           (console.log stderr))
         (catch e

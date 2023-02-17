@@ -12,5 +12,5 @@ jobs:
           cache: npm
           cache-dependency-path: '**/package.json'
       - run: npm install
-      - name: test
+      - name: Run Tests
         run: ./node_modules/.bin/dak workspace-p.dak cover
