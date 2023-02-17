@@ -1,0 +1,28 @@
+#!/usr/bin/env dak
+
+(import [:node:fs/promises [opendir readFile writeFile]]
+        [:node:path [join]]
+        [:uvu [test]]
+        [:uvu/assert [equal]]
+        ["@daklang/transpiler" [transpileStr]])
+
+(const tour-dir "./tour")
+(const snapshots-dir "./tests/tour-snapshots")
+(const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
+
+(fn@ tour-test [name]
+  (let [contents @(readFile (join tour-dir name) "utf8")
+        actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
+        snapshot-file (join snapshots-dir (.replace name /\.dak$/ ".js"))]
+    (if update-snapshots
+      @(writeFile snapshot-file actual)
+      (equal actual @(readFile snapshot-file "utf8")))))
+
+(test :tour
+  (fn@ []
+    (let [ps []]
+      (for@ [ent @(opendir tour-dir)]
+        (ps.push (tour-test ent.name)))
+      @(Promise.all ps))))
+
+(test.run)
