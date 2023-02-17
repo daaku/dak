@@ -8,19 +8,18 @@
 (const exec (promisify execCB))
 
 (fn@ run [ws cmd]
-  (let [sh (-> (join ws "package.json")
-               (readFile :utf8)
-               await
-               JSON.parse
-               (?. :scripts cmd))]
-    (when sh
-      (try
-        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
-          (console.log (str ws ">") sh)
-          (console.log stdout)
-          (console.log stderr))
-        (catch e
-          (console.error e))))))
+  (when-let [sh (-> (join ws "package.json")
+                  (readFile :utf8)
+                  await
+                  JSON.parse
+                  (?. :scripts cmd))]
+    (try
+      (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
+        (console.log (str ws ">") sh)
+        (console.log stdout)
+        (console.log stderr))
+      (catch e
+        (console.error e)))))
 
 (fn@ main []
   (set process.env.PATH
