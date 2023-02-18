@@ -814,24 +814,46 @@ function* transpileSpecialFnArgs(ctx, node) {
 }
 
 const makeFnTranspiler = (preArgs, postArgs) =>
-  function* transpileBuiltinFn(ctx, node, assign) {
+  function* transpileBuiltinFn(ctx, node, assign, _hoist, evKind) {
+    let pre = preArgs
+    let post = postArgs
     let [prefix, index] = exportDefault(ctx, node)
     yield* transpileSpecialAssign(ctx, assign)
     yield* prefix
-    let wrapped = false
-    if (node[index].kind === 'symbol') {
-      yield ['const ', node]
-      ctx.bindings.add(node[index].value)
-      yield* transpileNodeSymbol(ctx, node[index])
-      yield '='
+    let decl = false
+    if (node[index].value === '^:decl') {
+      decl = true
+      pre = ''
+      post = ''
       index++
-    } else {
-      wrapped = true
+    }
+    let named = node[index].kind === 'symbol'
+    let wrapped = evKind === evExpr || !named
+    if (wrapped) {
       yield '('
     }
-    yield preArgs
+    if (decl) {
+      if (preArgs === '') {
+        yield ['function', node]
+      } else if (preArgs === 'async') {
+        yield ['async function', node]
+      }
+    }
+    if (named) {
+      if (decl) {
+        yield ' '
+        yield* transpileNodeSymbol(ctx, node[index])
+      } else {
+        yield ['const ', node]
+        yield* transpileNodeSymbol(ctx, node[index])
+        yield '='
+      }
+      ctx.bindings.add(node[index].value)
+      index++
+    }
+    yield pre
     yield* transpileSpecialFnArgs(ctx, node[index])
-    yield postArgs
+    yield post
     yield '{'
     yield* transpileSpecialBody(
       ctx,

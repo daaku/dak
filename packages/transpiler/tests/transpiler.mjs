@@ -234,6 +234,15 @@ test('builtin: fn', () => {
     `const err=(expected,offset)=>{return ("expected "+expected+" at position "+offset);};`,
   )
 })
+test('builtin: fn ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:decl err [expected offset]
+      (str "expected " expected " at position " offset))
+    `),
+    `function err(expected,offset){return ("expected "+expected+" at position "+offset);};`,
+  )
+})
 test('builtin: export fn', () => {
   assert.equal(
     tostr(`
@@ -242,12 +251,28 @@ test('builtin: export fn', () => {
     `export const i=(a)=>{return a;};`,
   )
 })
+test('builtin: export fn ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:export ^:decl i [a] a)
+    `),
+    `export function i(a){return a;};`,
+  )
+})
 test('builtin: export default fn', () => {
   assert.equal(
     tostr(`
     (fn ^:export ^:default i [a] a)
     `),
     `export default const i=(a)=>{return a;};`,
+  )
+})
+test('builtin: export default fn ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:export ^:default ^:decl i [a] a)
+    `),
+    `export default function i(a){return a;};`,
   )
 })
 test('builtin: export default anonymous fn', () => {
@@ -294,6 +319,15 @@ test('builtin: fn@', () => {
     `const run=async(v)=>{return await v(42);};`,
   )
 })
+test('builtin: fn@ ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn@ ^:decl run [v]
+      @(v 42))
+    `),
+    `async function run(v){return await v(42);};`,
+  )
+})
 test('builtin: fn*', () => {
   assert.equal(
     tostr(`
@@ -321,6 +355,15 @@ test('builtin: anonymous fn', () => {
     `((v)=>{return v(42);});`,
   )
 })
+test('builtin: anonymous fn ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:decl [v]
+      (v 42))
+    `),
+    `(function(v){return v(42);});`,
+  )
+})
 test('builtin: anonymous fn@', () => {
   assert.equal(
     tostr(`
@@ -328,6 +371,15 @@ test('builtin: anonymous fn@', () => {
       @(v 42))
     `),
     `(async(v)=>{return await v(42);});`,
+  )
+})
+test('builtin: anonymous fn@ ^:decl', () => {
+  assert.equal(
+    tostr(`
+    (fn@ ^:decl [v]
+      @(v 42))
+    `),
+    `(async function(v){return await v(42);});`,
   )
 })
 test('builtin: anonymous fn*', () => {
@@ -354,6 +406,22 @@ test('builtin: anonymous fn to const', () => {
     (const a (fn [b] (inc b)))
     `),
     `const a=((b)=>{return (b+1);});;`,
+  )
+})
+test('builtin: fn ^:decl to const', () => {
+  assert.equal(
+    tostr(`
+    (const a (fn ^:decl foo [b] (inc b)))
+    `),
+    `const a=(function foo(b){return (b+1);});;`,
+  )
+})
+test('builtin: fn with this', () => {
+  assert.equal(
+    tostr(`
+    (fn ^:decl TheClass [a] (set this.a a))
+    `),
+    `function TheClass(a){return this.a=a;};`,
   )
 })
 test('builtin: let', () => {
