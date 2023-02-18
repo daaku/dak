@@ -657,7 +657,7 @@ function* transpileBuiltinImportOne(ctx, node) {
 }
 
 function* transpileBuiltinImport(ctx, node, assign, hoist, evExpr) {
-  if (node[1].kind === 'symbol' || node[1].kind === 'string') {
+  if (node[1].kind !== 'array') {
     yield* transpileSpecialCall(ctx, node, assign, hoist, evExpr)
     return
   }
@@ -1537,7 +1537,7 @@ export const transpileStr = (code, config = {}) => {
     parts.push(
       '\n',
       '//# sourceMappingURL=data:application/json;base64,',
-      Buffer.from(JSON.stringify(mapJSON), 'utf8').toString('base64'),
+      btoa(JSON.stringify(mapJSON)),
     )
   }
   return {
