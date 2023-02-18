@@ -516,6 +516,9 @@ const mangleChars = {
 const mangleSym = sym => {
   // dont mangle numbers
   let first = sym[0]
+  if (first === '-') {
+    return sym
+  }
   if (first === '.') {
     first = sym.at(1)
   }

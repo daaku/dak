@@ -77,6 +77,9 @@ test('symbol: floats', () => {
   assert.equal(tostr('3.1E+12'), '3.1E+12;')
   assert.equal(tostr('.1e-23'), '.1e-23;')
 })
+test('symbol: negative number', () => {
+  assert.equal(tostr('-42'), '-42;')
+})
 test('symbol: dot prop', () => {
   assert.equal(tostr('.a-b'), '.a_DASH_b;')
 })
