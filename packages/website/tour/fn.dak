@@ -1,0 +1,30 @@
+; Functions are varied and colorful.
+
+; The simple function:
+(fn add [a b]
+  (+ a b))
+(prn (add 40 1))
+
+; The async function:
+(fn@ add-promises [a b]
+  (+ @a @b))
+(prn @(add-promises (Promise.resolve 40) (Promise.resolve 2)))
+
+; The generator function:
+(fn* powers [n count]
+  (let [current 1]
+    (for [i 0 count]
+      (yield (*= current n)))))
+(for-of [v (powers 2 5)]
+  (prn v))
+
+; The async generator function:
+(fn@* foo [a b]
+  (yield (inc @a))
+  (yield (inc @b)))
+(for@ [v (foo (Promise.resolve 41) (Promise.resolve -43))]
+  (prn v))
+
+; Exported function:
+(fn ^:export plus [a b]
+  (+ a b))
