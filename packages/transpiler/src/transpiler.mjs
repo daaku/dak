@@ -656,7 +656,11 @@ function* transpileBuiltinImportOne(ctx, node) {
   yield ';'
 }
 
-function* transpileBuiltinImport(ctx, node) {
+function* transpileBuiltinImport(ctx, node, assign, hoist, evExpr) {
+  if (node[1].kind === 'symbol' || node[1].kind === 'string') {
+    yield* transpileSpecialCall(ctx, node, assign, hoist, evExpr)
+    return
+  }
   for (let i = 1; i < node.length; i++) {
     yield* transpileBuiltinImportOne(ctx, node[i])
   }

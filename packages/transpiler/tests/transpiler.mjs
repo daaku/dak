@@ -163,6 +163,12 @@ test('builtin: import', () => {
     `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";;`,
   )
 })
+test('builtin: import dynamic symbol', () => {
+  assert.equal(tostr('(import foo)'), 'import(foo);')
+})
+test('builtin: import dynamic string', () => {
+  assert.equal(tostr('(import "foo")'), 'import("foo");')
+})
 test('builtin: const', () => {
   assert.equal(tostr('(const a 42)'), 'const a=42;;')
 })
