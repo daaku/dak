@@ -1411,6 +1411,7 @@ const builtins = {
   typeof: transpileBuiltinTypeof,
   instanceof: transpileBuiltinInstanceof,
   set: transpileBuiltinSet,
+  delete: transpileBuiltinDelete,
   hash: transpileBuiltinHash,
   quote: transpileBuiltinQuote,
   macro: transpileSpecialMacro,
@@ -1485,6 +1486,11 @@ function* transpileBuiltinInstanceof(ctx, node, assign, hoist, _evKind) {
   yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
   yield ' instanceof '
   yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
+}
+
+function* transpileBuiltinDelete(ctx, node, assign, hoist, _evKind) {
+  yield 'delete '
+  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
 }
 
 function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {

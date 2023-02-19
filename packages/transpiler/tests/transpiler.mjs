@@ -835,6 +835,9 @@ test('builtin: isa? shorthand', () => {
 test('builtin: set', () => {
   assert.equal(tostr('(set a 1)'), 'a=1;')
 })
+test('builtin: delete', () => {
+  assert.equal(tostr('(delete a.b)'), 'delete a.b;')
+})
 test('builtin: set returns', () => {
   assert.equal(
     tostr(`
