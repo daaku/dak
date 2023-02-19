@@ -1,9 +1,8 @@
-; NOTE: This example will error in the online playground
-; since imports in JavaScript can only be at the top
-; of a file.
+; NOTE: Since these modules are not available,
+; they will result in errors.
 
 ; Imports an be the simple named kind:
-(import ["node:fs" [readFile writeFile]])
+(import ["node:fs" [writeFile]])
 
 ; Keywords can be used for a terser syntax:
 (import [:node:fs [readFile]]
@@ -20,5 +19,5 @@
         ["./alt/ui.js" {Button AltButton}])
 
 ; Finally, they can be used together:
-(import ["./main/ui.js" TheDefault [Label] {Button MainButton}]
-        [:node:fs [readFile]])
+(import ["./main/ui.js" TheDefault [Label] {Button TheButton}]
+        [:node:path [relative]])

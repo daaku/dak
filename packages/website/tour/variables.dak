@@ -11,7 +11,7 @@
 
 ; Property access works using dot as shown above.
 ; For dynamic property names, the dot operator can be used.
-(set prop-name :planet)
+(let prop-name :planet)
 (prn (. machine prop-name))
 (set (. machine prop-name) :destroyed)
 
