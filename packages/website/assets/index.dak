@@ -8,18 +8,29 @@
 (const js-code (document.getElementById :js-code))
 (const output (document.getElementById :output))
 
-(fn primitive? [v] (or (bigint? v) (= v (Object v))))
+(fn simple? [v]
+  (or (number? v)
+      (boolean? v)
+      (string? v)
+      (undefined? v)
+      (null? v)
+      (bigint? v)
+      (isa? v Date)
+      (isa? v RegExp)))
 
 (set globalThis.prn
   (fn [...rest]
     (console.log ...rest)
-    (for-of [thing rest]
-      (let [child (document.createElement :pre)]
-        (set child.innerText
-          (if (primitive? thing)
-            (String thing)
-            (JSON.stringify thing)))
-        (output.appendChild child)))))
+    (let [child (document.createElement :pre)]
+      (for-of [[index thing] (rest.entries)]
+        (when (pos? index)
+          (child.appendChild (document.createTextNode " ")))
+        (child.appendChild
+          (document.createTextNode
+            (if (simple? thing)
+              (String thing)
+              (JSON.stringify thing)))))
+      (output.appendChild child))))
 
 (fn log-err [prefix err throw?]
   (let [child (document.createElement :pre)]
