@@ -22,7 +22,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------
 
-This package was derived from a the vscode extensions/clojure
+This package was derived from vscode extensions/clojure
 https://github.com/microsoft/vscode and distributed under the
 following license, located in `LICENSE.md` in the mentioned directory:
 
