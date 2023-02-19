@@ -21,7 +21,8 @@
       (catch e
         (console.log "FAIL:" (str ws ">") sh)
         (console.error e.stdout)
-        (console.error e.stderr)))))
+        (console.error e.stderr)
+        false))))
 
 (fn@ main []
   (set process.env.PATH
@@ -30,6 +31,8 @@
         workspaces (-> @(readFile "package.json" :utf8)
                        JSON.parse
                        (. :workspaces))]
-    @(Promise.allSettled (workspaces.map #(run $ cmd)))))
+    (if (.some @(Promise.allSettled (workspaces.map #(run $ cmd)))
+               #(false? $.value))
+      (process.exit 1))))
 
 @(main)
