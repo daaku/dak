@@ -6,20 +6,28 @@
         [:node:child_process {exec execCB}])
 
 (const exec (promisify execCB))
+(const PASS "\x1b[32mPASS\x1b[0m")
+(const FAIL "\x1b[31m\x1b[1mFAIL\x1b[0m")
 
-(fn@ run [ws cmd]
+(fn since [start]
+  (str (- (Date.now) start) "ms"))
+
+(fn@ run [ws cmd ws-pad-target]
   (when-let [sh (-> (join ws "package.json")
                   (readFile :utf8)
                   await
                   JSON.parse
                   (?. :scripts cmd))]
     (try
-      (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
-        (console.log (str ws ">") sh)
-        (console.log stdout)
-        (console.log stderr))
+      (let [start (Date.now)
+            {:keys [stdout stderr]} @(exec sh {:cwd ws})]
+        (console.log PASS (ws.padEnd ws-pad-target " ")
+          (.padStart (since start) 5 " ") sh)
+        (when (not= cmd :test)
+          (console.log stdout)
+          (console.log stderr)))
       (catch e
-        (console.log "FAIL:" (str ws ">") sh)
+        (console.log FAIL ws sh)
         (console.error e.stdout)
         (console.error e.stderr)
         false))))
@@ -30,8 +38,9 @@
   (let [cmd (. process.argv 2)
         workspaces (-> @(readFile "package.json" :utf8)
                        JSON.parse
-                       (. :workspaces))]
-    (if (.some @(Promise.allSettled (workspaces.map #(run $ cmd)))
+                       (. :workspaces))
+        ws-pad-target (workspaces.reduce #(Math.max $1 $2.length) 0)]
+    (if (.some @(Promise.allSettled (workspaces.map #(run $ cmd ws-pad-target)))
                #(false? $.value))
       (process.exit 1))))
 
