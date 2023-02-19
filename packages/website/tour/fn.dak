@@ -1,16 +1,16 @@
 ; Functions are varied and colorful.
 
-; The simple function:
+; Simple function:
 (fn add [a b]
   (+ a b))
 (prn (add 40 1))
 
-; The async function:
+; Async function:
 (fn@ add-promises [a b]
   (+ @a @b))
 (prn @(add-promises (Promise.resolve 40) (Promise.resolve 2)))
 
-; The generator function:
+; Generator function:
 (fn* powers [n count]
   (let [current 1]
     (for [i 0 count]
@@ -18,7 +18,7 @@
 (for-of [v (powers 2 5)]
   (prn v))
 
-; The async generator function:
+; Async generator function:
 (fn@* foo [a b]
   (yield (inc @a))
   (yield (inc @b)))
@@ -28,3 +28,12 @@
 ; Exported function:
 (fn ^:export plus [a b]
   (+ a b))
+
+; Exported default function:
+(fn ^:export ^:default [a b]
+  (- a b))
+
+; Declaration syntax:
+(fn ^:decl TheClass [a]
+  (set this.answer a))
+(prn (TheClass. 42))

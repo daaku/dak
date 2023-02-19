@@ -26,3 +26,10 @@ for await(let v of foo(Promise.resolve(41),Promise.resolve(-43))){prn(v)
 
 export const plus=(a,b)=>{return (a+b)
 }
+
+export default ((a,b)=>{return (a-b)
+})
+
+function TheClass(a){return this.answer=a
+}
+prn(new TheClass(42))
