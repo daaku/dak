@@ -44,6 +44,7 @@
                 URL.createObjectURL import await)
             (catch e
               (log-err :eval e true))))))
+      (set js (js.replace #/\/\/# sourceMappingURL=.*/ ""))
       (set js-code.value
         (try
           (case fmt.value
