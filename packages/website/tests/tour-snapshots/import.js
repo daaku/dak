@@ -1,8 +1,7 @@
 
 
 
-
-import {readFile,writeFile} from "node:fs"
+import {writeFile} from "node:fs"
 
 
 import {readFile} from "node:fs"
@@ -19,6 +18,6 @@ import {Button as MainButton,Label as MainLabel} from "./main/ui.js"
 import {Button as AltButton} from "./alt/ui.js"
 
 
-import TheDefault,{Label,Button as MainButton} from "./main/ui.js"
-import {readFile} from "node:fs"
+import TheDefault,{Label,Button as TheButton} from "./main/ui.js"
+import {relative} from "node:path"
 

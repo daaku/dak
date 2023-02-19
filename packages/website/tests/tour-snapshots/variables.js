@@ -10,7 +10,7 @@ machine.planet="destroyed"
 prn(answer,name,machine.planet)
 
 
-prop_DASH_name="planet"
+let prop_DASH_name="planet"
 prn(machine[prop_DASH_name])
 machine[prop_DASH_name]="destroyed"
 
