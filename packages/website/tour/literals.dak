@@ -39,8 +39,8 @@ world")
 
 ; Objects are similar, but no colons or commas
 ; between items.
-(prn (JSON.stringify {"hello" "world"}))
-(prn (JSON.stringify {:answer 42}))
+(prn {"hello" "world"})
+(prn {:answer 42})
 
 ; Booleans, null, undefined are same as in JavaScript.
 (prn true false null undefined)

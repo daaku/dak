@@ -32,7 +32,7 @@ prn([1,2,3,])
 prn([1,"a",[2,"b",],])
 
 
-prn(JSON.stringify({hello:"world",}))
-prn(JSON.stringify({answer:42,}))
+prn({hello:"world",})
+prn({answer:42,})
 
 prn(true,false,null,undefined)
