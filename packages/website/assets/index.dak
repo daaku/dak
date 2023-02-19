@@ -21,24 +21,29 @@
             (JSON.stringify thing)))
         (output.appendChild child)))))
 
-(fn log-err [prefix err]
-  (console.error err)
+(fn log-err [prefix err throw?]
   (let [child (document.createElement :pre)]
     (set child.innerText (str prefix ": " (?? err.message err)))
-    (output.appendChild child)))
+    (output.appendChild child))
+  (if throw?
+    (throw err)
+    (console.error err)))
 
 (fn@ refresh []
   (if globalThis.IS_PRODUCTION
     (console.clear))
   (output.replaceChildren)
   (try
-    (let [js (. (transpileStr dak-code.value {:filename "main.dak"}) :code)]
+    (let [js (. (transpileStr dak-code.value {:filename "main.dak"
+                                              :sourcemap :inline})
+                :code)]
       (when auto-eval.checked
         ((fn@ []
           (try
-            @((.constructor (Object.getPrototypeOf (fn@ [])) js))
+            (-> (Blob. [js] {:type "text/javascript"})
+                URL.createObjectURL import await)
             (catch e
-              (log-err :eval e))))))
+              (log-err :eval e true))))))
       (set js-code.value
         (try
           (case fmt.value
