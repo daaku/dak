@@ -44,6 +44,9 @@ const builtinMacros = `
 (macro defined? [v]
   '(not= (typeof ,v) :undefined))
 
+(macro isa? [v k]
+  '(instanceof ,v ,k))
+
 (macro null? [v]
   '(= ,v null))
 
@@ -1406,6 +1409,7 @@ const builtins = {
   '?.': transpileBuiltinQuestionDot,
   '...': transpileBuiltinRest,
   typeof: transpileBuiltinTypeof,
+  instanceof: transpileBuiltinInstanceof,
   set: transpileBuiltinSet,
   hash: transpileBuiltinHash,
   quote: transpileBuiltinQuote,
@@ -1475,6 +1479,12 @@ function* transpileNodeList(ctx, node, assign, hoist, evKind) {
 function* transpileBuiltinTypeof(ctx, node, assign, hoist, _evKind) {
   yield 'typeof '
   yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
+}
+
+function* transpileBuiltinInstanceof(ctx, node, assign, hoist, _evKind) {
+  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
+  yield ' instanceof '
+  yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
 }
 
 function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {

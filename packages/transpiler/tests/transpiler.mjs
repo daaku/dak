@@ -826,6 +826,12 @@ test('lambda with assign', () => {
 test('builtin: typeof', () => {
   assert.equal(tostr('(typeof 1)'), 'typeof 1;')
 })
+test('builtin: instanceof', () => {
+  assert.equal(tostr('(instanceof a 1)'), 'a instanceof 1;')
+})
+test('builtin: isa? shorthand', () => {
+  assert.equal(tostr('(isa? a 1)'), 'a instanceof 1;')
+})
 test('builtin: set', () => {
   assert.equal(tostr('(set a 1)'), 'a=1;')
 })
