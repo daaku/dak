@@ -971,7 +971,7 @@ test('builtin: class: static', () => {
       (static
         (console.log :hello)))
     `),
-    `class{static{console.log("hello");};};`,
+    `class{static{console.log("hello");}};`,
   )
 })
 test('builtin: class: macros', () => {
@@ -983,7 +983,31 @@ test('builtin: class: macros', () => {
     (class
       (log :hello))
     `),
-    `;class{static{console.log("hello");};};`,
+    `;class{static{console.log("hello");}};`,
+  )
+})
+test('builtin: class: let single without value', () => {
+  assert.equal(tostr(`(class (let hello))`), `class{hello;};`)
+})
+test('builtin: class: let single with value', () => {
+  assert.equal(tostr(`(class (let hello 42))`), `class{hello=42;};`)
+})
+test('builtin: class: let multiple', () => {
+  assert.equal(tostr(`(class (let [hello world]))`), `class{hello;world;};`)
+})
+test('builtin: class: let static single without value', () => {
+  assert.equal(tostr(`(class (let ^:static hello))`), `class{static hello;};`)
+})
+test('builtin: class: let static single with value', () => {
+  assert.equal(
+    tostr(`(class (let ^:static hello 42))`),
+    `class{static hello=42;};`,
+  )
+})
+test('builtin: class: let static multiple', () => {
+  assert.equal(
+    tostr(`(class (let ^:static [hello world]))`),
+    `class{static hello;static world;};`,
   )
 })
 test('macro: ->', () => {

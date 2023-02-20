@@ -1219,8 +1219,42 @@ function* transpileClassStatic(ctx, node) {
   yield '}'
 }
 
+function* transpileClassPrivateSymbol(ctx, token) {
+  yield [mangleSym(token.value), token]
+}
+
+function* transpileClassLet(ctx, node, _assign, _hoist) {
+  let index = 1
+  let stic = false
+  if (node[index].value === '^:static') {
+    stic = true
+    yield 'static '
+    index++
+  }
+  // (let [#one #two three]) style
+  if (node[index].kind === 'array') {
+    let count = node[index].length
+    for (const sym of node[index]) {
+      yield* transpileClassPrivateSymbol(ctx, sym)
+      yield ';'
+      count--
+      if (stic && count !== 0) {
+        yield 'static '
+      }
+    }
+    return
+  }
+  yield* transpileClassPrivateSymbol(ctx, node[index])
+  index++
+  if (node[index]) {
+    yield '='
+    yield* transpileNodeExpr(ctx, node[index], null, null, evExpr)
+  }
+  yield ';'
+}
+
 const classBuiltins = {
-  // let: null,
+  let: transpileClassLet,
   // fn: null,
   static: transpileClassStatic,
 }
@@ -1260,7 +1294,6 @@ function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
   yield '{'
   for (let i = index; i < node.length; i++) {
     yield* transpileClassNodeList(ctx, node[i], null, null, evStat)
-    yield ';'
   }
   yield '}'
 }
