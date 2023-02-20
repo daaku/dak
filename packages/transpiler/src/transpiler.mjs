@@ -1213,6 +1213,33 @@ function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
   }
 }
 
+function* transpileClassStatic(ctx, node) {
+  yield 'static{'
+  yield* transpileSpecialBody(ctx, node.slice(1), null, null, evStat)
+  yield '}'
+}
+
+const classBuiltins = {
+  // let: null,
+  // fn: null,
+  static: transpileClassStatic,
+}
+
+function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
+  const call = node[0].value
+  const builtin = classBuiltins[call]
+  if (builtin) {
+    yield* builtin(ctx, node, assign, hoist, evKind)
+    return
+  }
+  const macro = ctx.macros.get(call)
+  if (macro) {
+    yield* transpileClassNodeList(ctx, macro(...node), assign, hoist, evKind)
+    return
+  }
+  throw err(ctx, node[0], `unexpected class body "${node[0].kind}"`)
+}
+
 function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   let [prefix, index] = exportDefault(ctx, node)
@@ -1232,7 +1259,7 @@ function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
   }
   yield '{'
   for (let i = index; i < node.length; i++) {
-    yield* transpileNodeStatement(ctx, node[i], null, null, evStat)
+    yield* transpileClassNodeList(ctx, node[i], null, null, evStat)
     yield ';'
   }
   yield '}'

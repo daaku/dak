@@ -964,6 +964,28 @@ test('builtin: class: declaration: default', () => {
 test('builtin: class: expr: empty', () => {
   assert.equal(tostr(`(class)`), `class{};`)
 })
+test('builtin: class: static', () => {
+  assert.equal(
+    tostr(`
+    (class
+      (static
+        (console.log :hello)))
+    `),
+    `class{static{console.log("hello");};};`,
+  )
+})
+test('builtin: class: macros', () => {
+  assert.equal(
+    tostr(`
+    (macro log [v]
+      '(static (console.log ,v)))
+
+    (class
+      (log :hello))
+    `),
+    `;class{static{console.log("hello");};};`,
+  )
+})
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
