@@ -943,6 +943,15 @@ test('builtin: try/catch with hoist', () => {
     `const run=()=>{let hoist__0;try{hoist__0=42;}catch(e){hoist__0=43;};return (1+hoist__0);};`,
   )
 })
+test('builtin: class: declaration: empty', () => {
+  assert.equal(tostr(`(class Foo)`), `class Foo{};`)
+})
+test('builtin: class: declaration: extends', () => {
+  assert.equal(tostr(`(class Foo :extends Bar)`), `class Foo extends Bar{};`)
+})
+test('builtin: class: expr: empty', () => {
+  assert.equal(tostr(`(class)`), `class{};`)
+})
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),

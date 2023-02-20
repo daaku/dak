@@ -670,12 +670,12 @@ function* transpileBuiltinImport(ctx, node, assign, hoist, evExpr) {
 }
 
 function exportDefault(ctx, node) {
-  if (node[1].value !== '^:export') {
+  if (node[1]?.value !== '^:export') {
     return [[], 1]
   }
   const prefix = [['export ', node[1]]]
   let index = 2
-  if (node[2].value === '^:default') {
+  if (node[2]?.value === '^:default') {
     prefix.push(['default ', node[2]])
     index++
   }
@@ -1213,6 +1213,31 @@ function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
   }
 }
 
+function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
+  yield* transpileSpecialAssign(ctx, assign)
+  let [prefix, index] = exportDefault(ctx, node)
+  yield* prefix
+  yield ['class', node[0]]
+  // named
+  if (node[index]?.kind === 'symbol') {
+    yield ' '
+    yield* transpileNodeSymbol(ctx, node[index])
+    ctx.bindings.add(node[index].value)
+    index++
+  }
+  if (node[index]?.kind === 'string' && node[index]?.value === 'extends') {
+    yield [' extends ', node[index]]
+    yield* transpileNodeExpr(ctx, node[index + 1], null, hoist, evExpr)
+    index += 2
+  }
+  yield '{'
+  for (let i = index; i < node.length; i++) {
+    yield* transpileNodeStatement(ctx, node[i], null, null, evStat)
+    yield ';'
+  }
+  yield '}'
+}
+
 function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
   let restArg
@@ -1416,6 +1441,7 @@ const builtins = {
   quote: transpileBuiltinQuote,
   macro: transpileSpecialMacro,
   try: transpileBuiltinTry,
+  class: transpileBuiltinClass,
 }
 
 const macros = (() => {
