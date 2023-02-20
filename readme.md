@@ -1,12 +1,19 @@
 # dak
 
-Dak or DakLang is a Lisp that transpiles to JavaScript.
+Dak or DakLang is a Lisp like language that transpiles to JavaScript.
 
-Zen:
+## Play
 
-1. Full access to JavaScript.
-2. No runtime.
-3. Participate in the ecosystem.
+If you want to jump in and see what it looks like, explore the
+[Dak Tour](https://daklang.com/tour/)
+
+## Zen
+
+1. Full access to JavaScript. Be one with the host.
+2. No runtime. Participate in the library ecosystem.
+3. Perfect is the enemy of good. Versions are infinite.
+4. Be useful today. Survive to thrive.
+5. Be fast. Stay fast.
 
 JavaScript is ubiquitous. It's ecosystem is diverse and populated. Dak attempts
 to provide a path to leverage and participate in this ecosystem, as a modern
@@ -16,109 +23,25 @@ feature JavaScript has.
 
 It has browser output as an important goal. Specifically, small bundle size and
 tree shaking for pay-as-you-go, are key considerations that determine the design
-choices. If you are making a browser based application in Dak, a [Vite based
-setup is the recommended choice](#12).
+choices. If you are making a browser based application in Dak, a
+[Vite based setup is the recommended choice](packages/rollup).
 
-## Programmable Language
+## Status
 
-Lisp is often regarded as a programmable language. Augmenting the syntax is a
-powerful, and available tool. Since Dak is a transpiler, it only makes sense to
-allow augmenting the transpile process directly. This has various implications.
+A language needs an ecosystem. Formatting, LSP, [VSCode](packages/vscode)
+extensions, REPL, unit testing, benchmarking and so much more. We don't have
+much here.
 
-1. Prefer functions where possible.
-2. Macros when you need to control evaluation.
-3. Syntax extension like delimited structures.
-4. Trainspile extension as the ulimate last resort.
+Macros and the programmable aspects of Dak are what I consider to be it's
+selling points. It's much easier to achieve this in a Lisp like language. These
+are still very much a work-in-progress. Expect heavy iteration here.
 
-## Why Lisp?
+Syntax in JavaScript is quite diverse. Much of it is already supported. What is
+missing is probably easy to provide.
 
-Because they spark joy.
+## What's Next?
 
-## Documentation
-
-### Literals
-
-- Numbers
-- Strings: Multiline strings, Double Quoted, Escapes
-- Array
-- Object
-
-### Destructuring
-
-- rename
-- :keys
-- :or
-- :as
-- rest/spread
-
-### Functions
-
-- Named vs Anonymous
-- Shorthand Lambda
-- Documentation
-- No Arity
-- Metadata
-- Async, Generator, Return, Yield, Yield\*
-- Async / Await
-
-### Macros
-
-- Define
-- Quoting
-- Gensym
-
-### Loops / Iteration
-
-- Numeric Loop
-- While Loop
-- Iterator
-- Async Iterator
-- Break
-- Continue
-
-### Exceptions
-
-- Try
-- Catch
-- Finally
-- Throw
-
-### Import
-
-### Spread Operator
-
-### Classes
-
-- Define
-- New
-- This
-- Prototype
-
-### Mutation
-
-- Set
-- Set In
-
-### Type Of
-
-### Regex
-
-### Null Safe
-
-### Math
-
-- Multi Argument Comparisons
-
-### Hiccup
-
-- lit-html?
-
-### Source Maps
-
-### Tooling
-
-- Formatting
-- Language Server
-- Tests
-- Repl
-- nREPL
+It's all a bit fuzzy, but a seemingly good near term goal is to provide a fun,
+featureful and fast development experience to build browser based UX
+applications that can use hiccup like syntax and leverage React, lit-html or
+Solid.
