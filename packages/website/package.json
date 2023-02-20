@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "dak build.dak",
     "build": "NODE_ENV=production dak build.dak",
-    "watch": "watchexec -cr -- dak build.dak",
+    "watch": "watchexec -cr -w .. -- dak build.dak",
     "test": "dak tests/tour.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/tour.dak"
   },
