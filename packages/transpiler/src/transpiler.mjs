@@ -542,8 +542,7 @@ const mangleSym = (sym, autoThis = true) => {
   for (let end = 0; end < sym.length; end++) {
     const c = sym[end]
     if (autoThis && end === 0 && c === '#') {
-      parts.push('this.#')
-      continue
+      parts.push('this.')
     }
     const found = mangleChars[c]
     if (found && (c !== '?' || sym[end + 1] !== '.')) {
@@ -551,7 +550,7 @@ const mangleSym = (sym, autoThis = true) => {
       start = end + 1
     }
   }
-  if (start === 0) {
+  if (parts.length === 0) {
     return sym
   }
   parts.push(sym.slice(start, sym.length))

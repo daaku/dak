@@ -83,6 +83,9 @@ test('symbol: negative number', () => {
 test('symbol: dot prop', () => {
   assert.equal(tostr('.a-b'), '.a_DASH_b;')
 })
+test('symbol: class private', () => {
+  assert.equal(tostr('#foo'), 'this.#foo;')
+})
 test('plain keyword', () => {
   assert.equal(tostr(':foo'), '"foo";')
 })
