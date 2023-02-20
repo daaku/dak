@@ -993,7 +993,7 @@ test('builtin: class: let single with value', () => {
   assert.equal(tostr(`(class (let hello 42))`), `class{hello=42;};`)
 })
 test('builtin: class: let multiple', () => {
-  assert.equal(tostr(`(class (let [hello world]))`), `class{hello;world;};`)
+  assert.equal(tostr(`(class (let [hello #world]))`), `class{hello;#world;};`)
 })
 test('builtin: class: let static single without value', () => {
   assert.equal(tostr(`(class (let ^:static hello))`), `class{static hello;};`)
@@ -1009,6 +1009,9 @@ test('builtin: class: let static multiple', () => {
     tostr(`(class (let ^:static [hello world]))`),
     `class{static hello;static world;};`,
   )
+})
+test('builtin: class: let single private', () => {
+  assert.equal(tostr(`(class (let #hello 42))`), `class{#hello=42;};`)
 })
 test('macro: ->', () => {
   assert.equal(

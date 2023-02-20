@@ -343,6 +343,14 @@ const astShorthand = (ctx, token, special, input) =>
     token,
   )
 
+const astHash = (ctx, token, input) => {
+  const node = astShorthand(ctx, token, 'hash', input)
+  if (node.length === 2 && node[1].kind === 'symbol') {
+    return { kind: 'symbol', value: '#' + node[1].value, pos: node.pos }
+  }
+  return node
+}
+
 const astOne = (ctx, input) => {
   const { value, done } = input.next()
   if (done) {
@@ -370,7 +378,7 @@ const astOne = (ctx, input) => {
     case '@':
       return astShorthand(ctx, value, 'await', input)
     case '#':
-      return astShorthand(ctx, value, 'hash', input)
+      return astHash(ctx, value, input)
     case ':':
       const sym = astNeedOne(ctx, input)
       if (sym.kind !== 'symbol') {
@@ -516,7 +524,7 @@ const mangleChars = {
   '-': '_DASH_',
 }
 
-const mangleSym = sym => {
+const mangleSym = (sym, autoThis = true) => {
   // dont mangle numbers
   let first = sym[0]
   if (first === '-') {
@@ -533,6 +541,10 @@ const mangleSym = sym => {
   let start = 0
   for (let end = 0; end < sym.length; end++) {
     const c = sym[end]
+    if (autoThis && end === 0 && c === '#') {
+      parts.push('this.#')
+      continue
+    }
     const found = mangleChars[c]
     if (found && (c !== '?' || sym[end + 1] !== '.')) {
       parts.push(sym.slice(start, end), found)
@@ -1220,7 +1232,7 @@ function* transpileClassStatic(ctx, node) {
 }
 
 function* transpileClassPrivateSymbol(ctx, token) {
-  yield [mangleSym(token.value), token]
+  yield [mangleSym(token.value, false), token]
 }
 
 function* transpileClassLet(ctx, node, _assign, _hoist) {
