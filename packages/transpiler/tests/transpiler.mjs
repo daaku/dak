@@ -949,6 +949,18 @@ test('builtin: class: declaration: empty', () => {
 test('builtin: class: declaration: extends', () => {
   assert.equal(tostr(`(class Foo :extends Bar)`), `class Foo extends Bar{};`)
 })
+test('builtin: class: declaration: export', () => {
+  assert.equal(
+    tostr(`(class ^:export Foo :extends Bar)`),
+    `export class Foo extends Bar{};`,
+  )
+})
+test('builtin: class: declaration: default', () => {
+  assert.equal(
+    tostr(`(class ^:export ^:default :extends Bar)`),
+    `export default class extends Bar{};`,
+  )
+})
 test('builtin: class: expr: empty', () => {
   assert.equal(tostr(`(class)`), `class{};`)
 })
