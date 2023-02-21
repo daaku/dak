@@ -2,7 +2,7 @@
   "name": "@daklang/html",
   "version": "0.1.0",
   "description": "HTML library for Dak",
-  "homepage": "https://daklang.com/",
+  "homepage": "https://www.daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
   "type": "module",

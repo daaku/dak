@@ -2,7 +2,7 @@
   "name": "@daklang/transpiler",
   "version": "0.1.0",
   "description": "Transpiler package for Dak",
-  "homepage": "https://daklang.com/",
+  "homepage": "https://www.daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
   "type": "module",

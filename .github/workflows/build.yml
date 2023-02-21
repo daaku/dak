@@ -40,7 +40,7 @@ jobs:
           wget https://downloads.rclone.org/rclone-current-linux-amd64.deb
           sudo dpkg -i rclone-current-linux-amd64.deb
       - name: deploy
-        run: rclone --config packages/website/.rclone.conf copyto packages/website/dist/ s3:daklang.com/
+        run: rclone --config packages/website/.rclone.conf copyto packages/website/dist/ s3:www.daklang.com/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

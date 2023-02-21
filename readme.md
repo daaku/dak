@@ -5,7 +5,7 @@ Dak or DakLang is a Lisp like language that transpiles to JavaScript.
 ## Play
 
 If you want to jump in and see what it looks like, explore the
-[Dak Tour](https://daklang.com/tour/).
+[Dak Tour](https://www.daklang.com/tour/).
 
 ## Zen
 
