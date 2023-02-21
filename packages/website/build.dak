@@ -149,7 +149,7 @@
     (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
 
 (fn@ main-dev [config]
-  @(rm "dist" {:recursive true})
+  @(rm "dist" {:recursive true :force true})
   (main-prod config)
   (let [token (crypto.randomUUID)
         ss (serveStatic "dist" {:setHeaders set-headers})
