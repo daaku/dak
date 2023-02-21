@@ -24,6 +24,7 @@
 
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/favicon.svg"
+                                   "assets/logo.svg"
                                    "assets/index.css"
                                    "assets/index.dak"]
                      :define {"globalThis.IS_PRODUCTION"
@@ -135,11 +136,12 @@
 (fn@ index-html [config assets]
   @(writeFile "dist/index.html"
     (doc {:lang :en}
-      (head-ui assets "Welcome")
+      (head-ui assets "Dak Language")
       [:body.narrow
-      [:div
-        (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
-      [:script {:type :module :src (. assets "index.js")}]])))
+       [:image {:src (. assets "logo.svg")}]
+       [:div
+         (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
+       [:script {:type :module :src (. assets "index.js")}]])))
 
 (fn@ tour-index-html [config assets]
   @(writeFile "dist/tour/index.html"
