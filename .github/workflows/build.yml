@@ -35,7 +35,7 @@ jobs:
           cache: npm
           cache-dependency-path: '**/package.json'
       - run: npm install
-      - run: npm -w packages/website build
+      - run: npm run -w packages/website build
       - uses: cloudflare/pages-action@1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
