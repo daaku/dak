@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "dak build.dak",
     "build": "NODE_ENV=production dak build.dak",
-    "watch": "watchexec -cr -w .. -- dak build.dak",
+    "watch": "watchexec -cr -w .. -w ../../readme.md -- dak build.dak",
     "test": "dak tests/tour.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/tour.dak"
   },
@@ -30,6 +30,7 @@
     "@daklang/transpiler": "0.1.0",
     "esbuild": "^0.17.6",
     "finalhandler": "^1.2.0",
+    "marked": "^4.2.12",
     "serve-static": "^1.15.0",
     "uvu": "^0.5.6",
     "ws": "^8.12.0"

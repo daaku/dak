@@ -5,6 +5,7 @@
         [:finalhandler finalhandler]
         [:serve-static serveStatic]
         [:ws [WebSocketServer]]
+        [:marked [marked]]
         ["@daklang/transpiler" [transpileStr]]
         ["@daklang/html" [doc html unsafe]])
 
@@ -120,9 +121,6 @@
     @(mkdir (dirname out-file) {:recursive true})
     @(writeFile out-file (play-ui assets {:title title :code code}))))
 
-(fn@ play-index [config assets]
-  @(writeFile "dist/index.html" (play-ui assets {})))
-
 (fn@ error-html [config assets]
   @(writeFile "dist/error.html"
     (doc {:lang :en}
@@ -134,12 +132,21 @@
         "There was a problem trying to get the page you requested."]]
       [:script {:type :module :src (. assets "index.js")}]])))
 
+(fn@ index-html [config assets]
+  @(writeFile "dist/index.html"
+    (doc {:lang :en}
+      (head-ui assets "Welcome")
+      [:body
+      [:div.marked
+        (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
+      [:script {:type :module :src (. assets "index.js")}]])))
+
 (const timer-label "Build completed")
 (fn@ main-prod [config]
   (console.time timer-label)
   (let [assets @(esbuild-prod config)]
     @(Promise.all
-      [(play-index config assets)
+      [(index-html config assets)
        (error-html config assets)
        (... (tour.map #(play-build config assets $)))]))
   (console.timeEnd timer-label))

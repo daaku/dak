@@ -72,3 +72,8 @@ header > div {
   height: 100vh;
   font-size: 24px;
 }
+
+.marked {
+  max-width: 600px;
+  margin: auto;
+}
