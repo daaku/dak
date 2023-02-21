@@ -79,16 +79,6 @@
    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
    [:link {:rel :icon :type "image/svg+xml" :href (. assets "favicon.svg")}]])
 
-(fn error-ui [assets]
-  (doc {:lang :en}
-    (head-ui assets "Error")
-    [:body
-     [:div#error
-      [:div
-       [:h1 "\u26a0"]
-       "There was a problem trying to get the page you requested."]]
-     [:script {:type :module :src (. assets "index.js")}]]))
-
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
    (head-ui assets title)
@@ -134,7 +124,15 @@
   @(writeFile "dist/index.html" (play-ui assets {})))
 
 (fn@ error-html [config assets]
-  @(writeFile "dist/error.html" (error-ui assets)))
+  @(writeFile "dist/error.html"
+    (doc {:lang :en}
+      (head-ui assets "Error")
+      [:body
+      [:div#error
+        [:div
+        [:h1 "\u26a0"]
+        "There was a problem trying to get the page you requested."]]
+      [:script {:type :module :src (. assets "index.js")}]])))
 
 (const timer-label "Build completed")
 (fn@ main-prod [config]
