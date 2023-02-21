@@ -1016,6 +1016,46 @@ test('builtin: class: let static multiple', () => {
 test('builtin: class: let single private', () => {
   assert.equal(tostr(`(class (let #hello 42))`), `class{#hello=42;};`)
 })
+test('builtin: class: fn', () => {
+  assert.equal(
+    tostr(`
+    (class Foo
+      (fn bar [a]
+        (inc a)))
+    `),
+    `class Foo{bar(a){return (a+1);}};`,
+  )
+})
+test('builtin: class: fn@', () => {
+  assert.equal(
+    tostr(`
+    (class Foo
+      (fn@ bar [a]
+        @a))
+    `),
+    `class Foo{async bar(a){return await a;}};`,
+  )
+})
+test('builtin: class: fn*', () => {
+  assert.equal(
+    tostr(`
+    (class Foo
+      (fn* bar [a]
+        (yield a)))
+    `),
+    `class Foo{*bar(a){return yield a;}};`,
+  )
+})
+test('builtin: class: fn@*', () => {
+  assert.equal(
+    tostr(`
+    (class Foo
+      (fn@* #bar [a]
+        (yield @a)))
+    `),
+    `class Foo{async *#bar(a){return yield (await a);}};`,
+  )
+})
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
