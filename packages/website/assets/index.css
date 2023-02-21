@@ -41,13 +41,13 @@ header > div {
 #tour-toggle {
   margin-right: 16px;
 }
-.code {
+#code {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   gap: 16px;
 }
-.code textarea {
+#code textarea {
   padding: 8px;
   height: 50vh;
   font-size: 16px;
@@ -63,4 +63,12 @@ header > div {
   margin: 0 0 1px 0;
   font-size: 16px;
   border-bottom: 1px solid #ddd;
+}
+#error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100vh;
+  font-size: 24px;
 }

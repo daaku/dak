@@ -71,14 +71,27 @@
         (fn [v]
           [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))
 
+(fn head-ui [assets title]
+  [:head
+   [:meta {:charset :utf-8}]
+   [:title title]
+   [:meta {:name :viewport :content "width=device-width,initial-scale=1"}]
+   [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
+   [:link {:rel :icon :type "image/svg+xml" :href (. assets "favicon.svg")}]])
+
+(fn error-ui [assets]
+  (doc {:lang :en}
+    (head-ui assets "Error")
+    [:body
+     [:div#error
+      [:div
+       [:h1 "\u26a0"]
+       "There was a problem trying to get the page you requested."]]
+     [:script {:type :module :src (. assets "index.js")}]]))
+
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
-   [:head
-    [:meta {:charset :utf-8}]
-    [:title title]
-    [:meta {:name :viewport :content "width=device-width,initial-scale=1"}]
-    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
-    [:link {:rel :icon :type "image/svg+xml" :href (. assets "favicon.svg")}]]
+   (head-ui assets title)
    [:body
     [:header
      [:h1 title]
@@ -90,7 +103,7 @@
                    [:option {:value :raw} "Raw"]
                    [:option {:value :minify} "Minify"]]]]
     tour-nav
-    [:div.code
+    [:div#code
      [:textarea {:id :dak-code
                  :placeholder "Write some Dak..."
                  :autocorrect :off
@@ -120,12 +133,16 @@
 (fn@ play-index [config assets]
   @(writeFile "dist/index.html" (play-ui assets {})))
 
+(fn@ error-html [config assets]
+  @(writeFile "dist/error.html" (error-ui assets)))
+
 (const timer-label "Build completed")
 (fn@ main-prod [config]
   (console.time timer-label)
   (let [assets @(esbuild-prod config)]
     @(Promise.all
       [(play-index config assets)
+       (error-html config assets)
        (... (tour.map #(play-build config assets $)))]))
   (console.timeEnd timer-label))
 
