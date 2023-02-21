@@ -19,3 +19,27 @@ jobs:
       - run: npm install
       - name: Run Tests
         run: ./node_modules/.bin/dak workspace-p.dak cover
+
+  deploy:
+    name: website
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 19
+          cache: npm
+          cache-dependency-path: '**/package.json'
+      - run: npm install
+      - run: npm -w packages/website build
+      - uses: cloudflare/pages-action@1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: dak
+          directory: packages/website/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
