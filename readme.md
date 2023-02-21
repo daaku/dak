@@ -5,7 +5,7 @@ Dak or DakLang is a Lisp like language that transpiles to JavaScript.
 ## Play
 
 If you want to jump in and see what it looks like, explore the
-[Dak Tour](https://daklang.com/tour/)
+[Dak Tour](https://daklang.com/tour/).
 
 ## Zen
 
@@ -17,9 +17,10 @@ If you want to jump in and see what it looks like, explore the
 
 JavaScript is ubiquitous. It's ecosystem is diverse and populated. Dak attempts
 to provide a path to leverage and participate in this ecosystem, as a modern
-lisp like language. It's not Common Lisp or Scheme, but more like Clojure or
-Fennel. It doesn't hide it's true nature, and aims to provide access to every
-feature JavaScript has.
+lisp like language. It is not a Lisp. It's still JavaScript, but wearing a Lisp
+outfit. It's not Common Lisp or Scheme, but a bit more like Clojure or Fennel.
+It doesn't hide it's true nature, and aims to provide access to every feature
+JavaScript has.
 
 It has browser output as an important goal. Specifically, small bundle size and
 tree shaking for pay-as-you-go, are key considerations that determine the design
