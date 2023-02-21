@@ -1,5 +1,5 @@
 (import [:esbuild :as esbuild]
-        [:node:fs/promises [readFile writeFile mkdir]]
+        [:node:fs/promises [readFile writeFile mkdir rm]]
         [:node:path [relative dirname]]
         [:node:http [createServer]]
         [:finalhandler finalhandler]
@@ -151,6 +151,7 @@
     (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
 
 (fn@ main-dev [config]
+  @(rm "dist" {:recursive true})
   (main-prod config)
   (let [token (crypto.randomUUID)
         ss (serveStatic "dist" {:setHeaders set-headers})
