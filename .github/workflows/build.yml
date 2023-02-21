@@ -37,7 +37,7 @@ jobs:
       - name: install rclone
         run: |
           cd /tmp
-          wget https://downloads.rclone.org/rclone-current-linux-amd64.deb
+          wget --quiet https://downloads.rclone.org/rclone-current-linux-amd64.deb
           sudo dpkg -i rclone-current-linux-amd64.deb
       - name: deploy
         run: rclone --config packages/website/.rclone.conf copyto packages/website/dist/ s3:www.daklang.com/
