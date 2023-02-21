@@ -73,7 +73,7 @@ header > div {
   font-size: 24px;
 }
 
-.marked {
+body.narrow {
   max-width: 600px;
   margin: auto;
 }

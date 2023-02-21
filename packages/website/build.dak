@@ -68,7 +68,7 @@
 (const tour-nav
   (unsafe (html
     [:div#tour
-      [:ul#tour (... (tour.map
+      [:ul (... (tour.map
         (fn [v]
           [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))
 
@@ -136,18 +136,32 @@
   @(writeFile "dist/index.html"
     (doc {:lang :en}
       (head-ui assets "Welcome")
-      [:body
-      [:div.marked
+      [:body.narrow
+      [:div
         (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
       [:script {:type :module :src (. assets "index.js")}]])))
+
+(fn@ tour-index-html [config assets]
+  @(writeFile "dist/tour/index.html"
+    (doc {:lang :en}
+      (head-ui assets "Dak Tour")
+      [:body.narrow
+       [:h1 "Dak Tour"]
+       [:div#tour-index
+        [:ul (... (tour.map
+         (fn [v]
+           [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]]]
+       [:script {:type :module :src (. assets "index.js")}])))
 
 (const timer-label "Build completed")
 (fn@ main-prod [config]
   (console.time timer-label)
+  @(mkdir "dist/tour" {:recursive true})
   (let [assets @(esbuild-prod config)]
     @(Promise.all
       [(index-html config assets)
        (error-html config assets)
+       (tour-index-html config assets)
        (... (tour.map #(play-build config assets $)))]))
   (console.timeEnd timer-label))
 
