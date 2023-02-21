@@ -23,10 +23,8 @@ jobs:
   deploy:
     name: website
     needs: build
+    if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -36,10 +34,10 @@ jobs:
           cache-dependency-path: '**/package.json'
       - run: npm install
       - run: npm run -w packages/website build
-      - uses: cloudflare/pages-action@1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: dak
-          directory: packages/website/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: install rclone
+        run: |
+          cd /tmp
+          wget https://downloads.rclone.org/rclone-current-linux-amd64.deb
+          sudo dpkg -i rclone-current-linux-amd64.deb
+      - name: deploy
+        run: rclone --config packages/website/.rclone.conf copyto packages/website/dist/ s3:daklang.com/
