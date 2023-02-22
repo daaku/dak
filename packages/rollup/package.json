@@ -1,7 +1,7 @@
 {
   "name": "@daklang/rollup",
   "version": "0.1.0",
-  "description": "ESM Loader for Dak",
+  "description": "Rollup & Vite Plugin for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
