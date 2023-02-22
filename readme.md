@@ -1,4 +1,4 @@
-# dak
+# <img src="./packages/website/assets/logo.svg" width="24" height="24"> dak
 
 Dak or DakLang is a Lisp like language that transpiles to JavaScript.
 

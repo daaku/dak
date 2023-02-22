@@ -22,6 +22,12 @@
                           :sourcemap :inline})
                        :code)})))})
 
+(fn markdown [content assets]
+  (-> content
+      marked.parse
+      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g
+        (fn [_ v] (. assets v)))))
+
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/logo.svg"
                                    "assets/index.css"
@@ -149,10 +155,8 @@
     (doc {:lang :en}
       (head-ui assets "Dak Language")
       [:body.narrow
-       [:image {:width 64 :height 64 :margin: "8px"
-                :src (. assets "logo.svg")}]
        [:div
-         (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
+         (unsafe (markdown @(readFile "../../readme.md" :utf8) assets))]
        foot-ui
        [:script {:type :module :src (. assets "index.js")}]])))
 
