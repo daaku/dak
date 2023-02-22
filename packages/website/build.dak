@@ -84,8 +84,9 @@
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
    (head-ui assets title)
-   [:body
+   [:body.tour
     [:header
+     [:img {:width 24 :height 24 :src (. assets "logo.svg")}]
      [:h1 title]
      [:div
       [:button#tour-toggle "\u25B7 Show Tour Index"]
@@ -138,7 +139,8 @@
     (doc {:lang :en}
       (head-ui assets "Dak Language")
       [:body.narrow
-       [:image {:src (. assets "logo.svg")}]
+       [:image {:width 64 :height 64 :margin: "8px"
+                :src (. assets "logo.svg")}]
        [:div
          (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
        [:script {:type :module :src (. assets "index.js")}]])))
