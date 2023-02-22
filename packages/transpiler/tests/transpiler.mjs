@@ -826,6 +826,12 @@ test('lambda with assign', () => {
     `((lambda__0)=>{return [lambda__0,];})(42);`,
   )
 })
+test('lambda with skipped arg', () => {
+  assert.equal(
+    tostr(`#(. assets $2)`),
+    `((lambda__0,lambda__1)=>{return assets[lambda__1]});`,
+  )
+})
 test('builtin: typeof', () => {
   assert.equal(tostr('(typeof 1)'), 'typeof 1;')
 })

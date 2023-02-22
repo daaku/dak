@@ -1361,7 +1361,13 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
       arg = parseInt(target.slice(1), 10) - 1
     }
 
-    const replace = (args[arg] ?? (args[arg] = ctx.gensym('lambda'))).value
+    for (let i = 0; i <= arg; i++) {
+      if (!args[i]) {
+        args[i] = ctx.gensym('lambda')
+      }
+    }
+
+    const replace = args[arg].value
     n.value = dot === -1 ? replace : `${replace}${sym.slice(dot)}`
   }
   argMap(node[1])
