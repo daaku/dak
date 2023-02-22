@@ -1,7 +1,13 @@
+html {
+  --color-logo: #155ec3;
+}
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+a {
+  color: var(--color-logo);
 }
 header {
   display: grid;
@@ -22,6 +28,33 @@ header > h1 {
 header > div,
 header > img {
   justify-self: center;
+}
+footer {
+  text-align: center;
+  padding: 16px;
+}
+footer ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: inline-grid;
+  grid-auto-flow: column;
+  column-gap: 24px;
+}
+footer li {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+footer a {
+  text-decoration: none;
+}
+footer a,
+footer a:visited {
+  color: var(--color-logo);
+}
+footer a:hover {
+  text-decoration: underline;
 }
 #fmt {
   margin-left: 8px;

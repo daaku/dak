@@ -80,6 +80,16 @@
    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
    [:link {:rel :icon :type "image/svg+xml" :href (. assets "logo.svg")}]])
 
+(const foot-ui
+  (unsafe (html
+    [:footer
+      [:ul
+       [:li [:a {:href "/"} "Dak Language"]]
+       [:li [:a {:href "/tour/"} "Tour"]]
+       [:li [:a {:href "https://github.com/daaku/dak"} "GitHub"]]
+       [:li [:a {:href "mailto:n@daaku.org?subject=Dak" :target :_blank}
+              "\u00a9 Naitik Shah"]]]])))
+
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
    (head-ui assets title)
@@ -110,6 +120,7 @@
                  :autocapitalize :none
                  :spellcheck false}]]
     [:div#output]
+    foot-ui
     [:script {:src "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"}]
     [:script {:src "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"}]
     [:script {:type :module :src (. assets "index.js")}]]))
@@ -142,6 +153,7 @@
                 :src (. assets "logo.svg")}]
        [:div
          (unsafe (marked.parse @(readFile "../../readme.md" :utf8)))]
+       foot-ui
        [:script {:type :module :src (. assets "index.js")}]])))
 
 (fn@ tour-index-html [config assets]
@@ -154,6 +166,7 @@
         [:ul (... (tour.map
          (fn [v]
            [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]]]
+       foot-ui
        [:script {:type :module :src (. assets "index.js")}])))
 
 (const timer-label "Build completed")
