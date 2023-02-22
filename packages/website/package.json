@@ -6,6 +6,9 @@
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
   "type": "module",
+  "files": [
+    "readme.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/daaku/dak",

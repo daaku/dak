@@ -1,0 +1,3 @@
+*.dak
+/fixtures/
+/tests/
