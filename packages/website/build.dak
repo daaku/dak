@@ -24,9 +24,8 @@
 
 (fn markdown [content assets]
   (-> content
-      marked.parse
-      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g
-        #(. assets $2))))
+      (marked.parse {:baseUrl "https://github.com/daaku/dak/blob/main/"})
+      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))))
 
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/logo.svg"
