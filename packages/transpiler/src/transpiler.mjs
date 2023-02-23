@@ -1332,7 +1332,7 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   let restArg
   const args = []
   const argMap = n => {
-    if (Array.isArray(n)) {
+    if (Array.isArray(n) && n[0].value !== 'hash') {
       n.forEach(argMap)
       return
     }
