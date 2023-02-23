@@ -1,6 +1,6 @@
 {
   "name": "@daklang/website",
-  "version": "0.2.0",
+  "private": true,
   "description": "Website package for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
