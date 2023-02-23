@@ -44,18 +44,15 @@
                #(false? $.value))
       (process.exit 1))))
 
-(fn r-dep-graph-fill [graph pkg kind]
-  (when-let [deps (. pkg kind)]
-    (-> deps Object.keys
-        (.map #(when (in $ graph)
-                 (.push (. graph $ kind) pkg.name))))))
-
 (fn r-dep-graph [pkgs]
   (let [graph {}]
-    (pkgs.map #(set (. graph $.name) {:devDependencies [] :dependencies []}))
-    (pkgs.map (fn [pkg]
-                (r-dep-graph-fill graph pkg :dependencies)
-                (r-dep-graph-fill graph pkg :devDependencies)))
+    (pkgs.map #(set (. graph $.name) []))
+    (pkgs.map
+      (fn [pkg]
+        (when-let [deps pkg.dependencies]
+          (-> deps Object.keys
+              (.map #(when (in $ graph)
+                      (.push (. graph $) pkg.name)))))))
     graph))
 
 (fn@ r-graph []
