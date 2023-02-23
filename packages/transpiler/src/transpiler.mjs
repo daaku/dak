@@ -1501,6 +1501,7 @@ const builtins = {
   '&&': makeOpTranspiler('&&'),
   and: makeOpTranspiler('&&'),
   not: makePrefixOpTranspiler('!'),
+  in: makeOpTranspiler(' in '),
   '=': transpileBuiltinCmp,
   '==': transpileBuiltinCmp,
   '!=': transpileBuiltinCmp,

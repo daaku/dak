@@ -769,6 +769,9 @@ test('builtin: op &&', () => {
 test('builtin: op and', () => {
   assert.equal(tostr('(and 1 2 3)'), '(1&&2&&3);')
 })
+test('builtin: op in', () => {
+  assert.equal(tostr('(in a b)'), '(a in b);')
+})
 test('builtin: prefix bit-not', () => {
   assert.equal(tostr('(bit-not 1)'), '(~1);')
 })
