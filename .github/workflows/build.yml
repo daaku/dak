@@ -18,7 +18,7 @@ jobs:
           cache-dependency-path: '**/package.json'
       - run: npm install
       - name: Run Tests
-        run: ./node_modules/.bin/dak workspace-p.dak cover
+        run: ./node_modules/.bin/dak make.dak cover
 
   deploy:
     name: website
