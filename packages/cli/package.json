@@ -21,6 +21,7 @@
     "fennel"
   ],
   "dependencies": {
+    "@daklang/loader": "^0.1.0",
     "@daklang/transpiler": "^0.1.0"
   },
   "bin": {
