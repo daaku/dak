@@ -18,7 +18,7 @@
 (fn@ workspace-package-json [ws]
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
 
-(fn@ run [ws cmd ws-pad-target]
+(fn@ run-ws [ws cmd ws-pad-target]
   (when-let [sh (-> @(workspace-package-json ws) (?. :scripts cmd))]
     (try
       (let [start (Date.now)
@@ -34,14 +34,25 @@
         (console.error e.stderr)
         false))))
 
+(fn@ run [cmd]
+  (let [workspaces @(all-workspaces)
+        ws-pad-target (workspaces.reduce #(Math.max $1 $2.length) 0)]
+    (if (.some @(Promise.allSettled (workspaces.map #(run-ws $ cmd ws-pad-target)))
+               #(false? $.value))
+      (process.exit 1))))
+
+(const commands {:run run
+                 :test #(run :test)
+                 :cover #(run :cover)})
+
 (fn@ main []
   (set process.env.PATH
        (str process.env.PATH ":" (join (process.cwd) "./node_modules/.bin")))
-  (let [cmd (. process.argv 2)
-        workspaces @(all-workspaces)
-        ws-pad-target (workspaces.reduce #(Math.max $1 $2.length) 0)]
-    (if (.some @(Promise.allSettled (workspaces.map #(run $ cmd ws-pad-target)))
-               #(false? $.value))
-      (process.exit 1))))
+  (let [cmd-name (. process.argv 2)
+        cmd (. commands cmd-name)]
+    (when (not cmd)
+      (console.error "unknown command:" cmd-name)
+      (process.exit 1))
+    (cmd (... (process.argv.slice 3)))))
 
 @(main)
