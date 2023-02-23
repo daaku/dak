@@ -841,6 +841,9 @@ test('lambda in lambda', () => {
     `((lambda__0)=>{return lambda__0(((lambda__1)=>{return lambda__1()}))});`,
   )
 })
+test('lambda with empty list', () => {
+  assert.equal(tostr(`#($ [])`), `((lambda__0)=>{return lambda__0([])});`)
+})
 test('builtin: typeof', () => {
   assert.equal(tostr('(typeof 1)'), 'typeof 1;')
 })
