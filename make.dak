@@ -12,6 +12,9 @@
 (fn since [start]
   (str (- (Date.now) start) "ms"))
 
+(fn@ out [...args]
+  (.trim (. @(exec ...args) :stdout)))
+
 (fn@ all-workspaces []
   (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces)))
 
@@ -60,10 +63,25 @@
         pkgs @(Promise.all (workspaces.map workspace-package-json))]
     (console.log (r-dep-graph pkgs))))
 
+(fn@ pkg-needs-bump [ws]
+  (let [version-line @(out "grep -n '\"version\"' package.json|cut -d : -f 1"
+                           {:cwd ws})
+        last-version-rev @(out (str "git log -1 --quiet --format=%H -L "
+                                    version-line "," version-line ":"
+                                    (join ws "package.json")))
+        has-changes (not= "" @(out (str "git log -1 --format=%H "
+                                        last-version-rev "..main " ws)))]
+    (console.log ws version-line last-version-rev has-changes)))
+
+(fn@ version []
+  (let [workspaces @(all-workspaces)]
+    (console.log @(Promise.all (workspaces.map pkg-needs-bump)))))
+
 (const commands {:run run
                  :test #(run :test)
                  :cover #(run :cover)
-                 :r-graph r-graph})
+                 :r-graph r-graph
+                 :version version})
 
 (fn@ main []
   (set process.env.PATH
