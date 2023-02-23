@@ -3,4 +3,3 @@
 /packages/*/coverage
 /packages/*/dist
 /packages/vscode/*.vsix
-/packages/website/node_modules
