@@ -1,9 +1,11 @@
 #!/usr/bin/env dak
 
-(import [:node:fs/promises [readFile]]
+(import [:node:fs/promises [readFile writeFile]]
         [:node:path [join]]
         [:node:util [promisify]]
-        [:node:child_process {exec execCB}])
+        [:node:child_process {exec execCB}]
+        [:mri mri]
+        [:semver/functions/inc.js semver-inc])
 
 (const exec (promisify execCB))
 (const PASS "\x1b[32mPASS\x1b[0m")
@@ -55,7 +57,7 @@
                       (.push (. graph $) pkg.name)))))))
     graph))
 
-(fn@ r-graph []
+(fn@ r-dep []
   (let [workspaces @(all-workspaces)
         pkgs @(Promise.all (workspaces.map workspace-package-json))]
     (console.log (r-dep-graph pkgs))))
@@ -65,19 +67,58 @@
                            {:cwd ws})
         last-version-rev @(out (str "git log -1 --quiet --format=%H -L "
                                     version-line "," version-line ":"
-                                    (join ws "package.json")))
-        has-changes (not= "" @(out (str "git log -1 --format=%H "
-                                        last-version-rev "..main " ws)))]
-    (console.log ws version-line last-version-rev has-changes)))
+                                    (join ws "package.json")))]
+    (not= "" @(out (str "git log -1 --format=%H "
+                        last-version-rev "..main " ws)))))
 
-(fn@ version []
-  (let [workspaces @(all-workspaces)]
-    (console.log @(Promise.all (workspaces.map pkg-needs-bump)))))
+(fn ws-to-name [workspaces pkgs]
+  (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
+
+(fn name-to-index [pkgs]
+  (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
+
+(fn@ version [...argv]
+  (let [args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
+        release (?? (. args._ 0) :minor)
+        workspaces @(all-workspaces)
+        [needs-bump pkgs]
+        @(Promise.all
+           [(Promise.all (workspaces.map pkg-needs-bump))
+            (Promise.all (workspaces.map workspace-package-json))])
+        ws-names (ws-to-name workspaces pkgs)
+        name-index (name-to-index pkgs)
+        graph (r-dep-graph pkgs)
+        all-bump (needs-bump.reduce
+                   (fn [all needs index]
+                     (when needs
+                       (all.add (. ws-names (. workspaces index)))
+                       (.map (. graph (. pkgs index :name)) #(all.add $)))
+                     all)
+                   (Set.))
+        write-indexes (Set.)
+        writes []]
+    (for-of [name all-bump]
+      (let [index (. name-index name)
+            pkg (. pkgs index)
+            new-version (semver-inc pkg.version release)]
+        (console.log name pkg.version "=>" new-version)
+        (when (not args.n)
+          (set pkg.version new-version)
+          (write-indexes.add index)
+          (for-of [r-dep-name (. graph name)]
+            (let [r-dep-index (. name-index r-dep-name)
+                  r-dep-pkg (. pkgs r-dep-index)]
+              (set (. r-dep-pkg.dependencies name) (str "^" new-version))
+              (write-indexes.add r-dep-index))))))
+    (for-of [index write-indexes]
+      (writes.push (writeFile (join (. workspaces index) "package.json")
+                              [(JSON.stringify (. pkgs index) null 2) "\n"])))
+    @(Promise.all writes)))
 
 (const commands {:run run
                  :test #(run :test)
                  :cover #(run :cover)
-                 :r-graph r-graph
+                 :r-dep r-dep
                  :version version})
 
 (fn@ main []

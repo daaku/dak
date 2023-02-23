@@ -6,5 +6,9 @@
     "packages/rollup",
     "packages/html",
     "packages/website"
-  ]
+  ],
+  "devDependencies": {
+    "mri": "^1.2.0",
+    "semver": "^7.3.8"
+  }
 }
