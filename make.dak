@@ -53,12 +53,12 @@
     (pkgs.map (fn [pkg]
                 (r-dep-graph-fill graph pkg :dependencies)
                 (r-dep-graph-fill graph pkg :devDependencies)))
-    (console.log graph)))
+    graph))
 
 (fn@ r-graph []
   (let [workspaces @(all-workspaces)
         pkgs @(Promise.all (workspaces.map workspace-package-json))]
-    (r-dep-graph pkgs)))
+    (console.log (r-dep-graph pkgs))))
 
 (const commands {:run run
                  :test #(run :test)
