@@ -12,12 +12,14 @@
 (fn since [start]
   (str (- (Date.now) start) "ms"))
 
+(fn@ all-workspaces []
+  (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces)))
+
+(fn@ workspace-package-json [ws]
+  (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
+
 (fn@ run [ws cmd ws-pad-target]
-  (when-let [sh (-> (join ws "package.json")
-                  (readFile :utf8)
-                  await
-                  JSON.parse
-                  (?. :scripts cmd))]
+  (when-let [sh (-> @(workspace-package-json ws) (?. :scripts cmd))]
     (try
       (let [start (Date.now)
             {:keys [stdout stderr]} @(exec sh {:cwd ws})]
@@ -36,9 +38,7 @@
   (set process.env.PATH
        (str process.env.PATH ":" (join (process.cwd) "./node_modules/.bin")))
   (let [cmd (. process.argv 2)
-        workspaces (-> @(readFile "package.json" :utf8)
-                       JSON.parse
-                       (. :workspaces))
+        workspaces @(all-workspaces)
         ws-pad-target (workspaces.reduce #(Math.max $1 $2.length) 0)]
     (if (.some @(Promise.allSettled (workspaces.map #(run $ cmd ws-pad-target)))
                #(false? $.value))
