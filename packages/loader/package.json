@@ -1,6 +1,6 @@
 {
   "name": "@daklang/loader",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ESM Loader for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
@@ -39,6 +39,6 @@
     "uvu": "^0.5.6"
   },
   "dependencies": {
-    "@daklang/transpiler": "^0.1.0"
+    "@daklang/transpiler": "^0.2.0"
   }
 }
