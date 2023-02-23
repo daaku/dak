@@ -80,7 +80,7 @@
 (fn@ release [...argv]
   (let [args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
         release (?? (. args._ 0) :minor)
-        workspaces @(all-workspaces)
+        workspaces (.filter @(all-workspaces) #(not= $ :packages/website))
         [needs-bump pkgs]
         @(Promise.all
            [(Promise.all (workspaces.map pkg-needs-bump))
