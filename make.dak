@@ -121,7 +121,7 @@
         @(Promise.all writes)
         @(exec "git commit -a -m 'publishing releases'")
         @(exec "git push")
-        @(exec "npm publish -w " (ws-to-publish.join " -w "))))))
+        @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
 
 (const commands {:run run
                  :test #(run :test)
