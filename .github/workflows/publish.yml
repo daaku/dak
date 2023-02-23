@@ -26,4 +26,3 @@ jobs:
           ./node_modules/.bin/dak make.dak release ${{ github.event.inputs.version }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-      - uses: mxschmitt/action-tmate@v3
