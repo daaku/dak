@@ -77,7 +77,7 @@
 (fn name-to-index [pkgs]
   (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
 
-(fn@ version [...argv]
+(fn@ release [...argv]
   (let [args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
         release (?? (. args._ 0) :minor)
         workspaces @(all-workspaces)
@@ -110,16 +110,24 @@
                   r-dep-pkg (. pkgs r-dep-index)]
               (set (. r-dep-pkg.dependencies name) (str "^" new-version))
               (write-indexes.add r-dep-index))))))
-    (for-of [index write-indexes]
-      (writes.push (writeFile (join (. workspaces index) "package.json")
-                              [(JSON.stringify (. pkgs index) null 2) "\n"])))
-    @(Promise.all writes)))
+    (when (pos? write-indexes.size)
+      (let [ws-to-publish []]
+        (for-of [index write-indexes]
+          (let [ws (. workspaces index)]
+            (ws-to-publish.push ws)
+            (writes.push (writeFile (join ws "package.json")
+                                    [(JSON.stringify (. pkgs index) null 2)
+                                     "\n"]))))
+        @(Promise.all writes)
+        @(exec "git commit -a -m 'publishing releases'")
+        @(exec "git push")
+        @(exec "npm publish -w " (ws-to-publish.join " -w "))))))
 
 (const commands {:run run
                  :test #(run :test)
                  :cover #(run :cover)
                  :r-dep r-dep
-                 :version version})
+                 :release release})
 
 (fn@ main []
   (set process.env.PATH
