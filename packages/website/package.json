@@ -29,8 +29,7 @@
     "@daklang/transpiler": "^0.1.0"
   },
   "devDependencies": {
-    "@daklang/cli": "0.1.0",
-    "@daklang/transpiler": "0.1.0",
+    "@daklang/cli": "^0.1.0",
     "esbuild": "^0.17.6",
     "finalhandler": "^1.2.0",
     "marked": "^4.2.12",
