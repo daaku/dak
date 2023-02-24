@@ -1,0 +1,39 @@
+; Classes are less special in Dak than in JavaScript.
+
+; Declarations look like:
+(class Animal)
+
+; Extends can be used for inheritance:
+(class Dinosaur :extends Animal)
+
+; Expressions look like:
+(const TRex (class :extends Dinosaur))
+
+; Instances are created using the constructor
+; with a dot (.) suffix:
+(const pet (TRex.))
+
+; instanceof, or the alias isa? can be used like:
+(prn "instanceof TRex =" (instanceof pet TRex))
+(prn "isa? Dinosaur =" (isa? pet Dinosaur))
+
+; Classes support using let and the fn family of builtins
+; to define properties and methods.
+(class Stego :extends Animal
+  (let #name)
+
+  ; Constructor functions are defined like a regular function.
+  (fn constructor [name]
+    (super)
+
+    ; Private variables are automatically prefixed with this.
+    (set #name name)
+
+    ; An explicit return is required since otherwise the (set)
+    ; above is used as the return value.
+    (return))
+
+  ; Async functions, as well as generators are supported.
+  (fn@ greet []
+    (prn #name "says hello.")))
+@(.greet (Stego. "Barney"))

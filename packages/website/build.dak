@@ -65,7 +65,7 @@
     @(ctx.dispose)
     assets))
 
-(const tour [:welcome :literals :variables :import :functions])
+(const tour [:welcome :literals :variables :import :functions :classes])
 
 (fn tour-title [s]
   (-> s
