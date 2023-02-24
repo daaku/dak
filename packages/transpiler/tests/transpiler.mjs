@@ -200,6 +200,12 @@ test('builtin: var', () => {
 test('builtin: let', () => {
   assert.equal(tostr('(let a 42)'), 'let a=42;')
 })
+test('builtin: let destructure', () => {
+  assert.equal(tostr('(let {:keys [a b]} c)'), 'let {a,b}=c;')
+})
+test('builtin: const destructure', () => {
+  assert.equal(tostr('(const [a b] c)'), 'const [a,b,]=c;;')
+})
 test('builtin: export let', () => {
   assert.equal(tostr('(let ^:export a 42)'), 'export let a=42;')
 })

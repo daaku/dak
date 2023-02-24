@@ -701,10 +701,9 @@ const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
 ) {
   let [prefix, symIndex] = exportDefault(ctx, node)
   yield* prefix
-  ctx.bindings.add(node[symIndex].value)
   yield [node[0].value, node[0]]
   yield ' '
-  yield* transpileNodeSymbol(ctx, node[symIndex])
+  yield* transpileSpecialDestructure(ctx, node[symIndex])
   yield '='
   yield* transpileNodeExpr(ctx, node[symIndex + 1], null, hoist, evExpr)
   yield ';'
@@ -713,10 +712,9 @@ const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
 function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
   let [prefix, symIndex] = exportDefault(ctx, node)
   yield* prefix
-  ctx.bindings.add(node[symIndex].value)
   // if we hoisted, then split the let, otherwise assign expression directly
   const [hoist, hoisted] = hoister(ctx)
-  const assign = [...transpileNodeSymbol(ctx, node[symIndex]), '=']
+  const assign = [...transpileSpecialDestructure(ctx, node[symIndex]), '=']
   const postHoist = [
     ...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr),
   ]
@@ -941,11 +939,11 @@ function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
 }
 
 function* transpileBuiltinLet(ctx, node, assign, hoist, evKind) {
-  if (node[1].kind === 'symbol') {
-    yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind)
+  if (node[1].kind === 'array') {
+    yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind)
     return
   }
-  yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind)
+  yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind)
 }
 
 function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
