@@ -22,8 +22,6 @@ header > * {
 header > h1 {
   font-size: 32px;
   margin: 0;
-  position: relative;
-  top: 3px;
 }
 header > div,
 header > img {
@@ -118,12 +116,17 @@ footer a:hover {
   font-size: 24px;
 }
 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  line-height: 1.4;
+}
 body.tour {
   max-width: 1800px;
   margin: 0 auto;
   padding: 0 8px;
 }
 body.narrow {
-  max-width: 600px;
+  max-width: 800px;
   margin: auto;
 }
