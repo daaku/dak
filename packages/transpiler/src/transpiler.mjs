@@ -1289,6 +1289,9 @@ const classBuiltins = {
 }
 
 function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
+  if (node.kind === 'comment') {
+    return
+  }
   const call = node[0].value
   const builtin = classBuiltins[call]
   if (builtin) {

@@ -1074,6 +1074,15 @@ test('builtin: class: fn@*', () => {
     `class Foo{async *#bar(a){return yield (await a);}};`,
   )
 })
+test('builtin: class: ignore comments', () => {
+  assert.equal(
+    tostr(`
+    (class Foo
+      ; hello
+    )`),
+    `class Foo{};`,
+  )
+})
 test('macro: ->', () => {
   assert.equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
