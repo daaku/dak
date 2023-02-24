@@ -96,15 +96,18 @@
       [:ul
        [:li [:a {:href "/"} "Dak Language"]]
        [:li [:a {:href "/tour/"} "Tour"]]
+       [:li [:a {:href "/play/"} "Playground"]]
        [:li [:a {:href "https://github.com/daaku/dak"} "GitHub"]]
        [:li [:a {:href "mailto:n@daaku.org?subject=Dak" :target :_blank}
               "\u00a9 Naitik Shah"]]]])))
 
-(fn play-ui [assets {:or {title "Dak Playground" code ""}}]
+(fn play-ui [assets {:or {title "Dak Playground" code "" description ""}}]
   (doc {:lang :en}
    (head-ui assets
      {:title title
-      :description (str title " to experiment with code in the Dak Language.")})
+      :description
+       (or description
+           (str title " to experiment with code in the Dak Language."))})
    [:body.tour
     [:header
      [:img {:width 24 :height 24 :src (. assets "logo.svg")}]
@@ -183,15 +186,24 @@
        foot-ui
        [:script {:type :module :src (. assets "index.js")}])))
 
+(fn@ play-index-html [config assets]
+  @(writeFile "dist/play/index.html"
+    (play-ui assets
+      {:title "Dak Playground"
+       :description "A Playground to experiment with the Dak Language."})))
+
 (const timer-label "Build completed")
 (fn@ main-prod [config]
   (console.time timer-label)
-  @(mkdir "dist/tour" {:recursive true})
+  @(Promise.all
+    [(mkdir "dist/tour" {:recursive true})
+     (mkdir "dist/play" {:recursive true})])
   (let [assets @(esbuild-prod config)]
     @(Promise.all
       [(index-html config assets)
        (error-html config assets)
        (tour-index-html config assets)
+       (play-index-html config assets)
        (... (tour.map #(play-build config assets $)))]))
   (console.timeEnd timer-label))
 
