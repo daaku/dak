@@ -1,3 +1,5 @@
+#!/usr/bin/env dak
+
 (import [:esbuild :as esbuild]
         [:node:fs/promises [readFile writeFile mkdir rm]]
         [:node:path [relative dirname]]
