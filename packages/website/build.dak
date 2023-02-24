@@ -113,7 +113,8 @@
            (str title " to experiment with code in the Dak Language."))})
    [:body.tour
     [:header
-     [:img {:width 24 :height 24 :src (. assets "logo.svg")}]
+     [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
+                            :alt "Home" :title "Home"}]]
      [:h1 title]
      [:div
       [:button#tour-toggle "\u25B7 Show Tour Index"]
