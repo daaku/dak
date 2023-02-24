@@ -210,6 +210,3 @@
     ((if (= config.env :development) main-dev main-prod) config)))
 
 @(main)
-
-;; TODO
-;; - tour navigation
