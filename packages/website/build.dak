@@ -29,6 +29,7 @@
 
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/logo.svg"
+                                   "assets/logo.png"
                                    "assets/index.css"
                                    "assets/index.dak"]
                      :define {"globalThis.IS_PRODUCTION"
@@ -39,7 +40,7 @@
                      :metafile true
                      :assetNames "assets/[name]-[hash]"
                      :entryNames "assets/[name]-[hash]"
-                     :loader {:.svg :file}
+                     :loader {:.svg :file :.png :file}
                      :sourcemap true
                      :plugins [dakPlugin]}))
 
@@ -77,11 +78,15 @@
         (fn [v]
           [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))
 
-(fn head-ui [assets title]
+(fn head-ui [assets {:keys [title] :or {description "The Dak language."}}]
   [:head
    [:meta {:charset :utf-8}]
    [:title title]
    [:meta {:name :viewport :content "width=device-width,initial-scale=1"}]
+   [:meta {:property :og:image
+           :content (str "https://www.daklang.com" (. assets "logo.png"))}]
+   (when description
+    [:meta {:name :description :content description}])
    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
    [:link {:rel :icon :type "image/svg+xml" :href (. assets "logo.svg")}]])
 
@@ -97,7 +102,9 @@
 
 (fn play-ui [assets {:or {title "Dak Playground" code ""}}]
   (doc {:lang :en}
-   (head-ui assets title)
+   (head-ui assets
+     {:title title
+      :description (str title " to experiment with code in the Dak Language.")})
    [:body.tour
     [:header
      [:img {:width 24 :height 24 :src (. assets "logo.svg")}]
@@ -141,7 +148,7 @@
 (fn@ error-html [config assets]
   @(writeFile "dist/error.html"
     (doc {:lang :en}
-      (head-ui assets "Error")
+      (head-ui assets {:title "Error"})
       [:body
       [:div#error
         [:div
@@ -152,7 +159,9 @@
 (fn@ index-html [config assets]
   @(writeFile "dist/index.html"
     (doc {:lang :en}
-      (head-ui assets "Dak Language")
+      (head-ui assets
+        {:title "Dak Language"
+         :description "Dak is a Lisp like language that transpiles to JavaScript."})
       [:body.narrow
        [:div
          (unsafe (markdown @(readFile "../../readme.md" :utf8) assets))]
@@ -162,7 +171,9 @@
 (fn@ tour-index-html [config assets]
   @(writeFile "dist/tour/index.html"
     (doc {:lang :en}
-      (head-ui assets "Dak Tour")
+      (head-ui assets
+        {:title "Dak Tour"
+         :description "A series of modules to explore the Dak Language."})
       [:body.narrow
        [:h1 "Dak Tour"]
        [:div#tour-index
