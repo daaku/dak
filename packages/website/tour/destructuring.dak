@@ -1,0 +1,20 @@
+; Destructuring support is mapped to JavaScript constructs.
+; It works where assignment works including function arguments
+; let/const/var, loops etc. There is a special exception for
+; let noted below.
+
+(const answers [1 2])
+(const [answer-one answer-two] answers)
+(prn "answers:" answer-one answer-two)
+
+(const jedi {:name :yoda :age 900})
+(let {:keys [name age]} jedi)
+(prn "jedi" name age)
+
+(const sith {:darth :vader})
+(let {:keys [darth] :or {masked true}} sith)
+(prn "sith" darth masked)
+
+; Since let supports the multi binding syntax, it does not
+; support destructuring into an array. An array as the first
+; argument triggers the multi binding syntax of let.
