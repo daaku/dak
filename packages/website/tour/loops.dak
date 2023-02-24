@@ -1,0 +1,32 @@
+; While loops:
+(let [i 5]
+  (while (> i 0)
+    (prn "while:" (-- i))))
+
+; For with step=1
+(for [i 0 5]
+  (prn "for step=1" i))
+
+; For with step=2
+(for [i 0 10 2]
+  (prn "for step=2" i))
+
+; For Of
+(const vs [:a :b :c])
+(for-of [v vs]
+  (prn "for-of:" v))
+
+; For Of supports Destructuring
+(const os [{:name :yoda :age 900} {:name :luke :age 90}])
+(for-of [{:keys [name age]} os]
+  (prn name "is" age "years old"))
+
+; For In
+(const yoda {:name :yoda :age 900})
+(for-in [p yoda]
+  (prn p (. yoda p)))
+
+; For Await
+(const ps [(Promise.resolve 1) (Promise.resolve 2)])
+(for@ [v ps]
+  (prn "for@" v))
