@@ -1,6 +1,6 @@
 # <img src="./packages/website/assets/logo.svg" width="24" height="24"> dak
 
-Dak or DakLang is a Lisp like language that transpiles to JavaScript.
+Dak is a Lisp like language that transpiles to JavaScript.
 
 ## Play
 
@@ -24,17 +24,19 @@ JavaScript has.
 
 ## Browser
 
-It has browser output as an important goal. Specifically, small bundle size and
-tree shaking for pay-as-you-go, are key considerations that determine the design
+Browser output is an important goal. Specifically, small bundle size and tree
+shaking for pay-as-you-go, are key considerations that determine the design
 choices. If you are making a browser based application in Dak, a
-[Vite based setup is the recommended choice](packages/rollup).
+[Vite based setup is the recommended choice](packages/rollup). ES Modules
+support is virtually required and baked in.
 
 ## CLI
 
-If you are targetting `node`, then take a look at the [ESM
-Loader](packages/loader). It provides a loader but otherwise doesn't get in your
-way. Maybe look at [`make.dak`](make.dak) or
-[`build.dak`](packages/website/build.dak) for inspiration.
+CLI tooling using `node` can be built using the [ESM Loader](packages/loader).
+It provides a loader but otherwise doesn't get in your way. Maybe look at
+[`make.dak`](make.dak) or [`build.dak`](packages/website/build.dak) for
+inspiration. For one off use [`npx @daklang/cli`](packages/cli) can do in a
+pinch, though `npx` adds considerable overhead.
 
 ## Status
 

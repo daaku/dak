@@ -6,6 +6,12 @@
   "license": "MIT",
   "author": "Naitik Shah <n@daaku.org>",
   "type": "module",
+  "keywords": [
+    "dak",
+    "lisp",
+    "rollup",
+    "vite"
+  ],
   "exports": {
     ".": {
       "import": "./dist/rollup.mjs"
