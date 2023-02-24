@@ -1,0 +1,27 @@
+; Dak replaces the `switch` statement with a `case` statement.
+; Largely it is the same, but it adds implicit `break` or
+; `return` at the end of each case.
+
+; The final expression (in case of an odd number) is
+; the default clause.
+
+(for [i 40 43]
+  (case i
+    41 (prn i :warm)
+    42 (prn i :boom)
+    (prn i "no dice")))
+
+; Hoisting allows for case to be used as an expression:
+(const answer 42)
+(prn "hoisted"
+     (case answer
+       42 :boom
+       "no dice"))
+
+; Return is used instead of break when possible:
+(fn run [answer]
+  (case answer
+    41 :warm
+    42 :boom
+    "no dice"))
+(prn "run returns" (run 42))
