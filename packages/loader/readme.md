@@ -6,6 +6,7 @@ Loader](https://nodejs.org/api/esm.html#esm_loaders) to allow loading
 having to first transpile them.
 
 ```sh
+npm i @daklang/loader
 echo '(console.log :hello)' > hello.dak
 node --no-warnings --enable-source-maps --loader @daklang/loader hello.dak
 ```
