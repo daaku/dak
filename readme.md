@@ -22,10 +22,19 @@ outfit. It's not Common Lisp or Scheme, but a bit more like Clojure or Fennel.
 It doesn't hide it's true nature, and aims to provide access to every feature
 JavaScript has.
 
+## Browser
+
 It has browser output as an important goal. Specifically, small bundle size and
 tree shaking for pay-as-you-go, are key considerations that determine the design
 choices. If you are making a browser based application in Dak, a
 [Vite based setup is the recommended choice](packages/rollup).
+
+## CLI
+
+If you are targetting `node`, then take a look at the [ESM
+Loader](packages/loader). It provides a loader but otherwise doesn't get in your
+way. Maybe look at [`make.dak`](make.dak) or
+[`build.dak`](packages/website/build.dak) for inspiration.
 
 ## Status
 
