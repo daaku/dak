@@ -1,4 +1,4 @@
-# <img src="./packages/website/assets/logo.svg" width="24" height="24"> dak
+# <img src="./packages/website/assets/logo.svg" width="24" height="24" alt="Logo"> Dak
 
 Dak is a Lisp like language that transpiles to JavaScript.
 
