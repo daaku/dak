@@ -1,0 +1,21 @@
+; Try allows for a number of statements, ending with
+; at least one of, or both a catch and/or finally.
+(try
+  (prn (neverDefined))
+  (catch e
+    (prn :caught e.message))
+  (finally
+    (prn :finally)))
+
+; Try statements are hoisted and can be used as expressions:
+(fn check [answer]
+  (prn :check (try
+                (case answer
+                  42 :boom
+                  41 :close
+                  (throw (Error. :no-dice)))
+                (catch e
+                  :failed))))
+(check 40)
+(check 41)
+(check 42)
