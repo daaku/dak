@@ -1,0 +1,23 @@
+; Conditions are fairly typical:
+(const answer 42)
+(if (= answer 42)
+  (prn :simple :boom)
+  (prn :simple :no-dice))
+
+; Conditions are hoisted and can be used as expressions:
+(prn :hoisted (if (= answer 42) :boom))
+
+; Every pair is a condition, the last lone clause is the else.
+(prn :multiple
+  (if (< answer 42) :too-low
+      (> answer 42) :too-high
+      (= answer 42) :just-right))
+
+; Prefer `when` for single condition without else clause:
+(when (= answer 42)
+  (prn :when answer)
+  (prn "when has an implicit do"))
+
+; Condition with assignment using `if-let` or `when-let`:
+(when-let [one (- answer 41)]
+  (prn "when-let" one))
