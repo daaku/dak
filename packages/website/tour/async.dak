@@ -1,0 +1,14 @@
+; Async functions are defined using the fn@ builtin:
+(fn@ hello [w]
+  (prn :hello w))
+
+; Await can be used as the builtin:
+(await (hello :world))
+
+; Await can be used as the reader macro:
+@(hello :earth)
+
+; For Await can be used via for@
+(const ps [(Promise.resolve 1) (Promise.resolve 2)])
+(for@ [v ps]
+  (prn "for@" v))
