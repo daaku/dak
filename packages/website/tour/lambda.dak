@@ -1,0 +1,13 @@
+; A shorthand for defining functions using #()
+
+; The first argument is available via a $ or $1:
+(prn (.map [1 2 3] #(** $ 2)))
+
+; The rest of the arguments are available via $2, $3 etc:
+(prn (.map [:a :b :c] #(str $1 $2)))
+
+; Rest style arguments are available via the ...$ shorthand:
+(#(prn ...$) :a :b :c)
+
+; It is an implicit call, returning a value requires using a do:
+(prn (#(do 42)))
