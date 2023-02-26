@@ -71,11 +71,11 @@
         (log-err fmt.value e))))
 
   (let [tour-toggle (document.getElementById :tour-toggle)
-        tour (document.getElementById :tour)]
+        tour-nav (document.getElementById :tour-nav)]
     (set tour-toggle.onclick
       (fn []
         (set tour-toggle.innerText
-          (if (tour.classList.toggle :visible)
+          (if (tour-nav.classList.toggle :visible)
             "\u25bd Hide Tour Index"
             "\u25B7 Show Tour Index")))))
 

@@ -76,7 +76,7 @@
 
 (const tour-nav
   (unsafe (html
-    [:div#tour
+    [:div#tour-nav
       [:ul (... (tour.map
         (fn [v]
           [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))

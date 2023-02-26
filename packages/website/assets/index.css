@@ -6,27 +6,15 @@
 *::after {
   box-sizing: border-box;
 }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  line-height: 1.4;
+}
 a {
   color: var(--color-logo);
 }
-header {
-  display: grid;
-  grid-auto-columns: auto 1fr auto;
-  grid-auto-flow: column;
-  column-gap: 16px;
-  padding: 8px 0;
-}
-header > * {
-  align-self: center;
-}
-header > h1 {
-  font-size: 32px;
-  margin: 0;
-}
-header > div,
-header > img {
-  justify-self: center;
-}
+
 footer {
   text-align: center;
   padding: 16px;
@@ -58,16 +46,51 @@ footer a:visited {
 footer a:hover {
   text-decoration: underline;
 }
+
+#error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100vh;
+  font-size: 24px;
+}
+
+body.narrow {
+  max-width: 800px;
+  margin: auto;
+  padding: 0 16px;
+}
+
+body.tour {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 8px;
+}
+.tour header {
+  display: grid;
+  grid-auto-columns: auto 1fr auto;
+  grid-auto-flow: column;
+  column-gap: 16px;
+  padding: 8px 0;
+}
+.tour header > * {
+  align-self: center;
+}
+.tour header > h1 {
+  font-size: 32px;
+  margin: 0;
+}
 #fmt {
   margin-left: 8px;
 }
-#tour {
+#tour-nav {
   display: grid;
   grid-template-rows: 0fr;
   overflow: hidden;
   transition: grid-template-rows 0.3s;
 }
-#tour ul {
+#tour-nav ul {
   align-self: end;
   min-height: 0;
   transition: visibility 1s;
@@ -75,16 +98,16 @@ footer a:hover {
   list-style: none;
   margin: 0;
 }
-#tour ul li:last-child {
+#tour-nav ul li:last-child {
   margin-bottom: 8px;
 }
-#tour.visible {
+#tour-nav.visible {
   grid-template-rows: 1fr;
 }
-#tour.visible ul {
+#tour-nav.visible ul {
   visibility: visible;
 }
-#tour-toggle {
+#tour-nav-toggle {
   margin-right: 16px;
 }
 #code {
@@ -110,28 +133,4 @@ footer a:hover {
   margin: 0 0 1px 0;
   font-size: 16px;
   border-bottom: 1px solid #ddd;
-}
-#error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  height: 100vh;
-  font-size: 24px;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
-    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  line-height: 1.4;
-}
-body.tour {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 0 8px;
-}
-body.narrow {
-  max-width: 800px;
-  margin: auto;
-  padding: 0 16px;
 }
