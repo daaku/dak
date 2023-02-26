@@ -1,0 +1,38 @@
+; NOTE: Very much a work in progress.
+
+; They are defined using the macro keyword:
+(macro add [a b]
+  '(+ ,a ,b))
+(prn "add" (add 1 2))
+
+; Rest arguments can be used to capture the body:
+(macro unless [cond ...body]
+  '(if (not ,cond)
+     (do ,...body)))
+(unless false
+  (prn :unless)
+  (prn :world))
+
+; Symbols can be generated using Clojure style gensym:
+(macro unless-let [[form tst] then el]
+  '(let [temp# ,tst]
+     (if (not temp#)
+       (let [,form temp#]
+         ,then)
+       ,el)))
+(unless-let [v (- 1 1)]
+  (prn :unless-let-hit v)
+  (prn :unless-let-fail))
+
+; More advance use cases are currently possible but require
+; mucking with the internals.
+(macro thread [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (= f.kind :list)
+               (do
+                 (.splice f 1 0 c)
+                 f)
+               '(,f ,c)))
+           v))
+(thread " heLLo " .trim .toLowerCase prn)

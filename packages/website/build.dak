@@ -67,7 +67,7 @@
 
 (const tour [:welcome :literals :variables :import :functions :lambda
              :classes :conditions :async :loops :destructuring :case
-             :try-catch :operators])
+             :try-catch :operators :macros])
 
 (fn tour-title [s]
   (-> s
