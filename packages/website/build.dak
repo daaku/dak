@@ -104,6 +104,10 @@
        [:li [:a {:href "mailto:n@daaku.org?subject=Dak" :target :_blank}
               "\u00a9 Naitik Shah"]]]])))
 
+(fn logo-ui [assets]
+  [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
+                         :alt "Home" :title "Home"}]])
+
 (fn play-ui [assets {:or {title "Dak Playground" code "" description ""}}]
   (doc {:lang :en}
    (head-ui assets
@@ -113,9 +117,7 @@
            (str title " to experiment with code in the Dak Language."))})
    [:body.tour
     [:header
-     [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
-                            :alt "Home" :title "Home"}]]
-     [:h1 title]
+     [:h1 (logo-ui assets) " " title]
      [:div
       [:button#tour-toggle "\u25B7 Show Tour Index"]
       [:input#auto-eval {:type :checkbox :checked true}]
@@ -182,10 +184,7 @@
         {:title "Dak Tour"
          :description "A series of modules to explore the Dak Language."})
       [:body.narrow
-       [:h1
-        [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
-                               :alt "Home" :title "Home"}]]
-        " Dak Tour"]
+       [:h1 (logo-ui assets) " Dak Tour"]
        [:div#tour-index
         [:ul (... (tour.map
          (fn [v]
