@@ -182,7 +182,10 @@
         {:title "Dak Tour"
          :description "A series of modules to explore the Dak Language."})
       [:body.narrow
-       [:h1 "Dak Tour"]
+       [:h1
+        [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
+                               :alt "Home" :title "Home"}]]
+        " Dak Tour"]
        [:div#tour-index
         [:ul (... (tour.map
          (fn [v]
