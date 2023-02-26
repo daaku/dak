@@ -33,3 +33,14 @@ const ps=[Promise.resolve(1),Promise.resolve(2),]
 
 for await(let v of ps){prn("for@",v)
 }
+
+for(let i=0
+i<5
+i++){prn("breaking",i)
+break
+}
+
+for(let i=0
+i<5
+i++){if((i%2)===0){prn("even",i)}else{continue}
+}

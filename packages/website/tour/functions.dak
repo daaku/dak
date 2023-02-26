@@ -37,3 +37,17 @@
 (fn ^:decl TheClass [a]
   (set this.answer a))
 (prn (TheClass. 42))
+
+; Explicit return is available:
+(fn until [a]
+  (while true
+    (if (= (++ a) 42)
+      (return :boom))))
+(prn :returned (until 40))
+
+; Yield & Yield* are available:
+(fn* it [a]
+  (yield (++ a))
+  (yield* [(++ a) (++ a)]))
+(for-of [v (it 39)]
+  (prn "it:" v))

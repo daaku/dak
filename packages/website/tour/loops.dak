@@ -30,3 +30,14 @@
 (const ps [(Promise.resolve 1) (Promise.resolve 2)])
 (for@ [v ps]
   (prn "for@" v))
+
+; break:
+(for [i 0 5]
+  (prn "breaking" i)
+  (break))
+
+; continue:
+(for [i 0 5]
+  (if (= (% i 2) 0)
+    (prn "even" i)
+    (continue)))

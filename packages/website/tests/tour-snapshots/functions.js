@@ -33,3 +33,14 @@ export default ((a,b)=>{return (a-b)
 function TheClass(a){return this.answer=a
 }
 prn(new TheClass(42))
+
+const until=(a)=>{while(true){if((a++)===42){return "boom"}
+}
+}
+prn("returned",until(40))
+
+const it=function*(a){yield (a++)
+return yield* [(a++),(a++),]
+}
+for(let v of it(39)){prn("it:",v)
+}
