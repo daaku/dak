@@ -36,8 +36,12 @@ footer ul {
   margin: 0;
   padding: 0;
   display: inline-grid;
-  grid-auto-flow: column;
   column-gap: 24px;
+}
+@media (min-width: 600px) {
+  footer ul {
+    grid-auto-flow: column;
+  }
 }
 footer li {
   list-style-type: none;
@@ -129,4 +133,5 @@ body.tour {
 body.narrow {
   max-width: 800px;
   margin: auto;
+  padding: 0 16px;
 }
