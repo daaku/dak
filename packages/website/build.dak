@@ -11,6 +11,8 @@
         ["@daklang/transpiler" [transpileStr]]
         ["@daklang/html" [doc html unsafe]])
 
+(const prodURL "https://www.daklang.com/")
+
 (const dakPlugin
   {:name :dak
    :setup
@@ -24,10 +26,11 @@
                           :sourcemap :inline})
                        :code)})))})
 
-(fn markdown [content assets]
+(fn markdown [config assets content]
   (-> content
       (marked.parse {:baseUrl "https://github.com/daaku/dak/blob/main/"})
-      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))))
+      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
+      (.replace prodURL "/")))
 
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/logo.svg"
@@ -174,7 +177,7 @@
          :description "Dak is a Lisp like language that transpiles to JavaScript."})
       [:body.narrow
        [:div
-         (unsafe (markdown @(readFile "../../readme.md" :utf8) assets))]
+         (unsafe (markdown config assets @(readFile "../../readme.md" :utf8)))]
        foot-ui
        [:script {:type :module :src (. assets "index.js")}]])))
 
