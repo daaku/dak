@@ -9,6 +9,12 @@ Adding this as a dependency provides a [shell script](dak) wrapper that executes
 scripts. See for example the scripts section of how the
 [website](../website/package.json) is built.
 
+```sh
+npm i @daklang/cli
+echo '(console.log :hello)' > hello.dak
+./node_modules/.bin/dak hello.dak
+```
+
 ## NPX
 
 This also allows for usage via `npx`:
