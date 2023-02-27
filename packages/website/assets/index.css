@@ -85,34 +85,11 @@ body.tour {
   font-size: 32px;
   margin: 0;
 }
+.tour-index {
+  margin-right: 24px;
+}
 #fmt {
   margin-left: 8px;
-}
-#tour-nav {
-  display: grid;
-  grid-template-rows: 0fr;
-  overflow: hidden;
-  transition: grid-template-rows 0.3s;
-}
-#tour-nav ul {
-  align-self: end;
-  min-height: 0;
-  transition: visibility 1s;
-  visibility: hidden;
-  list-style: none;
-  margin: 0;
-}
-#tour-nav ul li:last-child {
-  margin-bottom: 8px;
-}
-#tour-nav.visible {
-  grid-template-rows: 1fr;
-}
-#tour-nav.visible ul {
-  visibility: visible;
-}
-#tour-nav-toggle {
-  margin-right: 16px;
 }
 #code {
   display: grid;

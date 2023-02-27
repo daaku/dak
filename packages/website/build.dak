@@ -78,13 +78,6 @@
     (.replace #/\w\S*/g #(str (-> $ (.charAt 0) .toUpperCase)
                               (-> $ (.substring 1) .toLowerCase)))))
 
-(const tour-nav
-  (unsafe (html
-    [:div#tour-nav
-      [:ul (... (tour.map
-        (fn [v]
-          [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]])))
-
 (fn head-ui [assets {:keys [title] :or {description "The Dak language."}}]
   [:head
    [:meta {:charset :utf-8}]
@@ -123,13 +116,12 @@
     [:header
      [:h1 (logo-ui assets) " " title]
      [:div
-      [:button#tour-toggle "\u25B7 Show Tour Index"]
+      [:a.tour-index {:href "/tour/"} "Tour Index"]
       [:input#auto-eval {:type :checkbox :checked true}]
       [:label {:for :auto-eval} "Eval"]
       [:select#fmt [:option {:value :pretty} "Pretty"]
                    [:option {:value :raw} "Raw"]
                    [:option {:value :minify} "Minify"]]]]
-    tour-nav
     [:div#code
      [:textarea {:id :dak-code
                  :placeholder "Write some Dak..."
