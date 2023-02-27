@@ -44,9 +44,10 @@ A language needs an ecosystem. Formatting, LSP, [VSCode](packages/vscode)
 extensions, REPL, unit testing, benchmarking and so much more. We don't have
 much here.
 
-Macros and the programmable aspects of Dak are what I consider to be it's
-selling points. It's much easier to achieve this in a Lisp like language. These
-are still very much a work-in-progress. Expect heavy iteration here.
+[Macros](https://www.daklang.com/tour/macros/) and the programmable aspects of
+Dak are what I consider to be it's selling points. It's much easier to achieve
+this in a Lisp like language. These are still very much a work-in-progress.
+Expect heavy iteration here.
 
 Syntax in JavaScript is quite diverse. Much of it is already supported. What is
 missing is probably easy to provide.
