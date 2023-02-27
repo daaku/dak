@@ -30,7 +30,7 @@
   (-> content
       (marked.parse {:baseUrl "https://github.com/daaku/dak/blob/main/"})
       (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
-      (.replace prodURL "/")))
+      (.replaceAll prodURL "/")))
 
 (fn@ esbuild-context [config]
   @(esbuild.context {:entryPoints ["assets/logo.svg"
