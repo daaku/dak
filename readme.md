@@ -2,6 +2,8 @@
 
 Dak is a Lisp like language that transpiles to JavaScript.
 
+<!--exits-->
+
 ## Play
 
 If you want to jump in and see what it looks like, explore the

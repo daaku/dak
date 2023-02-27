@@ -161,6 +161,31 @@
         "There was a problem trying to get the page you requested."]]
       [:script {:type :module :src (. assets "index.js")}]])))
 
+(fn exit [{:keys [sym title href action]} ...body]
+  [:div.exit
+   [:div.sym sym]
+   [:div.title title]
+   [:div.body ...body]
+   [:a.go {:href href} action]])
+
+(fn exits-ui []
+  [:div.exits
+   (exit {:sym "\u{1f310}"
+         :title "Browser"
+         :href "https://github.com/daaku/dak/blob/main/packages/rollup"
+         :action "Build for Browsers"}
+     "Make browser apps using a Vite/Rollup plugin that hooks into your existing bundler pipeline.")
+   (exit {:sym "\u{1f3ae}"
+         :title "Play"
+         :href "/tour/functions/"
+         :action "Playground"}
+     "Take a tour and write as well as run code using an interactive playground right here in your browser.")
+   (exit {:sym "\u2328\ufe0f"
+         :title "CLI"
+         :href "https://github.com/daaku/dak/blob/main/packages/loader"
+         :action "Build CLIs"}
+     "Write one off scripts or server side applications in Node and use anything from NPM.")])
+
 (fn@ index-html [config assets]
   @(writeFile "dist/index.html"
     (doc {:lang :en}
@@ -169,7 +194,9 @@
          :description "Dak is a Lisp like language that transpiles to JavaScript."})
       [:body.narrow
        [:div
-         (unsafe (markdown config assets @(readFile "../../readme.md" :utf8)))]
+         (-> (markdown config assets @(readFile "../../readme.md" :utf8))
+             (.replace "<!--exits-->" (html (exits-ui)))
+             unsafe)]
        foot-ui
        [:script {:type :module :src (. assets "index.js")}]])))
 
