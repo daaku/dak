@@ -86,6 +86,9 @@ test('symbol: dot prop', () => {
 test('symbol: class private', () => {
   assert.equal(tostr('#foo'), 'this.#foo;')
 })
+test('symbol: class private spread', () => {
+  assert.equal(tostr('...#foo'), '...this.#foo;')
+})
 test('template: simple', () => {
   assert.equal(tostr('`foo`'), '`foo`;')
 })

@@ -581,6 +581,12 @@ const mangleSym = (sym, autoThis = true) => {
 
   const parts = []
   let start = 0
+
+  if (autoThis && sym.startsWith('...#')) {
+    parts.push('...this.#')
+    start = 4
+  }
+
   for (let end = 0; end < sym.length; end++) {
     const c = sym[end]
     if (autoThis && end === 0 && c === '#') {
