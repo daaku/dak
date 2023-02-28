@@ -86,6 +86,21 @@ test('symbol: dot prop', () => {
 test('symbol: class private', () => {
   assert.equal(tostr('#foo'), 'this.#foo;')
 })
+test('template: simple', () => {
+  assert.equal(tostr('`foo`'), '`foo`;')
+})
+test('template: with symbol', () => {
+  assert.equal(tostr('`foo ${#bar} baz`'), '`foo ${this.#bar} baz`;')
+})
+test('template: with add', () => {
+  assert.equal(
+    tostr('`foo ${(+ bar #baz)} boom`'),
+    '`foo ${(bar+this.#baz)} boom`;',
+  )
+})
+test('template: with dot', () => {
+  assert.equal(tostr('`foo ${(. foo 1)} boom`'), '`foo ${foo[1]} boom`;')
+})
 test('plain keyword', () => {
   assert.equal(tostr(':foo'), '"foo";')
 })

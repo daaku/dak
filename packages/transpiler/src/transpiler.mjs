@@ -1,7 +1,7 @@
 import { SourceMapGenerator } from 'source-map-js/lib/source-map-generator.js'
 
 const symbolBreaker = ['(', ')', '[', ']', '{', '}']
-const single = [...symbolBreaker, '@', '#', ':', "'", '~', '`', ',']
+const single = [...symbolBreaker, '@', '#', ':', "'", '~', ',']
 const whitespace = [' ', '\r', '\n', '\t']
 
 const builtinMacros = `
@@ -144,14 +144,14 @@ const newCtx = (config, macros) => {
   }
 }
 
-const readString = (ctx, input, len, pos) => {
+const readString = (ctx, quote, input, len, pos) => {
   let buf = []
   let start = pos.offset + 1
   for (let end = start; end < len; end++) {
     pos.offset++
     pos.column++
     switch (input[end]) {
-      case '"':
+      case quote:
         pos.offset++
         pos.column++
         if (buf.length === 0) {
@@ -283,9 +283,15 @@ function* tokens(ctx, input) {
     switch (c) {
       case '"':
         start = { ...pos }
-        value = readString(ctx, input, len, pos)
+        value = readString(ctx, '"', input, len, pos)
         ctx.pos = { ...start }
         yield { kind: 'string', value, pos: start }
+        break
+      case '`':
+        start = { ...pos }
+        value = readString(ctx, '`', input, len, pos)
+        ctx.pos = { ...start }
+        yield { kind: 'template', value, pos: start }
         break
       case ';':
         start = { ...pos }
@@ -360,6 +366,8 @@ const astOne = (ctx, input) => {
     case 'comment':
       return value
     case 'string':
+      return value
+    case 'template':
       return value
     case 'regexp':
       return value
@@ -509,6 +517,40 @@ function* transpileNodeString(ctx, token) {
   yield '"'
 }
 
+const exprStart = '${'
+const exprEnd = '}'
+
+const templateExprStart = (template, position) => {
+  let index = template.indexOf(exprStart, position)
+  if (index === -1) {
+    return -1
+  }
+  if (index === 0) {
+    return exprStart.length
+  }
+  if (template[index - 1] === '\\') {
+    return templateExprStart(template, index)
+  }
+  return index + exprStart.length
+}
+
+function* transpileNodeTemplate(ctx, token, hoist) {
+  yield ['`', token]
+  let last = 0
+  let start = templateExprStart(token.value)
+  while (start !== -1) {
+    yield [token.value.slice(last, start), token]
+    last = token.value.indexOf(exprEnd, start)
+    if (last === -1) {
+      throw err(ctx, token, 'invalid template literal')
+    }
+    yield* transpileCtx(token.value.slice(start, last), ctx, false)
+    start = templateExprStart(token.value, start)
+  }
+  yield [token.value.slice(last), token]
+  yield '`'
+}
+
 function* transpileNodeRegExp(ctx, token) {
   yield token.value
 }
@@ -596,6 +638,9 @@ function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr) {
       break
     case 'string':
       yield* transpileNodeString(ctx, node)
+      break
+    case 'template':
+      yield* transpileNodeTemplate(ctx, node, hoist)
       break
     case 'symbol':
       yield* transpileNodeSymbol(ctx, node)
@@ -1632,8 +1677,7 @@ function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
   yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr)
 }
 
-export function* transpile(code, config = {}) {
-  const ctx = newCtx(config, macros)
+function* transpileCtx(code, ctx, semi = true) {
   const input = uninterrupt(tokens(ctx, code))
   while (true) {
     const node = astOne(ctx, input)
@@ -1641,8 +1685,14 @@ export function* transpile(code, config = {}) {
       return
     }
     yield* transpileNodeStatement(ctx, node, null, null, evStat)
-    yield ';'
+    if (semi) {
+      yield ';'
+    }
   }
+}
+
+export function* transpile(code, config = {}) {
+  yield* transpileCtx(code, newCtx(config, macros))
 }
 
 export const transpileStr = (code, config = {}) => {
