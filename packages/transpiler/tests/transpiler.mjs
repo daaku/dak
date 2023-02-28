@@ -607,6 +607,16 @@ test('builtin: case assign', () => {
     `const run=()=>{{let v;switch ((1+1)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`,
   )
 })
+test('builtin: case array matches', () => {
+  assert.equal(
+    tostr(`
+    (const v (case (inc 1)
+                ["foo" "bar"] 42
+                :otherwise))
+    `),
+    `let hoist__0;switch ((1+1)){case "foo":case "bar":hoist__0=42;break;default:hoist__0="otherwise";break};const v=hoist__0;;`,
+  )
+})
 test('builtin: do', () => {
   assert.equal(
     tostr(`

@@ -25,3 +25,9 @@
     42 :boom
     "no dice"))
 (prn "run returns" (run 42))
+
+; Case allows for an array of values to match:
+(prn "array"
+     (case answer
+       [41 42 43] :close-enough
+       "no dice"))

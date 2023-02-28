@@ -1139,9 +1139,17 @@ function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
       return
     }
 
-    yield 'case '
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-    yield ':'
+    if (node[i].kind === 'array') {
+      for (let j = 0; j < node[i].length; j++) {
+        yield ['case ', node[i][j]]
+        yield* transpileNodeExpr(ctx, node[i][j], null, hoist, evExpr)
+        yield [':', node[i][j]]
+      }
+    } else {
+      yield ['case ', node[i]]
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
+      yield [':', node[i]]
+    }
     yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat)
     yield ';'
     if (assign !== 'return ') {

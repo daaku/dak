@@ -28,3 +28,10 @@ default:return "no dice"
 }
 }
 prn("run returns",run(42))
+
+let hoist__1
+switch (answer){case 41:case 42:case 43:hoist__1="close-enough"
+break
+default:hoist__1="no dice"
+break}
+prn("array",hoist__1)
