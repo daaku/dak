@@ -1,10 +1,7 @@
-
-
 try{prn(neverDefined())
 }catch(e){prn("caught",e.message)
 }finally{prn("finally")
 }
-
 const check=(answer)=>{let hoist__0
 try{switch (answer){case 42:hoist__0="boom"
 break

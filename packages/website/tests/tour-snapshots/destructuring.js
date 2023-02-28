@@ -1,7 +1,3 @@
-
-
-
-
 const answers=[1,2,]
 
 const [answer_DASH_one,answer_DASH_two,]=answers
@@ -15,6 +11,3 @@ const sith={darth:"vader",}
 
 let {darth,masked=true}=sith
 prn("sith",darth,masked)
-
-
-

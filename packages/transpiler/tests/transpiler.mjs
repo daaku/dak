@@ -164,14 +164,14 @@ test('comments', () => {
     ; this is the truth
     "use strict" ; really sure
     `),
-    `;"use strict";;`,
+    `"use strict";`,
   )
 })
 test('comment at EOF', () => {
-  assert.equal(tostr('a\n;'), 'a;;')
+  assert.equal(tostr('a\n;'), 'a;')
 })
 test('comment middle line', () => {
-  assert.equal(tostr('a;b'), 'a;;')
+  assert.equal(tostr('a;b'), 'a;')
 })
 test('builtin: import', () => {
   assert.equal(

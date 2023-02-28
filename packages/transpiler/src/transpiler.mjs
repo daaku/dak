@@ -248,9 +248,11 @@ function* tokens(ctx, input) {
   while (pos.offset < len) {
     let c = input[pos.offset]
     if (c === '\n') {
-      pos.offset++
       pos.line++
       pos.column = 0
+      ctx.pos = { ...pos }
+      yield { kind: 'newline', value: '\n', pos }
+      pos.offset++
       continue
     }
     if (whitespace.includes(c)) {
@@ -309,6 +311,9 @@ function* tokens(ctx, input) {
   }
 }
 
+const whitespaceOrComment = ({ kind }) =>
+  kind === 'comment' || kind === 'newline'
+
 const setKind = (o, kind, { pos }) => {
   Object.defineProperty(o, 'kind', {
     value: kind,
@@ -323,6 +328,9 @@ const setKind = (o, kind, { pos }) => {
 
 function* astUntil(ctx, input, kind) {
   for (const token of input) {
+    if (whitespaceOrComment(token)) {
+      continue
+    }
     if (token.kind === kind) {
       return
     }
@@ -358,46 +366,47 @@ const astHash = (ctx, token, input) => {
 }
 
 const astOne = (ctx, input) => {
-  const { value, done } = input.next()
-  if (done) {
-    return
+  while (true) {
+    const { value, done } = input.next()
+    if (done) {
+      return
+    }
+    switch (value.kind) {
+      default:
+        /* c8 ignore next */
+        throw err(ctx, value, `unknown token ${value.kind}`)
+      case 'newline':
+      case 'comment':
+        continue
+      case 'string':
+      case 'template':
+      case 'regexp':
+      case 'symbol':
+        return value
+      case '(':
+        return setKind([...astUntil(ctx, input, ')')], 'list', value)
+      case '[':
+        return setKind([...astUntil(ctx, input, ']')], 'array', value)
+      case '{':
+        return setKind([...astUntil(ctx, input, '}')], 'object', value)
+      case "'":
+        return astShorthand(ctx, value, 'quote', input)
+      case ',':
+        return astShorthand(ctx, value, 'unquote', input)
+      case '@':
+        return astShorthand(ctx, value, 'await', input)
+      case '#':
+        return astHash(ctx, value, input)
+      case ':':
+        const sym = astNeedOne(ctx, input)
+        if (sym.kind !== 'symbol') {
+          throw err(ctx, value, 'invalid keyword')
+        }
+        sym.kind = 'string'
+        sym.pos = value.pos
+        return sym
+    }
   }
-  switch (value.kind) {
-    case 'comment':
-      return value
-    case 'string':
-      return value
-    case 'template':
-      return value
-    case 'regexp':
-      return value
-    case 'symbol':
-      return value
-    case '(':
-      return setKind([...astUntil(ctx, input, ')')], 'list', value)
-    case '[':
-      return setKind([...astUntil(ctx, input, ']')], 'array', value)
-    case '{':
-      return setKind([...astUntil(ctx, input, '}')], 'object', value)
-    case "'":
-      return astShorthand(ctx, value, 'quote', input)
-    case ',':
-      return astShorthand(ctx, value, 'unquote', input)
-    case '@':
-      return astShorthand(ctx, value, 'await', input)
-    case '#':
-      return astHash(ctx, value, input)
-    case ':':
-      const sym = astNeedOne(ctx, input)
-      if (sym.kind !== 'symbol') {
-        throw err(ctx, value, 'invalid keyword')
-      }
-      sym.kind = 'string'
-      sym.pos = value.pos
-      return sym
-  }
-  /* c8 ignore next */
-  throw err(ctx, value, `unknown token ${value.kind}`)
 }
 
 // generators have cleanup logic which makes early returns void the rest of
@@ -620,11 +629,6 @@ function* transpileSpecialAssign(ctx, assign) {
 }
 
 function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr) {
-  // completely ignore comments
-  if (node.kind === 'comment') {
-    return
-  }
-
   // list will handle it's own assign, all others are expressions
   if (node.kind === 'list') {
     yield* transpileNodeList(ctx, node, assign, hoist, evExpr)
@@ -1346,9 +1350,6 @@ const classBuiltins = {
 }
 
 function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
-  if (node.kind === 'comment') {
-    return
-  }
   const call = node[0].value
   const builtin = classBuiltins[call]
   if (builtin) {
