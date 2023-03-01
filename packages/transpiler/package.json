@@ -8,7 +8,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./src/transpiler.mjs"
+      "import": "./dist/transpiler.mjs"
     }
   },
   "repository": {
@@ -26,6 +26,7 @@
     "fennel"
   ],
   "scripts": {
+    "prepare": "mkdir -p dist && cp src/transpiler.mjs dist/transpiler.mjs && node ../bootstrap/bootstrap.mjs < src/transpiler.dak >> dist/transpiler.mjs",
     "test": "uvu",
     "cover": "c8 -r html -r text uvu"
   },

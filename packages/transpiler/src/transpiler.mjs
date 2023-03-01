@@ -1698,10 +1698,6 @@ function* transpileCtx(code, ctx, semi = true) {
   }
 }
 
-export function* transpile(code, config = {}) {
-  yield* transpileCtx(code, newCtx(config, macros))
-}
-
 export const transpileStr = (code, config = {}) => {
   const source = config.filename ?? '<anonymous>'
   const parts = []

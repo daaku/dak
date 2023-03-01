@@ -1,0 +1,2 @@
+(fn* ^:export transpile [code config]
+  (yield* (transpileCtx code (newCtx (or config {}) macros))))
