@@ -1,1 +1,2 @@
 *.dak linguist-language=clojure
+packages/bootstrap/bootstrap.mjs linguist-generated=true binary
