@@ -1,3 +1,23 @@
+(fn* transpileBuiltinClass [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [[prefix index] (exportDefault ctx node)]
+    (yield* prefix)
+    (yield [:class (. node 0)])
+    ; named
+    (when (= (?. node index :kind) :symbol)
+      (yield " ")
+      (yield* (transpileNodeSymbol ctx (. node index)))
+      (ctx.bindings.add (. node index :value))
+      (++ index))
+    (when (and (= (?. node index :kind) :string) (= (?. node index :value) :extends))
+      (yield [" extends " (. node index)])
+      (yield* (transpileNodeExpr ctx (. node (inc index)) null hoist evExpr))
+      (+= index 2))
+    (yield "{")
+    (for [i index node.length]
+      (yield* (transpileClassNodeList ctx (. node i) null null evStat)))
+    (yield "}")))
+
 (fn hashLambdaArgMap [ctx args n]
   (if (and (Array.isArray n) (not= (?. n 0 :value) :hash))
       (do

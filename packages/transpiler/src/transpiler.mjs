@@ -1351,27 +1351,3 @@ function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
   }
   throw err(ctx, node[0], `unexpected class body "${node[0].kind}"`)
 }
-
-function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  let [prefix, index] = exportDefault(ctx, node)
-  yield* prefix
-  yield ['class', node[0]]
-  // named
-  if (node[index]?.kind === 'symbol') {
-    yield ' '
-    yield* transpileNodeSymbol(ctx, node[index])
-    ctx.bindings.add(node[index].value)
-    index++
-  }
-  if (node[index]?.kind === 'string' && node[index]?.value === 'extends') {
-    yield [' extends ', node[index]]
-    yield* transpileNodeExpr(ctx, node[index + 1], null, hoist, evExpr)
-    index += 2
-  }
-  yield '{'
-  for (let i = index; i < node.length; i++) {
-    yield* transpileClassNodeList(ctx, node[i], null, null, evStat)
-  }
-  yield '}'
-}
