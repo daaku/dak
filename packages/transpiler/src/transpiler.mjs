@@ -1491,18 +1491,3 @@ const applyGensym = (ctx, existing, node) => {
     }
   }
 }
-
-function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
-  applyGensym(ctx, {}, node)
-  yield* transpileSpecialAssign(ctx, assign)
-  yield* serializeNode(ctx, node[1], hoist)
-}
-
-function* transpileSpecialMacro(ctx, node) {
-  const args = node[2].map(v => partsStr(transpileSpecialDestructure(ctx, v)))
-  const body = partsStr(transpileSpecialBody(ctx, node.slice(3), 'return '))
-  // if (node[1]?.value === 'deftest') {
-  //   console.log(body)
-  // }
-  ctx.macros.add(node[1].value, new Function('_macroName', ...args, body))
-}

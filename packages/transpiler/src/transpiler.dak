@@ -1,3 +1,15 @@
+(fn* transpileBuiltinQuote [ctx node assign hoist _evKind]
+  (applyGensym ctx {} node)
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (serializeNode ctx (. node 1) hoist)))
+
+(fn* transpileSpecialMacro [ctx node]
+  (let [args (-> node (. 2) (.map #(partsStr (transpileSpecialDestructure ctx $))))
+        body (partsStr (transpileSpecialBody ctx (node.slice 3) "return "))]
+    ; (when (= (?. node 1 :value) :deftest)
+    ;   (console.log body))
+    (ctx.macros.add (. node 1 :value) (Function. :_macroName ...args body))))
+
 ; function, method or constructor call
 (fn* transpileSpecialCall [ctx node assign hoist evKind]
   (yield* (transpileSpecialAssign ctx assign))
