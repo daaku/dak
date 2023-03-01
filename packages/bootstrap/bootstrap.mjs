@@ -1012,17 +1012,6 @@ var bindings = (initial) => {
     }
   };
 };
-var newCtx = (config, macros2) => {
-  let gensym = 0;
-  return {
-    ...config,
-    bindings: bindings(builtins),
-    macros: bindings(macros2),
-    gensym(prefix = "gensym") {
-      return { kind: "symbol", value: `${prefix}__${gensym++}`, pos: {} };
-    }
-  };
-};
 var readString = (ctx, quote, input2, len, pos) => {
   let buf = [];
   let start = pos.offset + 1;
@@ -2192,230 +2181,209 @@ function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
   }
   throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`);
 }
-function* serializeNode(ctx, node, hoist) {
+var serializeNode = function* (ctx, node, hoist) {
   if (Array.isArray(node)) {
-    if (node[0]?.value === "unquote") {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-      return;
-    }
-    yield "Object.defineProperties([";
-    for (const i of node) {
-      yield* serializeNode(ctx, i, hoist);
-      yield ",";
-    }
-    yield "],";
-    yield JSON.stringify({
-      kind: {
-        value: node.kind,
-        enumerable: false
-      },
-      pos: {
-        value: node.pos,
-        enumerable: false
+    if (node?.[0]?.value === "unquote") {
+      return yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+    } else {
+      yield "Object.defineProperties([";
+      for (let i of node) {
+        yield* serializeNode(ctx, i, hoist);
+        yield ",";
       }
-    });
-    yield ")";
-    return;
+      ;
+      yield "],";
+      yield JSON.stringify({ kind: { value: node.kind, enumerable: false }, pos: { value: node.pos, enumerable: false } });
+      return yield ")";
+    }
+  } else {
+    return yield JSON.stringify(node);
   }
-  yield JSON.stringify(node);
-}
+  ;
+};
 var applyGensym = (ctx, existing, node) => {
   if (Array.isArray(node)) {
-    node.map(applyGensym.bind(null, ctx, existing));
-  } else {
-    if (node.kind === "symbol" && node.value.endsWith("#")) {
-      const name = node.value;
-      const found = existing[name];
-      if (found) {
-        node.value = found;
+    return node.forEach((lambda__0) => {
+      return applyGensym(ctx, existing, lambda__0);
+    });
+  } else if (node.kind === "symbol" && node.value.endsWith("#")) {
+    {
+      let macro__0 = existing[node.value];
+      if (macro__0) {
+        {
+          let found = macro__0;
+          return node.value = found;
+        }
       } else {
-        const gen = ctx.gensym("macro").value;
-        existing[name] = gen;
-        node.value = gen;
+        {
+          let gen = ctx.gensym("macro").value;
+          existing[node.value] = gen;
+          return node.value = gen;
+        }
       }
+      ;
     }
   }
+  ;
 };
-function* transpileBuiltinQuote(ctx, node, assign, hoist, _evKind) {
+var transpileBuiltinQuote = function* (ctx, node, assign, hoist, _evKind) {
   applyGensym(ctx, {}, node);
   yield* transpileSpecialAssign(ctx, assign);
-  yield* serializeNode(ctx, node[1], hoist);
-}
-function* transpileSpecialMacro(ctx, node) {
-  const args = node[2].map((v) => partsStr(transpileSpecialDestructure(ctx, v)));
-  const body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
-  ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
-}
-var builtins = {
-  import: transpileBuiltinImport,
-  const: transpileBuiltinConst,
-  var: transpileBuiltinDef,
-  fn: transpileBuiltinFnArrow,
-  "fn@": transpileBuiltinFnArrowAsync,
-  "fn*": transpileBuiltinFnGenerator,
-  "fn@*": transpileBuiltinFnAsyncGenerator,
-  str: makeOpTranspiler("+"),
-  "+": makeOpTranspiler("+", true),
-  "-": makeOpTranspiler("-", true),
-  "*": makeOpTranspiler("*"),
-  "/": makeOpTranspiler("/"),
-  "**": makeOpTranspiler("**"),
-  "%": makeOpTranspiler("%"),
-  "+=": makeOpTranspiler("+="),
-  "-=": makeOpTranspiler("-="),
-  "&=": makeOpTranspiler("&="),
-  "|=": makeOpTranspiler("|="),
-  "/=": makeOpTranspiler("/="),
-  "*=": makeOpTranspiler("*="),
-  "**=": makeOpTranspiler("**="),
-  "<<=": makeOpTranspiler("<<="),
-  ">>=": makeOpTranspiler(">>="),
-  ">>>=": makeOpTranspiler(">>>="),
-  "||=": makeOpTranspiler("||="),
-  "??=": makeOpTranspiler("??="),
-  "%=": makeOpTranspiler("%="),
-  "??": makeOpTranspiler("??"),
-  "<<": makeOpTranspiler("<<"),
-  ">>": makeOpTranspiler(">>"),
-  ">>>": makeOpTranspiler(">>>"),
-  "++": makeSuffixOpTranspiler("++"),
-  "--": makeSuffixOpTranspiler("--"),
-  "bit-and": makeOpTranspiler("&"),
-  "bit-or": makeOpTranspiler("|"),
-  "bit-not": makePrefixOpTranspiler("~"),
-  "bit-xor": makeOpTranspiler("^"),
-  "||": makeOpTranspiler("||"),
-  or: makeOpTranspiler("||"),
-  "&&": makeOpTranspiler("&&"),
-  and: makeOpTranspiler("&&"),
-  not: makePrefixOpTranspiler("!"),
-  in: makeOpTranspiler(" in "),
-  "=": transpileBuiltinCmp,
-  "==": transpileBuiltinCmp,
-  "!=": transpileBuiltinCmp,
-  "not=": transpileBuiltinCmp,
-  "<": transpileBuiltinCmp,
-  ">": transpileBuiltinCmp,
-  "<=": transpileBuiltinCmp,
-  ">=": transpileBuiltinCmp,
-  let: transpileBuiltinLet,
-  throw: transpileBuiltinKeywordStatement,
-  return: transpileBuiltinKeywordStatement,
-  yield: transpileBuiltinKeywordExpr,
-  "yield*": transpileBuiltinKeywordExpr,
-  break: transpileBuiltinKeywordStatement,
-  continue: transpileBuiltinKeywordStatement,
-  await: transpileBuiltinKeywordExpr,
-  for: transpileBuiltinFor,
-  "for@": transpileBuiltinForAwait,
-  "for-of": transpileBuiltinForOf,
-  "for-in": transpileBuiltinForIn,
-  case: transpileBuiltinCase,
-  do: transpileBuiltinDo,
-  if: transpileBuiltinIf,
-  while: transpileBuiltinWhile,
-  ".": transpileBuiltinDot,
-  "?.": transpileBuiltinQuestionDot,
-  "...": transpileBuiltinRest,
-  typeof: transpileBuiltinTypeof,
-  instanceof: transpileBuiltinInstanceof,
-  set: transpileBuiltinSet,
-  delete: transpileBuiltinDelete,
-  hash: transpileBuiltinHash,
-  quote: transpileBuiltinQuote,
-  macro: transpileSpecialMacro,
-  try: transpileBuiltinTry,
-  class: transpileBuiltinClass
+  return yield* serializeNode(ctx, node[1], hoist);
 };
-var macros = (() => {
-  const ctx = newCtx({}, {});
-  const input2 = uninterrupt(tokens(ctx, builtinMacros));
-  while (true) {
-    const node = astOne(ctx, input2);
-    if (!node) {
-      return ctx.macros.scopes[0];
+var transpileSpecialMacro = function* (ctx, node) {
+  {
+    let args = node[2].map((lambda__1) => {
+      return partsStr(transpileSpecialDestructure(ctx, lambda__1));
+    });
+    let body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
+    return ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
+  }
+  ;
+};
+var transpileSpecialCall = function* (ctx, node, assign, hoist, evKind) {
+  yield* transpileSpecialAssign(ctx, assign);
+  {
+    let argStart = 1;
+    if (node[0].kind === "symbol") {
+      {
+        let call = node[0].value;
+        if (call.endsWith(".")) {
+          yield ["new ", node[0]];
+          yield [mangleSym(call.slice(0, -1)), node[0]];
+        } else if (call.startsWith(".")) {
+          yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+          yield [mangleSym(call), node[0]];
+          argStart = 2;
+        } else {
+          yield [mangleSym(call), node];
+        }
+        ;
+      }
+    } else {
+      yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr);
     }
     ;
-    [...transpileNodeStatement(ctx, node, null, null, evStat)];
-  }
-})();
-function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  let argStart = 1;
-  if (node[0].kind === "symbol") {
-    const call = node[0].value;
-    if (call.endsWith(".")) {
-      yield ["new ", node[0]];
-      yield [mangleSym(call.slice(0, -1)), node[0]];
-    } else if (call.startsWith(".")) {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-      yield [mangleSym(call), node[0]];
-      argStart = 2;
-    } else {
-      yield [mangleSym(call), node];
+    {
+      let comma = splitter(",");
+      yield "(";
+      for (let i = argStart; i < node.length; i++) {
+        yield comma();
+        yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
+      }
+      ;
+      return yield ")";
     }
-  } else {
-    yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr);
+    ;
   }
-  const comma = splitter(",");
-  yield "(";
-  for (let i = argStart; i < node.length; i++) {
-    yield comma();
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
-  }
-  yield ")";
-}
-function* transpileNodeList(ctx, node, assign, hoist, evKind) {
-  const call = node[0].value;
-  const binding = ctx.bindings.get(call);
-  if (binding === true) {
-    yield* transpileSpecialCall(ctx, node, assign, hoist, evKind);
-    return;
-  }
-  if (binding) {
-    yield* binding(ctx, node, assign, hoist, evKind);
-    return;
-  }
-  const macro = ctx.macros.get(call);
-  if (macro) {
-    yield* transpileNodeUnknown(ctx, macro(...node), assign, hoist, evKind);
-    return;
-  }
-  yield* transpileSpecialCall(ctx, node, assign, hoist, evKind);
-}
-function* transpileBuiltinTypeof(ctx, node, assign, hoist, _evKind) {
-  yield "typeof ";
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
-}
-function* transpileBuiltinInstanceof(ctx, node, assign, hoist, _evKind) {
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
-  yield " instanceof ";
-  yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr);
-}
-function* transpileBuiltinDelete(ctx, node, assign, hoist, _evKind) {
-  yield "delete ";
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
-}
-function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
-  const newAssign = [
-    ...transpileNodeExpr(ctx, node[1], assign, hoist, evExpr),
-    "="
-  ];
-  yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr);
-}
-function* transpileCtx(code, ctx, semi = true) {
-  const input2 = uninterrupt(tokens(ctx, code));
-  while (true) {
-    const node = astOne(ctx, input2);
-    if (!node) {
+  ;
+};
+var transpileNodeList = function* (ctx, node, assign, hoist, evKind) {
+  {
+    let call = node[0].value;
+    let binding = ctx.bindings.get(call);
+    if (binding === true) {
+      yield* transpileSpecialCall(ctx, node, assign, hoist, evKind);
       return;
     }
-    yield* transpileNodeStatement(ctx, node, null, null, evStat);
-    if (semi) {
-      yield ";";
+    ;
+    if (binding) {
+      yield* binding(ctx, node, assign, hoist, evKind);
+      return;
     }
+    ;
+    {
+      let macro__1 = ctx.macros.get(call);
+      if (macro__1) {
+        {
+          let macro = macro__1;
+          yield* transpileNodeUnknown(ctx, macro(...node), assign, hoist, evKind);
+          return;
+        }
+      }
+      ;
+    }
+    ;
   }
-}
+  ;
+  return yield* transpileSpecialCall(ctx, node, assign, hoist, evKind);
+};
+var transpileBuiltinTypeof = function* (ctx, node, assign, hoist, _evKind) {
+  yield "typeof ";
+  return yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
+};
+var transpileBuiltinInstanceof = function* (ctx, node, assign, hoist, _evKind) {
+  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
+  yield " instanceof ";
+  return yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr);
+};
+var transpileBuiltinDelete = function* (ctx, node, assign, hoist, _evKind) {
+  yield "delete ";
+  return yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr);
+};
+var transpileBuiltinSet = function* (ctx, node, assign, hoist, _evKind) {
+  return yield* transpileNodeExpr(ctx, node[2], [...transpileNodeExpr(ctx, node[1], assign, hoist, evExpr), "="], hoist, evExpr);
+};
+var builtins = { import: transpileBuiltinImport, const: transpileBuiltinConst, var: transpileBuiltinDef, fn: transpileBuiltinFnArrow, ["fn@"]: transpileBuiltinFnArrowAsync, ["fn*"]: transpileBuiltinFnGenerator, ["fn@*"]: transpileBuiltinFnAsyncGenerator, str: makeOpTranspiler("+"), ["+"]: makeOpTranspiler("+", true), ["-"]: makeOpTranspiler("-", true), ["*"]: makeOpTranspiler("*"), ["/"]: makeOpTranspiler("/"), ["**"]: makeOpTranspiler("**"), ["%"]: makeOpTranspiler("%"), ["+="]: makeOpTranspiler("+="), ["-="]: makeOpTranspiler("-="), ["&="]: makeOpTranspiler("&="), ["|="]: makeOpTranspiler("|="), ["/="]: makeOpTranspiler("/="), ["*="]: makeOpTranspiler("*="), ["**="]: makeOpTranspiler("**="), ["<<="]: makeOpTranspiler("<<="), [">>="]: makeOpTranspiler(">>="), [">>>="]: makeOpTranspiler(">>>="), ["||="]: makeOpTranspiler("||="), ["??="]: makeOpTranspiler("??="), ["%="]: makeOpTranspiler("%="), ["??"]: makeOpTranspiler("??"), ["<<"]: makeOpTranspiler("<<"), [">>"]: makeOpTranspiler(">>"), [">>>"]: makeOpTranspiler(">>>"), ["++"]: makeSuffixOpTranspiler("++"), ["--"]: makeSuffixOpTranspiler("--"), ["bit-and"]: makeOpTranspiler("&"), ["bit-or"]: makeOpTranspiler("|"), ["bit-not"]: makePrefixOpTranspiler("~"), ["bit-xor"]: makeOpTranspiler("^"), ["||"]: makeOpTranspiler("||"), or: makeOpTranspiler("||"), ["&&"]: makeOpTranspiler("&&"), and: makeOpTranspiler("&&"), not: makePrefixOpTranspiler("!"), in: makeOpTranspiler(" in "), ["="]: transpileBuiltinCmp, ["=="]: transpileBuiltinCmp, ["!="]: transpileBuiltinCmp, ["not="]: transpileBuiltinCmp, ["<"]: transpileBuiltinCmp, [">"]: transpileBuiltinCmp, ["<="]: transpileBuiltinCmp, [">="]: transpileBuiltinCmp, let: transpileBuiltinLet, throw: transpileBuiltinKeywordStatement, return: transpileBuiltinKeywordStatement, yield: transpileBuiltinKeywordExpr, ["yield*"]: transpileBuiltinKeywordExpr, break: transpileBuiltinKeywordStatement, continue: transpileBuiltinKeywordStatement, await: transpileBuiltinKeywordExpr, for: transpileBuiltinFor, ["for@"]: transpileBuiltinForAwait, ["for-of"]: transpileBuiltinForOf, ["for-in"]: transpileBuiltinForIn, case: transpileBuiltinCase, do: transpileBuiltinDo, if: transpileBuiltinIf, while: transpileBuiltinWhile, ["."]: transpileBuiltinDot, ["?."]: transpileBuiltinQuestionDot, ["..."]: transpileBuiltinRest, typeof: transpileBuiltinTypeof, instanceof: transpileBuiltinInstanceof, set: transpileBuiltinSet, delete: transpileBuiltinDelete, hash: transpileBuiltinHash, quote: transpileBuiltinQuote, macro: transpileSpecialMacro, try: transpileBuiltinTry, class: transpileBuiltinClass };
+var macros = {};
+var newCtx = (config, macros2) => {
+  let gensym = 0;
+  return { ...config, bindings: bindings(builtins), macros: bindings(macros2), gensym: (prefix) => {
+    prefix = prefix ?? "gensym";
+    return { kind: "symbol", value: `${prefix}__${gensym++}`, pos: {} };
+  } };
+};
+macros = (() => {
+  {
+    let ctx = newCtx({}, {});
+    let input2 = uninterrupt(tokens(ctx, builtinMacros));
+    while (true) {
+      {
+        let macro__0 = astOne(ctx, input2);
+        if (macro__0) {
+          {
+            let node = macro__0;
+            [...transpileNodeStatement(ctx, node, null, null, evStat)];
+          }
+        } else {
+          return ctx.macros.scopes[0];
+        }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+  ;
+})();
+var transpileCtx = function* (code, ctx, semi) {
+  {
+    let input2 = uninterrupt(tokens(ctx, code));
+    semi = semi ?? true;
+    while (true) {
+      {
+        let macro__0 = astOne(ctx, input2);
+        if (macro__0) {
+          {
+            let node = macro__0;
+            yield* transpileNodeStatement(ctx, node, null, null, evStat);
+            if (semi) {
+              yield ";";
+            }
+            ;
+            ;
+          }
+        } else {
+          return;
+        }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+  ;
+};
 var transpile = function* (code, config) {
   return yield* transpileCtx(code, newCtx(config || {}, macros));
 };
