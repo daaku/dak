@@ -1,3 +1,27 @@
+; function, method or constructor call
+(fn* transpileSpecialCall [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [argStart 1]
+    (if (= (. node 0 :kind) :symbol)
+      (let [call (. node 0 :value)]
+        (if (call.endsWith ".")
+            (do
+              (yield ["new " (. node 0)])
+              (yield [(mangleSym (call.slice 0 -1)) (. node 0)])) ; drop the trailing .
+            (call.startsWith ".")
+            (do
+              (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+              (yield [(mangleSym call) (. node 0)])
+              (set argStart 2))
+            (yield [(mangleSym call) node])))
+      (yield* (transpileNodeExpr ctx (. node 0) null hoist evExpr)))
+    (let [comma (splitter ",")]
+      (yield "(")
+      (for [i argStart node.length]
+        (yield (comma))
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr)))
+      (yield ")"))))
+
 (fn* transpileNodeList [ctx node assign hoist evKind]
   (let [call (. node 0 :value)
         binding (ctx.bindings.get call)]

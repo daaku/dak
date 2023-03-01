@@ -1506,31 +1506,3 @@ function* transpileSpecialMacro(ctx, node) {
   // }
   ctx.macros.add(node[1].value, new Function('_macroName', ...args, body))
 }
-
-// function, method or constructor call
-function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  let argStart = 1
-  if (node[0].kind === 'symbol') {
-    const call = node[0].value
-    if (call.endsWith('.')) {
-      yield ['new ', node[0]]
-      yield [mangleSym(call.slice(0, -1)), node[0]] // drop the tailing .
-    } else if (call.startsWith('.')) {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-      yield [mangleSym(call), node[0]]
-      argStart = 2
-    } else {
-      yield [mangleSym(call), node]
-    }
-  } else {
-    yield* transpileNodeExpr(ctx, node[0], null, hoist, evExpr)
-  }
-  const comma = splitter(',')
-  yield '('
-  for (let i = argStart; i < node.length; i++) {
-    yield comma()
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-  }
-  yield ')'
-}
