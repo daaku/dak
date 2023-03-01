@@ -1,3 +1,17 @@
+(fn* transpileNodeList [ctx node assign hoist evKind]
+  (let [call (. node 0 :value)
+        binding (ctx.bindings.get call)]
+    (when (true? binding)
+      (yield* (transpileSpecialCall ctx node assign hoist evKind))
+      (return))
+    (when binding
+      (yield* (binding ctx node assign hoist evKind))
+      (return))
+    (when-let [macro (ctx.macros.get call)]
+      (yield* (transpileNodeUnknown ctx (macro ...node) assign hoist evKind))
+      (return)))
+  (yield* (transpileSpecialCall ctx node assign hoist evKind)))
+
 (fn* transpileBuiltinTypeof [ctx node assign hoist _evKind]
   (yield "typeof ")
   (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr)))

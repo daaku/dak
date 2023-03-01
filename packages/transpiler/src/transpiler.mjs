@@ -1534,22 +1534,3 @@ function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
   }
   yield ')'
 }
-
-function* transpileNodeList(ctx, node, assign, hoist, evKind) {
-  const call = node[0].value
-  const binding = ctx.bindings.get(call)
-  if (binding === true) {
-    yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
-    return
-  }
-  if (binding) {
-    yield* binding(ctx, node, assign, hoist, evKind)
-    return
-  }
-  const macro = ctx.macros.get(call)
-  if (macro) {
-    yield* transpileNodeUnknown(ctx, macro(...node), assign, hoist, evKind)
-    return
-  }
-  yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
-}
