@@ -1553,19 +1553,3 @@ function* transpileNodeList(ctx, node, assign, hoist, evKind) {
   }
   yield* transpileSpecialCall(ctx, node, assign, hoist, evKind)
 }
-
-function* transpileBuiltinTypeof(ctx, node, assign, hoist, _evKind) {
-  yield 'typeof '
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
-}
-
-function* transpileBuiltinInstanceof(ctx, node, assign, hoist, _evKind) {
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
-  yield ' instanceof '
-  yield* transpileNodeExpr(ctx, node[2], assign, hoist, evExpr)
-}
-
-function* transpileBuiltinDelete(ctx, node, assign, hoist, _evKind) {
-  yield 'delete '
-  yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
-}
