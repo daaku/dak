@@ -1,3 +1,14 @@
+(fn* transpileCtx [code ctx semi]
+  (let [input (uninterrupt (tokens ctx code))]
+    (set semi (?? semi true))
+    (while true
+      (if-let [node (astOne ctx input)]
+        (do
+          (yield* (transpileNodeStatement ctx node null null evStat))
+          (when semi
+            (yield ";")))
+        (return)))))
+
 (fn* ^:export transpile [code config]
   (yield* (transpileCtx code (newCtx (or config {}) macros))))
 

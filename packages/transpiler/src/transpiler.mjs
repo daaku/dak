@@ -1683,17 +1683,3 @@ function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
   ]
   yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr)
 }
-
-function* transpileCtx(code, ctx, semi = true) {
-  const input = uninterrupt(tokens(ctx, code))
-  while (true) {
-    const node = astOne(ctx, input)
-    if (!node) {
-      return
-    }
-    yield* transpileNodeStatement(ctx, node, null, null, evStat)
-    if (semi) {
-      yield ';'
-    }
-  }
-}
