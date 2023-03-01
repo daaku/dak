@@ -1,2 +1,29 @@
 (fn* ^:export transpile [code config]
   (yield* (transpileCtx code (newCtx (or config {}) macros))))
+
+(fn ^:export transpileStr [code config]
+  (set config (?? config {}))
+  (let [source (?? config.filename "<anonymous>")
+        parts []
+        map (SourceMapGenerator.)
+        column 0]
+    (for-of [out (transpile code config)]
+      (let [[part partToken] (if (string? out) [out] out)]
+        (when (number? partToken?.pos?.line)
+          (map.addMapping
+            {:source source
+             :original {:line (inc partToken.pos.line)
+                        :column partToken.pos.column}
+             :generated {:line 1 :column column}
+             :name (if (and (= partToken.kind :symbol)
+                            (not (partToken.value.includes ".")))
+                      (mangleSym partToken.value)
+                      null)}))
+        (+= column part.length)
+        (parts.push part)))
+    (map.setSourceContent source code)
+    (let [mapJSON (map.toJSON)]
+      (when (= config.sourcemap :inline)
+        (parts.push "\n//# sourceMappingURL=data:application/json;base64,"
+                    (btoa (JSON.stringify mapJSON))))
+      {:code (parts.join "") :map mapJSON})))
