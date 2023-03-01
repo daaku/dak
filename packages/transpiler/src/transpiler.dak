@@ -1,3 +1,13 @@
+(fn applyGensym [ctx existing node]
+  (if (Array.isArray node)
+      (node.forEach #(applyGensym ctx existing $))
+      (and (= node.kind :symbol) (node.value.endsWith "#"))
+      (if-let [found (. existing node.value)]
+        (set node.value found)
+        (let [gen (. (ctx.gensym :macro) :value)]
+          (set (. existing node.value) gen)
+          (set node.value gen)))))
+
 (fn* transpileBuiltinQuote [ctx node assign hoist _evKind]
   (applyGensym ctx {} node)
   (yield* (transpileSpecialAssign ctx assign))

@@ -1473,21 +1473,3 @@ function* serializeNode(ctx, node, hoist) {
   }
   yield JSON.stringify(node)
 }
-
-const applyGensym = (ctx, existing, node) => {
-  if (Array.isArray(node)) {
-    node.map(applyGensym.bind(null, ctx, existing))
-  } else {
-    if (node.kind === 'symbol' && node.value.endsWith('#')) {
-      const name = node.value
-      const found = existing[name]
-      if (found) {
-        node.value = found
-      } else {
-        const gen = ctx.gensym('macro').value
-        existing[name] = gen
-        node.value = gen
-      }
-    }
-  }
-}
