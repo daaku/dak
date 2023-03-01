@@ -1,3 +1,110 @@
+(fn* transpileBuiltinSet [ctx node assign hoist _evKind]
+  (yield*
+    (transpileNodeExpr ctx (. node 2)
+      [(... (transpileNodeExpr ctx (. node 1) assign hoist evExpr)) "="]
+      hoist evExpr)))
+
+(const builtins
+  {:import transpileBuiltinImport
+   :const transpileBuiltinConst
+   :var transpileBuiltinDef
+   :fn transpileBuiltinFnArrow
+   "fn@" transpileBuiltinFnArrowAsync
+   "fn*" transpileBuiltinFnGenerator
+   "fn@*" transpileBuiltinFnAsyncGenerator
+   :str (makeOpTranspiler "+")
+   "+" (makeOpTranspiler "+" true)
+   "-" (makeOpTranspiler "-" true)
+   "*" (makeOpTranspiler "*")
+   "/" (makeOpTranspiler "/")
+   "**" (makeOpTranspiler "**")
+   "%" (makeOpTranspiler "%")
+   "+=" (makeOpTranspiler "+=")
+   "-=" (makeOpTranspiler "-=")
+   "&=" (makeOpTranspiler "&=")
+   "|=" (makeOpTranspiler "|=")
+   "/=" (makeOpTranspiler "/=")
+   "*=" (makeOpTranspiler "*=")
+   "**=" (makeOpTranspiler "**=")
+   "<<=" (makeOpTranspiler "<<=")
+   ">>=" (makeOpTranspiler ">>=")
+   ">>>=" (makeOpTranspiler ">>>=")
+   "||=" (makeOpTranspiler "||=")
+   "??=" (makeOpTranspiler "??=")
+   "%=" (makeOpTranspiler "%=")
+   "??" (makeOpTranspiler "??")
+   "<<" (makeOpTranspiler "<<")
+   ">>" (makeOpTranspiler ">>")
+   ">>>" (makeOpTranspiler ">>>")
+   "++" (makeSuffixOpTranspiler "++")
+   "--" (makeSuffixOpTranspiler "--")
+   :bit-and (makeOpTranspiler "&")
+   :bit-or (makeOpTranspiler "|")
+   :bit-not (makePrefixOpTranspiler "~")
+   :bit-xor (makeOpTranspiler "^")
+   "||" (makeOpTranspiler "||")
+   :or (makeOpTranspiler "||")
+   "&&" (makeOpTranspiler "&&")
+   :and (makeOpTranspiler "&&")
+   :not (makePrefixOpTranspiler "!")
+   :in (makeOpTranspiler " in ")
+   "=" transpileBuiltinCmp
+   "==" transpileBuiltinCmp
+   "!=" transpileBuiltinCmp
+   "not=" transpileBuiltinCmp
+   "<" transpileBuiltinCmp
+   ">" transpileBuiltinCmp
+   "<=" transpileBuiltinCmp
+   ">=" transpileBuiltinCmp
+   :let transpileBuiltinLet
+   :throw transpileBuiltinKeywordStatement
+   :return transpileBuiltinKeywordStatement
+   :yield transpileBuiltinKeywordExpr
+   "yield*" transpileBuiltinKeywordExpr
+   :break transpileBuiltinKeywordStatement
+   :continue transpileBuiltinKeywordStatement
+   :await transpileBuiltinKeywordExpr
+   :for transpileBuiltinFor
+   "for@" transpileBuiltinForAwait
+   "for-of" transpileBuiltinForOf
+   "for-in" transpileBuiltinForIn
+   :case transpileBuiltinCase
+   :do transpileBuiltinDo
+   :if transpileBuiltinIf
+   :while transpileBuiltinWhile
+   "." transpileBuiltinDot
+   "?." transpileBuiltinQuestionDot
+   "..." transpileBuiltinRest
+   :typeof transpileBuiltinTypeof
+   :instanceof transpileBuiltinInstanceof
+   :set transpileBuiltinSet
+   :delete transpileBuiltinDelete
+   :hash transpileBuiltinHash
+   :quote transpileBuiltinQuote
+   :macro transpileSpecialMacro
+   :try transpileBuiltinTry
+   :class transpileBuiltinClass})
+
+(let macros {})
+
+(fn newCtx [config macros]
+  (let gensym 0)
+  {...config
+   :bindings (bindings builtins)
+   :macros (bindings macros)
+   :gensym (fn [prefix]
+              (set prefix (?? prefix "gensym"))
+              {:kind :symbol :value `${prefix}__${(++ gensym)}` :pos {}})})
+
+(set macros
+  ((fn []
+    (let [ctx (newCtx {} {})
+          input (uninterrupt (tokens ctx builtinMacros))]
+      (while true
+        (if-let [node (astOne ctx input)]
+          [(... (transpileNodeStatement ctx node null null evStat))]
+          (return (. ctx.macros.scopes 0))))))))
+
 (fn* transpileCtx [code ctx semi]
   (let [input (uninterrupt (tokens ctx code))]
     (set semi (?? semi true))

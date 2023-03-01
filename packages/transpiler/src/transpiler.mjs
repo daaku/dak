@@ -132,18 +132,6 @@ const bindings = initial => {
   }
 }
 
-const newCtx = (config, macros) => {
-  let gensym = 0
-  return {
-    ...config,
-    bindings: bindings(builtins),
-    macros: bindings(macros),
-    gensym(prefix = 'gensym') {
-      return { kind: 'symbol', value: `${prefix}__${gensym++}`, pos: {} }
-    },
-  }
-}
-
 const readString = (ctx, quote, input, len, pos) => {
   let buf = []
   let start = pos.offset + 1
@@ -1519,100 +1507,6 @@ function* transpileSpecialMacro(ctx, node) {
   ctx.macros.add(node[1].value, new Function('_macroName', ...args, body))
 }
 
-const builtins = {
-  import: transpileBuiltinImport,
-  const: transpileBuiltinConst,
-  var: transpileBuiltinDef,
-  fn: transpileBuiltinFnArrow,
-  'fn@': transpileBuiltinFnArrowAsync,
-  'fn*': transpileBuiltinFnGenerator,
-  'fn@*': transpileBuiltinFnAsyncGenerator,
-  str: makeOpTranspiler('+'),
-  '+': makeOpTranspiler('+', true),
-  '-': makeOpTranspiler('-', true),
-  '*': makeOpTranspiler('*'),
-  '/': makeOpTranspiler('/'),
-  '**': makeOpTranspiler('**'),
-  '%': makeOpTranspiler('%'),
-  '+=': makeOpTranspiler('+='),
-  '-=': makeOpTranspiler('-='),
-  '&=': makeOpTranspiler('&='),
-  '|=': makeOpTranspiler('|='),
-  '/=': makeOpTranspiler('/='),
-  '*=': makeOpTranspiler('*='),
-  '**=': makeOpTranspiler('**='),
-  '<<=': makeOpTranspiler('<<='),
-  '>>=': makeOpTranspiler('>>='),
-  '>>>=': makeOpTranspiler('>>>='),
-  '||=': makeOpTranspiler('||='),
-  '??=': makeOpTranspiler('??='),
-  '%=': makeOpTranspiler('%='),
-  '??': makeOpTranspiler('??'),
-  '<<': makeOpTranspiler('<<'),
-  '>>': makeOpTranspiler('>>'),
-  '>>>': makeOpTranspiler('>>>'),
-  '++': makeSuffixOpTranspiler('++'),
-  '--': makeSuffixOpTranspiler('--'),
-  'bit-and': makeOpTranspiler('&'),
-  'bit-or': makeOpTranspiler('|'),
-  'bit-not': makePrefixOpTranspiler('~'),
-  'bit-xor': makeOpTranspiler('^'),
-  '||': makeOpTranspiler('||'),
-  or: makeOpTranspiler('||'),
-  '&&': makeOpTranspiler('&&'),
-  and: makeOpTranspiler('&&'),
-  not: makePrefixOpTranspiler('!'),
-  in: makeOpTranspiler(' in '),
-  '=': transpileBuiltinCmp,
-  '==': transpileBuiltinCmp,
-  '!=': transpileBuiltinCmp,
-  'not=': transpileBuiltinCmp,
-  '<': transpileBuiltinCmp,
-  '>': transpileBuiltinCmp,
-  '<=': transpileBuiltinCmp,
-  '>=': transpileBuiltinCmp,
-  let: transpileBuiltinLet,
-  throw: transpileBuiltinKeywordStatement,
-  return: transpileBuiltinKeywordStatement,
-  yield: transpileBuiltinKeywordExpr,
-  'yield*': transpileBuiltinKeywordExpr,
-  break: transpileBuiltinKeywordStatement,
-  continue: transpileBuiltinKeywordStatement,
-  await: transpileBuiltinKeywordExpr,
-  for: transpileBuiltinFor,
-  'for@': transpileBuiltinForAwait,
-  'for-of': transpileBuiltinForOf,
-  'for-in': transpileBuiltinForIn,
-  case: transpileBuiltinCase,
-  do: transpileBuiltinDo,
-  if: transpileBuiltinIf,
-  while: transpileBuiltinWhile,
-  '.': transpileBuiltinDot,
-  '?.': transpileBuiltinQuestionDot,
-  '...': transpileBuiltinRest,
-  typeof: transpileBuiltinTypeof,
-  instanceof: transpileBuiltinInstanceof,
-  set: transpileBuiltinSet,
-  delete: transpileBuiltinDelete,
-  hash: transpileBuiltinHash,
-  quote: transpileBuiltinQuote,
-  macro: transpileSpecialMacro,
-  try: transpileBuiltinTry,
-  class: transpileBuiltinClass,
-}
-
-const macros = (() => {
-  const ctx = newCtx({}, {})
-  const input = uninterrupt(tokens(ctx, builtinMacros))
-  while (true) {
-    const node = astOne(ctx, input)
-    if (!node) {
-      return ctx.macros.scopes[0]
-    }
-    ;[...transpileNodeStatement(ctx, node, null, null, evStat)]
-  }
-})()
-
 // function, method or constructor call
 function* transpileSpecialCall(ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign)
@@ -1674,12 +1568,4 @@ function* transpileBuiltinInstanceof(ctx, node, assign, hoist, _evKind) {
 function* transpileBuiltinDelete(ctx, node, assign, hoist, _evKind) {
   yield 'delete '
   yield* transpileNodeExpr(ctx, node[1], assign, hoist, evExpr)
-}
-
-function* transpileBuiltinSet(ctx, node, assign, hoist, _evKind) {
-  const newAssign = [
-    ...transpileNodeExpr(ctx, node[1], assign, hoist, evExpr),
-    '=',
-  ]
-  yield* transpileNodeExpr(ctx, node[2], newAssign, hoist, evExpr)
 }
