@@ -1,3 +1,8 @@
+(fn* transpileBuiltinHash [ctx node assign hoist evKind]
+  (if (= (. node 1 :kind) :list)
+    (yield* (transpileHashLambda ctx node assign hoist evKind))
+    (throw (err ctx ctx `unexpected hash "${(. node 1 :kind)}"`))))
+
 (fn* serializeNode [ctx node hoist]
   (if (Array.isArray node)
     (if (= (?. node 0 :value) :unquote)

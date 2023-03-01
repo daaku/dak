@@ -1436,11 +1436,3 @@ function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
   yield* transpileNodeStatement(ctx, node[1], 'return ', hoist, evStat)
   yield '})'
 }
-
-function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
-  if (node[1].kind === 'list') {
-    yield* transpileHashLambda(ctx, node, assign, hoist, evKind)
-    return
-  }
-  throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
-}
