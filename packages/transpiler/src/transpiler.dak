@@ -1,3 +1,51 @@
+(fn* transpileHashLambda [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [restArg null
+        args []
+        comma (splitter ",")
+        argMap
+        (fn [n]
+          (if (and (Array.isArray n) (not= (?. n 0 :value) :hash))
+              (do
+                (n.forEach argMap)
+                (return))
+              (not= n.kind :symbol)
+              (return)
+              (n.value.startsWith "...$")
+              (do
+                (when (not restArg)
+                  (set restArg (ctx.gensym :lambda_rest)))
+                (set n.value `${restArg.value}${(n.value.slice 4)}`)
+                (return))
+              (not (n.value.startsWith "$"))
+              (return))
+
+          ; check if we have a dot, indicates we're replacing part of a symbol
+          ; like $2.replace
+          (let [sym n.value
+                dot (sym.indexOf ".")
+                target (if (neg? dot) sym (sym.slice 0 dot))
+                arg 0]
+            (when (not= target "$")
+              (set arg (dec (parseInt (target.slice 1) 10))))
+            (for [i 0 (inc arg)]
+              (when (not (. args i))
+                (set (. args i) (ctx.gensym :lambda))))
+            (let [replace (. args arg :value)]
+              (set n.value (if (neg? dot) replace `${replace}${(sym.slice dot)}`)))))]
+    (argMap (. node 1))
+    (yield "((")
+    (for-of [arg args]
+      (yield (comma))
+      (yield* (transpileNodeSymbol ctx arg)))
+    (when restArg
+      (yield (comma))
+      (yield "...")
+      (yield* (transpileNodeSymbol ctx restArg)))
+    (yield ")=>{")
+    (yield* (transpileNodeStatement ctx (. node 1) "return " hoist evStat))
+    (yield "})")))
+
 (fn* transpileBuiltinHash [ctx node assign hoist evKind]
   (if (= (. node 1 :kind) :list)
     (yield* (transpileHashLambda ctx node assign hoist evKind))
