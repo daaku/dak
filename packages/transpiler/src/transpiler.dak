@@ -1,3 +1,19 @@
+(fn* serializeNode [ctx node hoist]
+  (if (Array.isArray node)
+    (if (= (?. node 0 :value) :unquote)
+      (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+      (do
+        (yield "Object.defineProperties([")
+        (for-of [i node]
+          (yield* (serializeNode ctx i hoist))
+          (yield ","))
+        (yield "],")
+        (yield (JSON.stringify
+                 {:kind {:value node.kind :enumerable false}
+                  :pos {:value node.pos :enumerable false}}))
+        (yield ")")))
+    (yield (JSON.stringify node))))
+
 (fn applyGensym [ctx existing node]
   (if (Array.isArray node)
       (node.forEach #(applyGensym ctx existing $))

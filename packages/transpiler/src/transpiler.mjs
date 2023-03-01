@@ -1444,32 +1444,3 @@ function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
   }
   throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`)
 }
-
-function* serializeNode(ctx, node, hoist) {
-  if (Array.isArray(node)) {
-    if (node[0]?.value === 'unquote') {
-      yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-      return
-    }
-
-    yield 'Object.defineProperties(['
-    for (const i of node) {
-      yield* serializeNode(ctx, i, hoist)
-      yield ','
-    }
-    yield '],'
-    yield JSON.stringify({
-      kind: {
-        value: node.kind,
-        enumerable: false,
-      },
-      pos: {
-        value: node.pos,
-        enumerable: false,
-      },
-    })
-    yield ')'
-    return
-  }
-  yield JSON.stringify(node)
-}
