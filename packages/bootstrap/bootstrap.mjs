@@ -2099,88 +2099,122 @@ function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
   }
   throw err(ctx, node[0], `unexpected class body "${node[0].kind}"`);
 }
-function* transpileBuiltinClass(ctx, node, assign, hoist, evKind) {
+var transpileBuiltinClass = function* (ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign);
-  let [prefix, index] = exportDefault(ctx, node);
-  yield* prefix;
-  yield ["class", node[0]];
-  if (node[index]?.kind === "symbol") {
-    yield " ";
-    yield* transpileNodeSymbol(ctx, node[index]);
-    ctx.bindings.add(node[index].value);
-    index++;
+  {
+    let [prefix, index] = exportDefault(ctx, node);
+    yield* prefix;
+    yield ["class", node[0]];
+    if (node?.[index]?.kind === "symbol") {
+      yield " ";
+      yield* transpileNodeSymbol(ctx, node[index]);
+      ctx.bindings.add(node[index].value);
+      index++;
+    }
+    ;
+    if (node?.[index]?.kind === "string" && node?.[index]?.value === "extends") {
+      yield [" extends ", node[index]];
+      yield* transpileNodeExpr(ctx, node[index + 1], null, hoist, evExpr);
+      index += 2;
+    }
+    ;
+    yield "{";
+    for (let i = index; i < node.length; i++) {
+      yield* transpileClassNodeList(ctx, node[i], null, null, evStat);
+    }
+    ;
+    return yield "}";
   }
-  if (node[index]?.kind === "string" && node[index]?.value === "extends") {
-    yield [" extends ", node[index]];
-    yield* transpileNodeExpr(ctx, node[index + 1], null, hoist, evExpr);
-    index += 2;
+  ;
+};
+var hashLambdaArgMap = (ctx, args, n) => {
+  if (Array.isArray(n) && n?.[0]?.value !== "hash") {
+    n.forEach((lambda__1) => {
+      return hashLambdaArgMap(ctx, args, lambda__1);
+    });
+    return;
+  } else if (n.kind !== "symbol") {
+    return;
+  } else if (n.value.startsWith("...$")) {
+    if (!args.rest) {
+      args.rest = ctx.gensym("lambda_rest");
+    }
+    ;
+    n.value = `${args.rest.value}${n.value.slice(4)}`;
+    return;
+  } else if (!n.value.startsWith("$")) {
+    return;
   }
-  yield "{";
-  for (let i = index; i < node.length; i++) {
-    yield* transpileClassNodeList(ctx, node[i], null, null, evStat);
-  }
-  yield "}";
-}
-function* transpileHashLambda(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  let restArg;
-  const args = [];
-  const argMap = (n) => {
-    if (Array.isArray(n) && n[0]?.value !== "hash") {
-      n.forEach(argMap);
-      return;
+  ;
+  {
+    let sym = n.value;
+    let dot = sym.indexOf(".");
+    let target;
+    if (dot < 0) {
+      target = sym;
+    } else {
+      target = sym.slice(0, dot);
     }
-    if (n.kind !== "symbol") {
-      return;
-    }
-    if (n.value.startsWith("...$")) {
-      if (!restArg) {
-        restArg = ctx.gensym("lambda_rest");
-      }
-      n.value = `${restArg.value}${n.value.slice(4)}`;
-      return;
-    }
-    if (!n.value.startsWith("$")) {
-      return;
-    }
-    const sym = n.value;
-    const dot = sym.indexOf(".");
-    const target = dot === -1 ? sym : sym.slice(0, dot);
+    ;
     let arg = 0;
     if (target !== "$") {
       arg = parseInt(target.slice(1), 10) - 1;
     }
-    for (let i = 0; i <= arg; i++) {
+    ;
+    for (let i = 0; i < arg + 1; i++) {
       if (!args[i]) {
         args[i] = ctx.gensym("lambda");
       }
+      ;
     }
-    const replace = args[arg].value;
-    n.value = dot === -1 ? replace : `${replace}${sym.slice(dot)}`;
-  };
-  argMap(node[1]);
-  const comma = splitter(",");
-  yield "((";
-  for (const arg of args) {
-    yield comma();
-    yield* transpileNodeSymbol(ctx, arg);
+    ;
+    {
+      let replace = args[arg].value;
+      let hoist__2;
+      if (dot < 0) {
+        hoist__2 = replace;
+      } else {
+        hoist__2 = `${replace}${sym.slice(dot)}`;
+      }
+      ;
+      return n.value = hoist__2;
+    }
+    ;
   }
-  if (restArg) {
-    yield comma();
-    yield "...";
-    yield* transpileNodeSymbol(ctx, restArg);
+  ;
+};
+var transpileHashLambda = function* (ctx, node, assign, hoist, evKind) {
+  yield* transpileSpecialAssign(ctx, assign);
+  {
+    let args = [];
+    let comma = splitter(",");
+    hashLambdaArgMap(ctx, args, node[1]);
+    yield "((";
+    for (let arg of args) {
+      yield comma();
+      yield* transpileNodeSymbol(ctx, arg);
+    }
+    ;
+    if (args.rest) {
+      yield comma();
+      yield "...";
+      yield* transpileNodeSymbol(ctx, args.rest);
+    }
+    ;
+    yield ")=>{";
+    yield* transpileNodeStatement(ctx, node[1], "return ", hoist, evStat);
+    return yield "})";
   }
-  yield ")=>{";
-  yield* transpileNodeStatement(ctx, node[1], "return ", hoist, evStat);
-  yield "})";
-}
-function* transpileBuiltinHash(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinHash = function* (ctx, node, assign, hoist, evKind) {
   if (node[1].kind === "list") {
-    yield* transpileHashLambda(ctx, node, assign, hoist, evKind);
-    return;
+    return yield* transpileHashLambda(ctx, node, assign, hoist, evKind);
+  } else {
+    throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`);
   }
-  throw err(ctx, ctx, `unexpected hash "${node[1].kind}"`);
-}
+  ;
+};
 var serializeNode = function* (ctx, node, hoist) {
   if (Array.isArray(node)) {
     if (node?.[0]?.value === "unquote") {
@@ -2203,8 +2237,8 @@ var serializeNode = function* (ctx, node, hoist) {
 };
 var applyGensym = (ctx, existing, node) => {
   if (Array.isArray(node)) {
-    return node.forEach((lambda__0) => {
-      return applyGensym(ctx, existing, lambda__0);
+    return node.forEach((lambda__3) => {
+      return applyGensym(ctx, existing, lambda__3);
     });
   } else if (node.kind === "symbol" && node.value.endsWith("#")) {
     {
@@ -2233,8 +2267,8 @@ var transpileBuiltinQuote = function* (ctx, node, assign, hoist, _evKind) {
 };
 var transpileSpecialMacro = function* (ctx, node) {
   {
-    let args = node[2].map((lambda__1) => {
-      return partsStr(transpileSpecialDestructure(ctx, lambda__1));
+    let args = node[2].map((lambda__4) => {
+      return partsStr(transpileSpecialDestructure(ctx, lambda__4));
     });
     let body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
     return ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
