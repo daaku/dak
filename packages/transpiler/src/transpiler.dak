@@ -1,3 +1,26 @@
+(fn readRegexp [ctx input len pos]
+  (let [start (inc pos.offset)]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (case (. input end)
+        "/"
+        (do
+          (++ pos.offset)
+          (++ pos.column)
+          ; flags
+          (while (< (++ end) len)
+            (when (not (isLetter (. input end)))
+              (return (input.substring (dec start) end)))
+            (++ pos.offset)
+            (++ pos.column)))
+        "\\"
+        (do
+          (++ end)
+          (++ pos.offset)
+          (++ pos.column)))))
+  (throw (err ctx {:pos pos} "unterminated regex")))
+
 (fn readSymbol [ctx input len pos]
   (let [start pos.offset]
     (for [end start len]

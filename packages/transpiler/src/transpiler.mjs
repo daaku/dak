@@ -171,31 +171,3 @@ const readString = (ctx, quote, input, len, pos) => {
 }
 
 const isLetter = c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-
-const readRegexp = (ctx, input, len, pos) => {
-  let start = pos.offset + 1
-  for (let end = start; end < len; end++) {
-    pos.offset++
-    pos.column++
-    switch (input[end]) {
-      case '/':
-        pos.offset++
-        pos.column++
-        // flags
-        end++
-        for (; end < len; end++) {
-          if (!isLetter(input[end])) {
-            return input.substring(start - 1, end)
-          }
-          pos.offset++
-          pos.column++
-        }
-      case '\\':
-        end++
-        pos.offset++
-        pos.column++
-        break
-    }
-  }
-  throw err(ctx, { pos }, 'unterminated regex')
-}
