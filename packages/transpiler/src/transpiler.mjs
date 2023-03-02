@@ -615,37 +615,3 @@ function* transpileSpecialAssign(ctx, assign) {
     }
   }
 }
-
-function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr) {
-  // list will handle it's own assign, all others are expressions
-  if (node.kind === 'list') {
-    yield* transpileNodeList(ctx, node, assign, hoist, evExpr)
-    return
-  }
-
-  yield* transpileSpecialAssign(ctx, assign)
-  switch (node.kind) {
-    case 'object':
-      yield* transpileNodeObject(ctx, node, hoist)
-      break
-    case 'array':
-      yield* transpileNodeArray(ctx, node, hoist)
-      break
-    case 'regexp':
-      yield* transpileNodeRegExp(ctx, node)
-      break
-    case 'string':
-      yield* transpileNodeString(ctx, node)
-      break
-    case 'template':
-      yield* transpileNodeTemplate(ctx, node, hoist)
-      break
-    case 'symbol':
-      yield* transpileNodeSymbol(ctx, node)
-      break
-    /* c8 ignore next */
-    default:
-      /* c8 ignore next */
-      throw err(ctx, node, `unhandled node "${node.kind}"`)
-  }
-}

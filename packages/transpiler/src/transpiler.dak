@@ -1,3 +1,18 @@
+(fn* transpileNodeUnknown [ctx node assign hoist evExpr]
+  ; list will handle it's own assign, all others are expressions
+  (if (= node.kind :list)
+    (yield* (transpileNodeList ctx node assign hoist evExpr))
+    (do
+      (yield* (transpileSpecialAssign ctx assign))
+      (case node.kind
+        :object (yield* (transpileNodeObject ctx node hoist))
+        :array (yield* (transpileNodeArray ctx node hoist))
+        :regexp (yield* (transpileNodeRegExp ctx node))
+        :string (yield* (transpileNodeString ctx node))
+        :template (yield* (transpileNodeTemplate ctx node hoist))
+        :symbol (yield* (transpileNodeSymbol ctx node))
+        (throw (err ctx node `unhandled node "${node.kind}"`))))))
+
 (const transpileNodeExpr transpileNodeUnknown)
 (const transpileNodeStatement (hoistable transpileNodeUnknown))
 
