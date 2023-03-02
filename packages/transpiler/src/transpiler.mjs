@@ -1067,17 +1067,3 @@ function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist, evKind) {
     yield ')'
   }
 }
-
-function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist, _evKind) {
-  if (node.length === 1) {
-    yield node[0].value
-  } else {
-    yield* transpileNodeStatement(
-      ctx,
-      node[1],
-      [node[0].value, ' '],
-      hoist,
-      evStat,
-    )
-  }
-}

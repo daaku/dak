@@ -1,3 +1,9 @@
+(fn* transpileBuiltinKeywordStatement [ctx node _assign hoist _evKind]
+  (if (= node.length 1)
+    (yield (. node 0 :value))
+    (yield* (transpileNodeStatement
+              ctx (. node 1) [(. node 0 :value) " "] hoist evStat))))
+
 (fn* transpileBuiltinFor [ctx node _assign hoist _evKind]
   (let [binding (. node 1)]
     (yield "for(let ")
