@@ -1,3 +1,32 @@
+(fn* transpileBuiltinQuestionDot [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+  (for [i 2 node.length]
+    (yield "?.")
+    (if (canLiteralIdentifier (. node i))
+      (yield [(. node i :value) (. node i)])
+      (do
+        (yield "[")
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+        (yield "]")))))
+
+(fn* transpileBuiltinDot [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+  (for [i 2 node.length]
+    (if (canLiteralIdentifier (. node i))
+      (do
+        (yield ".")
+        (yield [(. node i :value) (. node i)]))
+      (do
+        (yield "[")
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+        (yield "]")))))
+
+(fn* transpileBuiltinRest [ctx node assign hoist evKind]
+  (yield "...")
+  (yield* (transpileNodeStatement ctx (. node 1) assign hoist evKind)))
+
 (fn* transpileBuiltinTry [ctx node assign hoist evKind]
   (when (= evKind evExpr)
     (yield* (hoist transpileBuiltinTry node assign))

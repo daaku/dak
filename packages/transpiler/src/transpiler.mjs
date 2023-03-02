@@ -1201,38 +1201,3 @@ function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
   }
   yield '}'
 }
-
-function* transpileBuiltinQuestionDot(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-  for (let i = 2; i < node.length; i++) {
-    yield '?.'
-    if (canLiteralIdentifier(node[i])) {
-      yield [node[i].value, node[i]]
-    } else {
-      yield '['
-      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-      yield ']'
-    }
-  }
-}
-
-function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-  for (let i = 2; i < node.length; i++) {
-    if (canLiteralIdentifier(node[i])) {
-      yield '.'
-      yield [node[i].value, node[i]]
-    } else {
-      yield '['
-      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-      yield ']'
-    }
-  }
-}
-
-function* transpileBuiltinRest(ctx, node, assign, hoist, evKind) {
-  yield '...'
-  yield* transpileNodeStatement(ctx, node[1], assign, hoist, evKind)
-}
