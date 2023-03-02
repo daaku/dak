@@ -1,3 +1,32 @@
+(const evExpr "evExpr")
+(const evStat "evStat")
+
+(fn hoister [ctx]
+  (const collected [])
+  (fn hoist [transpile node givenAssign]
+    (let [sym [(... (transpileNodeSymbol ctx (ctx.gensym :hoist)))]
+          assign [...sym "="]]
+      (collected.push "let " ...sym ";"
+                      (... (transpile ctx node assign hoist evStat)) ";")
+      [(... (transpileSpecialAssign ctx givenAssign)) ...sym]))
+  [hoist collected])
+
+(fn hoistable [transpile]
+  (fn* [ctx node assign _hoist evKind]
+    (let [[hoist hoisted] (hoister ctx)
+          postHoist [(... (transpile ctx node assign hoist evKind))]]
+      (yield* hoisted)
+      (yield* postHoist))))
+
+(fn splitter [s]
+  (let first true)
+  (fn []
+    (if first
+      (do
+        (set first false)
+        "")
+      s)))
+
 ; be conservative
 (fn isValidIdentifier [s] (s.match #/^[a-zA-Z_$][0-9a-zA-Z_$]*$/))
 
