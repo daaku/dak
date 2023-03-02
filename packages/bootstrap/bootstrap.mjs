@@ -1050,277 +1050,347 @@ var readString = (ctx, quote, input2, len, pos) => {
 };
 var isLetter = (c) => c >= "A" && c <= "Z" || c >= "a" && c <= "z";
 var readRegexp = (ctx, input2, len, pos) => {
-  let start = pos.offset + 1;
-  for (let end = start; end < len; end++) {
-    pos.offset++;
-    pos.column++;
-    switch (input2[end]) {
-      case "/":
-        pos.offset++;
-        pos.column++;
-        end++;
-        for (; end < len; end++) {
-          if (!isLetter(input2[end])) {
-            return input2.substring(start - 1, end);
-          }
+  {
+    let start = pos.offset + 1;
+    for (let end = start; end < len; end++) {
+      pos.offset++;
+      pos.column++;
+      switch (input2[end]) {
+        case "/":
           pos.offset++;
           pos.column++;
-        }
-      case "\\":
-        end++;
-        pos.offset++;
-        pos.column++;
-        break;
+          while (end++ < len) {
+            if (!isLetter(input2[end])) {
+              return input2.substring(start - 1, end);
+            }
+            ;
+            pos.offset++;
+            pos.column++;
+          }
+          ;
+          ;
+          break;
+        case "\\":
+          end++;
+          pos.offset++;
+          pos.column++;
+          ;
+          break;
+      }
+      ;
     }
+    ;
   }
+  ;
   throw err(ctx, { pos }, "unterminated regex");
 };
 var readSymbol = (ctx, input2, len, pos) => {
-  let start = pos.offset;
-  let end;
-  for (end = start; end < len; end++) {
-    const c = input2[end];
-    if (symbolBreaker.includes(c) || whitespace.includes(c) || c === ";") {
-      break;
-    }
-    pos.offset++;
-    pos.column++;
-  }
-  return input2.substring(start, end);
-};
-var readEOL = (ctx, input2, len, pos) => {
-  let start = pos.offset;
-  let end;
-  for (end = start; end < len; end++) {
-    pos.offset++;
-    pos.column++;
-    if (input2[end] === "\n") {
-      pos.line++;
-      pos.column = 0;
-      break;
-    }
-  }
-  return input2.substring(start, end);
-};
-function* tokens(ctx, input2) {
-  let pos = { offset: 0, line: 0, column: 0 };
-  let len = input2.length;
-  let value, start;
-  while (pos.offset < len) {
-    let c = input2[pos.offset];
-    if (c === "\n") {
-      pos.line++;
-      pos.column = 0;
-      ctx.pos = { ...pos };
-      yield { kind: "newline", value: "\n", pos };
-      pos.offset++;
-      continue;
-    }
-    if (whitespace.includes(c)) {
+  {
+    let start = pos.offset;
+    for (let end = start; end < len; end++) {
+      {
+        let c = input2[end];
+        if (symbolBreaker.includes(c) || whitespace.includes(c) || c === ";") {
+          return input2.substring(start, end);
+        }
+        ;
+      }
+      ;
       pos.offset++;
       pos.column++;
-      continue;
     }
-    if (pos.offset === 0 && c === "#" && input2[1] === "!") {
-      readEOL(ctx, input2, len, pos);
-      continue;
-    }
-    if (single.includes(c)) {
-      if (c === "#" && input2[pos.offset + 1] === "/") {
-        pos.offset++;
-        pos.column++;
-        start = { ...pos };
-        value = readRegexp(ctx, input2, len, pos);
-        ctx.pos = { ...start };
-        yield { kind: "regexp", value, pos: start };
-      } else {
-        ctx.pos = { ...pos };
-        yield { kind: c, pos: { ...pos } };
-        pos.offset++;
-        pos.column++;
-      }
-      continue;
-    }
-    switch (c) {
-      case '"':
-        start = { ...pos };
-        value = readString(ctx, '"', input2, len, pos);
-        ctx.pos = { ...start };
-        yield { kind: "string", value, pos: start };
-        break;
-      case "`":
-        start = { ...pos };
-        value = readString(ctx, "`", input2, len, pos);
-        ctx.pos = { ...start };
-        yield { kind: "template", value, pos: start };
-        break;
-      case ";":
-        start = { ...pos };
-        value = readEOL(ctx, input2, len, pos);
-        ctx.pos = { ...start };
-        yield { kind: "comment", value, pos: start };
-        break;
-      default:
-        start = { ...pos };
-        value = readSymbol(ctx, input2, len, pos);
-        ctx.pos = { ...start };
-        yield { kind: "symbol", value, pos: start };
-        break;
-    }
+    ;
+    return input2.substring(start, len);
   }
-}
-var whitespaceOrComment = ({ kind }) => kind === "comment" || kind === "newline";
-var setKind = (o, kind, { pos }) => {
-  Object.defineProperty(o, "kind", {
-    value: kind,
-    enumerable: false
-  });
-  Object.defineProperty(o, "pos", {
-    value: pos,
-    enumerable: false
-  });
-  return o;
+  ;
 };
-function* astUntil(ctx, input2, kind) {
-  for (const token of input2) {
+var readEOL = (ctx, input2, len, pos) => {
+  {
+    let start = pos.offset;
+    for (let end = start; end < len; end++) {
+      pos.offset++;
+      pos.column++;
+      if (input2[end] === "\n") {
+        pos.line++;
+        pos.column = 0;
+        return input2.substring(start, end);
+      }
+      ;
+    }
+    ;
+    return input2.substring(start, len);
+  }
+  ;
+};
+var tokens = function* (ctx, input2) {
+  {
+    let pos = { offset: 0, line: 0, column: 0 };
+    let len = input2.length;
+    let value = null;
+    let start = null;
+    while (pos.offset < len) {
+      {
+        let c = input2[pos.offset];
+        if (c === "\n") {
+          pos.line++;
+          pos.column = 0;
+          ctx.pos = { ...pos };
+          yield { kind: "newline", value: "\n", pos };
+          pos.offset++;
+          continue;
+        }
+        ;
+        if (whitespace.includes(c)) {
+          pos.offset++;
+          pos.column++;
+          continue;
+        }
+        ;
+        if (pos.offset === 0 && c === "#" && input2[1] === "!") {
+          readEOL(ctx, input2, len, pos);
+          continue;
+        }
+        ;
+        if (single.includes(c)) {
+          if (c === "#" && input2[pos.offset + 1] === "/") {
+            pos.offset++;
+            pos.column++;
+            start = { ...pos };
+            value = readRegexp(ctx, input2, len, pos);
+            ctx.pos = { ...start };
+            yield { kind: "regexp", value, pos: start };
+          } else {
+            ctx.pos = { ...pos };
+            yield { kind: c, pos: { ...pos } };
+            pos.offset++;
+            pos.column++;
+          }
+          ;
+          continue;
+        }
+        ;
+        switch (c) {
+          case '"':
+            start = { ...pos };
+            value = readString(ctx, '"', input2, len, pos);
+            ctx.pos = { ...start };
+            yield { kind: "string", value, pos: start };
+            ;
+            break;
+          case "`":
+            start = { ...pos };
+            value = readString(ctx, "`", input2, len, pos);
+            ctx.pos = { ...start };
+            yield { kind: "template", value, pos: start };
+            ;
+            break;
+          case ";":
+            start = { ...pos };
+            value = readEOL(ctx, input2, len, pos);
+            ctx.pos = { ...start };
+            yield { kind: "comment", value, pos: start };
+            ;
+            break;
+          default:
+            start = { ...pos };
+            value = readSymbol(ctx, input2, len, pos);
+            ctx.pos = { ...start };
+            yield { kind: "symbol", value, pos: start };
+            ;
+            break;
+        }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+  ;
+};
+var whitespaceOrComment = ({ kind }) => {
+  return kind === "comment" || kind === "newline";
+};
+var setKind = (o, kind, { pos }) => {
+  {
+    let macro__2 = o;
+    Object.defineProperty(macro__2, "kind", { value: kind, enumerable: false });
+    Object.defineProperty(macro__2, "pos", { value: pos, enumerable: false });
+    return macro__2;
+  }
+  ;
+};
+var astUntil = function* (ctx, input2, kind) {
+  for (let token of input2) {
     if (whitespaceOrComment(token)) {
       continue;
     }
+    ;
     if (token.kind === kind) {
       return;
     }
+    ;
     yield astOne(ctx, prepend(token, input2));
   }
+  ;
   throw err(ctx, ctx, "unterminated form");
-}
-var astNeedOne = (ctx, input2) => {
-  const node = astOne(ctx, input2);
-  if (!node) {
-    throw err(ctx, ctx, "unterminated form");
-  }
-  return node;
 };
-var astShorthand = (ctx, token, special, input2) => setKind(
-  [
-    { kind: "symbol", pos: token.pos, value: special },
-    astNeedOne(ctx, input2)
-  ],
-  "list",
-  token
-);
-var astHash = (ctx, token, input2) => {
-  const node = astShorthand(ctx, token, "hash", input2);
-  if (node.length === 2 && node[1].kind === "symbol") {
-    return { kind: "symbol", value: "#" + node[1].value, pos: node.pos };
+var astNeedOne = (ctx, input2) => {
+  {
+    let macro__0 = astOne(ctx, input2);
+    if (macro__0) {
+      {
+        let node = macro__0;
+        return node;
+      }
+    } else {
+      throw err(ctx, ctx, "unterminated form");
+    }
+    ;
   }
-  return node;
+  ;
+};
+var astShorthand = (ctx, token, special, input2) => {
+  return setKind([{ kind: "symbol", pos: token.pos, value: special }, astNeedOne(ctx, input2)], "list", token);
+};
+var astHash = (ctx, token, input2) => {
+  {
+    let node = astShorthand(ctx, token, "hash", input2);
+    if (node.length === 2 && node[1].kind === "symbol") {
+      return { kind: "symbol", value: "#" + node[1].value, pos: node.pos };
+    } else {
+      return node;
+    }
+    ;
+  }
+  ;
 };
 var astOne = (ctx, input2) => {
   while (true) {
-    const { value, done } = input2.next();
-    if (done) {
-      return;
+    {
+      let { value, done } = input2.next();
+      if (done) {
+        return;
+      }
+      ;
+      switch (value.kind) {
+        case "newline":
+        case "comment":
+          continue;
+          break;
+        case "string":
+        case "template":
+        case "regexp":
+        case "symbol":
+          return value;
+          break;
+        case "(":
+          return setKind([...astUntil(ctx, input2, ")")], "list", value);
+          break;
+        case "[":
+          return setKind([...astUntil(ctx, input2, "]")], "array", value);
+          break;
+        case "{":
+          return setKind([...astUntil(ctx, input2, "}")], "object", value);
+          break;
+        case "'":
+          return astShorthand(ctx, value, "quote", input2);
+          break;
+        case ",":
+          return astShorthand(ctx, value, "unquote", input2);
+          break;
+        case "@":
+          return astShorthand(ctx, value, "await", input2);
+          break;
+        case "#":
+          return astHash(ctx, value, input2);
+          break;
+        case ":":
+          {
+            let sym = astNeedOne(ctx, input2);
+            if (sym.kind !== "symbol") {
+              throw err(ctx, value, "invalid keyword");
+            }
+            ;
+            sym.kind = "string";
+            sym.pos = value.pos;
+            return sym;
+          }
+          ;
+          break;
+        default:
+          throw err(ctx, value, `unknown token ${value.kind}`);
+          break;
+      }
+      ;
     }
-    switch (value.kind) {
-      default:
-        throw err(ctx, value, `unknown token ${value.kind}`);
-      case "newline":
-      case "comment":
-        continue;
-      case "string":
-      case "template":
-      case "regexp":
-      case "symbol":
-        return value;
-      case "(":
-        return setKind([...astUntil(ctx, input2, ")")], "list", value);
-      case "[":
-        return setKind([...astUntil(ctx, input2, "]")], "array", value);
-      case "{":
-        return setKind([...astUntil(ctx, input2, "}")], "object", value);
-      case "'":
-        return astShorthand(ctx, value, "quote", input2);
-      case ",":
-        return astShorthand(ctx, value, "unquote", input2);
-      case "@":
-        return astShorthand(ctx, value, "await", input2);
-      case "#":
-        return astHash(ctx, value, input2);
-      case ":":
-        const sym = astNeedOne(ctx, input2);
-        if (sym.kind !== "symbol") {
-          throw err(ctx, value, "invalid keyword");
-        }
-        sym.kind = "string";
-        sym.pos = value.pos;
-        return sym;
-    }
+    ;
   }
+  ;
 };
 var uninterrupt = (it) => {
-  return {
-    next() {
-      return it.next();
-    },
-    [Symbol.iterator]() {
-      return this;
-    }
-  };
+  return { next: () => {
+    return it.next();
+  }, [Symbol.iterator]: function() {
+    return this;
+  } };
 };
-var prepend = (one, rest) => uninterrupt(
-  function* () {
+var prepend = (one, rest) => {
+  return uninterrupt(function* () {
     yield one;
-    yield* rest;
-  }()
-);
+    return yield* rest;
+  }());
+};
 var evExpr = "evExpr";
 var evStat = "evStat";
 var hoister = (ctx) => {
   const collected = [];
+  ;
   const hoist = (transpile2, node, givenAssign) => {
-    const sym = [...transpileNodeSymbol(ctx, ctx.gensym("hoist"))];
-    const assign = [...sym, "="];
-    collected.push(
-      "let ",
-      ...sym,
-      ";",
-      ...transpile2(ctx, node, assign, hoist, evStat),
-      ";"
-    );
-    return [...transpileSpecialAssign(ctx, givenAssign), ...sym];
+    {
+      let sym = [...transpileNodeSymbol(ctx, ctx.gensym("hoist"))];
+      let assign = [...sym, "="];
+      collected.push("let ", ...sym, ";", ...transpile2(ctx, node, assign, hoist, evStat), ";");
+      return [...transpileSpecialAssign(ctx, givenAssign), ...sym];
+    }
+    ;
   };
   return [hoist, collected];
 };
-var hoistable = (transpile2) => function* transpileHoistable(ctx, node, assign, _hoist, evKind) {
-  const [hoist, hoisted] = hoister(ctx);
-  const postHoist = [...transpile2(ctx, node, assign, hoist, evKind)];
-  yield* hoisted;
-  yield* postHoist;
+var hoistable = (transpile2) => {
+  return function* (ctx, node, assign, _hoist, evKind) {
+    {
+      let [hoist, hoisted] = hoister(ctx);
+      let postHoist = [...transpile2(ctx, node, assign, hoist, evKind)];
+      yield* hoisted;
+      return yield* postHoist;
+    }
+    ;
+  };
 };
 var splitter = (s) => {
   let first = true;
   return () => {
-    while (true) {
-      if (first) {
-        first = false;
-        return "";
-      } else {
-        return s;
-      }
+    if (first) {
+      first = false;
+      return "";
+    } else {
+      return s;
     }
+    ;
   };
 };
-var isValidIdentifier = (s) => s.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
-var canLiteralIdentifier = (node) => node.kind === "string" && isValidIdentifier(node.value);
-function* transpileNodeObject(ctx, node, hoist) {
+var isValidIdentifier = (s) => {
+  return s.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
+};
+var canLiteralIdentifier = (node) => {
+  return node.kind === "string" && isValidIdentifier(node.value);
+};
+var transpileNodeObject = function* (ctx, node, hoist) {
   yield ["{", node];
-  for (let i = 0; i < node.length; i += 1) {
+  for (let i = 0; i < node.length; i++) {
     if (node[i].kind === "symbol" && node[i].value.startsWith("...")) {
       yield* transpileNodeSymbol(ctx, node[i]);
-    } else if (
-      // (... (foo :bar))
-      node[i].kind === "list" && node[i][0].kind === "symbol" && node[i][0].value === "..."
-    ) {
+    } else if (node[i].kind === "list" && node[i][0].kind === "symbol" && node[i][0].value === "...") {
       yield "...";
       yield* transpileNodeExpr(ctx, node[i][1], null, hoist, evExpr);
     } else {
@@ -1331,549 +1401,663 @@ function* transpileNodeObject(ctx, node, hoist) {
         yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
         yield "]";
       }
+      ;
       yield ":";
       yield* transpileNodeExpr(ctx, node[i + 1], null, hoist, evExpr);
       i++;
     }
+    ;
     yield ",";
   }
-  yield "}";
-}
-function* transpileNodeArray(ctx, node, hoist) {
+  ;
+  return yield "}";
+};
+var transpileNodeArray = function* (ctx, node, hoist) {
   yield ["[", node];
-  for (const i of node) {
+  for (let i of node) {
     yield* transpileNodeExpr(ctx, i, null, hoist, evExpr);
     yield ",";
   }
-  yield "]";
-}
-function* transpileNodeString(ctx, token) {
+  ;
+  return yield "]";
+};
+var transpileNodeString = function* (ctx, token) {
   yield ['"', token];
   yield token.value;
-  yield '"';
-}
+  return yield '"';
+};
 var exprStart = "${";
 var exprEnd = "}";
 var templateExprStart = (template, position) => {
-  let index = template.indexOf(exprStart, position);
-  if (index === -1) {
-    return -1;
+  {
+    let index = template.indexOf(exprStart, position);
+    if (index === -1) {
+      return -1;
+    } else if (index === 0) {
+      return exprStart.length;
+    } else if (template[index - 1] === "\\") {
+      return templateExprStart(template, index);
+    } else {
+      return index + exprStart.length;
+    }
+    ;
   }
-  if (index === 0) {
-    return exprStart.length;
-  }
-  if (template[index - 1] === "\\") {
-    return templateExprStart(template, index);
-  }
-  return index + exprStart.length;
+  ;
 };
-function* transpileNodeTemplate(ctx, token, hoist) {
+var transpileNodeTemplate = function* (ctx, token, hoist) {
   yield ["`", token];
-  let last = 0;
-  let start = templateExprStart(token.value);
-  while (start !== -1) {
-    yield [token.value.slice(last, start), token];
-    last = token.value.indexOf(exprEnd, start);
-    if (last === -1) {
-      throw err(ctx, token, "invalid template literal");
+  {
+    let last = 0;
+    let start = templateExprStart(token.value);
+    while (start != -1) {
+      yield [token.value.slice(last, start), token];
+      last = token.value.indexOf(exprEnd, start);
+      if (last === -1) {
+        throw err(ctx, token, "invalid template literal");
+      }
+      ;
+      yield* transpileCtx(token.value.slice(start, last), ctx, false);
+      start = templateExprStart(token.value, start);
     }
-    yield* transpileCtx(token.value.slice(start, last), ctx, false);
-    start = templateExprStart(token.value, start);
+    ;
+    yield [token.value.slice(last), token];
+    return yield "`";
   }
-  yield [token.value.slice(last), token];
-  yield "`";
-}
-function* transpileNodeRegExp(ctx, token) {
-  yield token.value;
-}
-var mangleChars = {
-  "!": "_BANG_",
-  "?": "_QMARK_",
-  "*": "_STAR_",
-  "+": "_PLUS_",
-  ">": "_GT_",
-  "<": "_LT_",
-  "=": "_EQ_",
-  "-": "_DASH_"
+  ;
 };
-var mangleSym = (sym, autoThis = true) => {
-  let first = sym[0];
-  if (first === "-") {
-    return sym;
-  }
-  if (first === ".") {
-    first = sym.at(1);
-  }
-  if (first >= "0" && first <= "9") {
-    return sym;
-  }
-  const parts = [];
-  let start = 0;
-  if (autoThis && sym.startsWith("...#")) {
-    parts.push("...this.#");
-    start = 4;
-  }
-  for (let end = 0; end < sym.length; end++) {
-    const c = sym[end];
-    if (autoThis && end === 0 && c === "#") {
-      parts.push("this.");
-    }
-    const found = mangleChars[c];
-    if (found && (c !== "?" || sym[end + 1] !== ".")) {
-      parts.push(sym.slice(start, end), found);
-      start = end + 1;
-    }
-  }
-  if (parts.length === 0) {
-    return sym;
-  }
-  parts.push(sym.slice(start, sym.length));
-  return parts.join("");
+var transpileNodeRegExp = function* (ctx, token) {
+  return yield token.value;
 };
-function* transpileNodeSymbol(ctx, token) {
-  yield [mangleSym(token.value), token];
-}
-function* transpileSpecialAssign(ctx, assign) {
+var mangleChars = { ["!"]: "_BANG_", ["?"]: "_QMARK_", ["*"]: "_STAR_", ["+"]: "_PLUS_", [">"]: "_GT_", ["<"]: "_LT_", ["="]: "_EQ_", ["-"]: "_DASH_" };
+var mangleSym = (sym, autoThis) => {
+  autoThis ??= true;
+  {
+    let first = sym[0];
+    if (first === "-") {
+      return sym;
+    }
+    ;
+    if (first === ".") {
+      first = sym.at(1);
+    }
+    ;
+    if (first >= "0" && first <= "9") {
+      return sym;
+    }
+    ;
+  }
+  ;
+  {
+    let parts = [];
+    let start = 0;
+    if (autoThis && sym.startsWith("...#")) {
+      parts.push("...this.#");
+      start = 4;
+    }
+    ;
+    for (let end = 0; end < sym.length; end++) {
+      {
+        let c = sym[end];
+        if (autoThis && end === 0 && c === "#") {
+          parts.push("this.");
+        }
+        ;
+        {
+          let macro__1 = mangleChars[c];
+          if (macro__1) {
+            {
+              let found = macro__1;
+              if (found && (c !== "?" || sym[end + 1] !== ".")) {
+                parts.push(sym.slice(start, end), found);
+                start = end + 1;
+              }
+              ;
+            }
+          }
+          ;
+        }
+        ;
+      }
+      ;
+    }
+    ;
+    if (parts.length === 0) {
+      return sym;
+    } else {
+      parts.push(sym.slice(start, sym.length));
+      return parts.join("");
+    }
+    ;
+  }
+  ;
+};
+var transpileNodeSymbol = function* (ctx, token) {
+  return yield [mangleSym(token.value), token];
+};
+var transpileSpecialAssign = function* (ctx, assign) {
   if (assign) {
     if (typeof assign === "string") {
-      yield assign;
+      return yield assign;
     } else {
-      yield* assign;
+      return yield* assign;
     }
+    ;
   }
-}
-function* transpileNodeUnknown(ctx, node, assign, hoist, evExpr2) {
+  ;
+};
+var transpileNodeUnknown = function* (ctx, node, assign, hoist, evExpr2) {
   if (node.kind === "list") {
-    yield* transpileNodeList(ctx, node, assign, hoist, evExpr2);
-    return;
+    return yield* transpileNodeList(ctx, node, assign, hoist, evExpr2);
+  } else {
+    yield* transpileSpecialAssign(ctx, assign);
+    switch (node.kind) {
+      case "object":
+        return yield* transpileNodeObject(ctx, node, hoist);
+      case "array":
+        return yield* transpileNodeArray(ctx, node, hoist);
+      case "regexp":
+        return yield* transpileNodeRegExp(ctx, node);
+      case "string":
+        return yield* transpileNodeString(ctx, node);
+      case "template":
+        return yield* transpileNodeTemplate(ctx, node, hoist);
+      case "symbol":
+        return yield* transpileNodeSymbol(ctx, node);
+      default:
+        throw err(ctx, node, `unhandled node "${node.kind}"`);
+    }
+    ;
   }
-  yield* transpileSpecialAssign(ctx, assign);
-  switch (node.kind) {
-    case "object":
-      yield* transpileNodeObject(ctx, node, hoist);
-      break;
-    case "array":
-      yield* transpileNodeArray(ctx, node, hoist);
-      break;
-    case "regexp":
-      yield* transpileNodeRegExp(ctx, node);
-      break;
-    case "string":
-      yield* transpileNodeString(ctx, node);
-      break;
-    case "template":
-      yield* transpileNodeTemplate(ctx, node, hoist);
-      break;
-    case "symbol":
-      yield* transpileNodeSymbol(ctx, node);
-      break;
-    default:
-      throw err(ctx, node, `unhandled node "${node.kind}"`);
-  }
-}
+  ;
+};
 var transpileNodeExpr = transpileNodeUnknown;
 var transpileNodeStatement = hoistable(transpileNodeUnknown);
-function* transpileBuiltinImportOne(ctx, node) {
-  let defaultName;
-  let asName;
-  const inner = [];
-  for (let i = 1; i < node.length; i++) {
-    const c = node[i];
-    switch (c.kind) {
-      default:
-        throw err(ctx, c, "unexpected import");
-      case "array":
-        for (const name of c) {
-          inner.push(mangleSym(name.value));
+var transpileBuiltinImportOne = function* (ctx, node) {
+  {
+    let defaultName = null;
+    let asName = null;
+    let inner = [];
+    let needFrom = false;
+    let comma = splitter(",");
+    for (let i = 1; i < node.length; i++) {
+      {
+        let c = node[i];
+        switch (c.kind) {
+          case "array":
+            for (let name of c) {
+              inner.push(mangleSym(name.value));
+            }
+            ;
+            break;
+          case "symbol":
+            defaultName = c;
+            break;
+          case "string":
+            if (c.value !== "as") {
+              throw err(ctx, c, `unexpected import string "${c.value}"`);
+            }
+            ;
+            i++;
+            asName = node[i];
+            ;
+            break;
+          case "object":
+            for (let i2 = 0; i2 < c.length; i2 += 2) {
+              inner.push(`${mangleSym(c[i2].value)} as ${mangleSym(c[i2 + 1].value)}`);
+            }
+            ;
+            break;
+          default:
+            throw err(ctx, c, "unexpected import");
+            break;
         }
-        break;
-      case "symbol":
-        defaultName = c;
-        break;
-      case "string":
-        if (c.value !== "as") {
-          throw err(ctx, c, `unexpected import string "${c.value}"`);
-        }
-        asName = node[++i];
-        break;
-      case "object":
-        for (let i2 = 0; i2 < c.length; i2 += 2) {
-          inner.push(mangleSym(c[i2].value) + " as " + mangleSym(c[i2 + 1].value));
-        }
-        break;
+        ;
+      }
+      ;
     }
+    ;
+    yield ["import ", node];
+    if (defaultName) {
+      needFrom = true;
+      yield comma();
+      yield* transpileNodeSymbol(ctx, defaultName);
+    }
+    ;
+    if (inner.length > 0) {
+      needFrom = true;
+      yield comma();
+      yield "{";
+      yield inner.join(",");
+      yield "}";
+    }
+    ;
+    if (asName) {
+      needFrom = true;
+      yield comma();
+      yield ["* as ", asName];
+      yield* transpileNodeSymbol(ctx, asName);
+    }
+    ;
+    if (needFrom) {
+      yield " from ";
+    }
+    ;
+    yield* transpileNodeString(ctx, node[0]);
+    return yield ";";
   }
-  yield ["import ", node];
-  let needFrom = false;
-  const comma = splitter(",");
-  if (defaultName) {
-    needFrom = true;
-    yield comma();
-    yield* transpileNodeSymbol(ctx, defaultName);
+  ;
+};
+var transpileBuiltinImport = function* (ctx, node, assign, hoist, evExpr2) {
+  if (node[1].kind === "array") {
+    for (let i = 1; i < node.length; i++) {
+      yield* transpileBuiltinImportOne(ctx, node[i]);
+    }
+  } else {
+    return yield* transpileSpecialCall(ctx, node, assign, hoist, evExpr2);
   }
-  if (inner.length !== 0) {
-    needFrom = true;
-    yield comma();
-    yield "{";
-    yield inner.join(",");
-    yield "}";
-  }
-  if (asName) {
-    needFrom = true;
-    yield comma();
-    yield ["* as ", asName];
-    yield* transpileNodeSymbol(ctx, asName);
-  }
-  if (needFrom) {
-    yield " from ";
-  }
-  yield* transpileNodeString(ctx, node[0]);
-  yield ";";
-}
-function* transpileBuiltinImport(ctx, node, assign, hoist, evExpr2) {
-  if (node[1].kind !== "array") {
-    yield* transpileSpecialCall(ctx, node, assign, hoist, evExpr2);
-    return;
-  }
-  for (let i = 1; i < node.length; i++) {
-    yield* transpileBuiltinImportOne(ctx, node[i]);
-  }
-}
-function exportDefault(ctx, node) {
-  if (node[1]?.value !== "^:export") {
+  ;
+};
+var exportDefault = (ctx, node) => {
+  if (node?.[1]?.value === "^:export") {
+    {
+      let prefix = [["export ", node[1]]];
+      let index = 2;
+      if (node?.[2]?.value === "^:default") {
+        prefix.push(["default ", node[2]]);
+        index++;
+      }
+      ;
+      return [prefix, index];
+    }
+  } else {
     return [[], 1];
   }
-  const prefix = [["export ", node[1]]];
-  let index = 2;
-  if (node[2]?.value === "^:default") {
-    prefix.push(["default ", node[2]]);
-    index++;
+  ;
+};
+var transpileBuiltinConst = hoistable(function* (ctx, node, assign, hoist) {
+  {
+    let [prefix, symIndex] = exportDefault(ctx, node);
+    yield* prefix;
+    yield [node[0].value, node[0]];
+    yield " ";
+    yield* transpileSpecialDestructure(ctx, node[symIndex]);
+    yield "=";
+    yield* transpileNodeExpr(ctx, node[symIndex + 1], null, hoist, evExpr);
+    return yield ";";
   }
-  return [prefix, index];
-}
-var transpileBuiltinConst = hoistable(function* transpileBuiltinConst2(ctx, node, assign, hoist) {
-  let [prefix, symIndex] = exportDefault(ctx, node);
-  yield* prefix;
-  yield [node[0].value, node[0]];
-  yield " ";
-  yield* transpileSpecialDestructure(ctx, node[symIndex]);
-  yield "=";
-  yield* transpileNodeExpr(ctx, node[symIndex + 1], null, hoist, evExpr);
-  yield ";";
+  ;
 });
-function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
-  let [prefix, symIndex] = exportDefault(ctx, node);
-  yield* prefix;
-  const [hoist, hoisted] = hoister(ctx);
-  const assign = [...transpileSpecialDestructure(ctx, node[symIndex]), "="];
-  const postHoist = [
-    ...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr)
-  ];
-  yield [node[0].value, node[0]];
-  yield " ";
-  if (hoisted.length !== 0 || postHoist[0] != assign[0]) {
-    yield* transpileNodeSymbol(ctx, node[symIndex]);
-    yield ";";
-    yield* hoisted;
-  }
-  yield* postHoist;
-}
-var transpileSpecialBody = hoistable(function* transpileSpecialBody2(ctx, node, assign, hoist) {
-  for (let i = 0; i < node.length; i++) {
-    let a;
-    if (i === node.length - 1) {
-      a = assign;
+var transpileBuiltinDef = function* (ctx, node, _assign, _hoist) {
+  {
+    let [prefix, symIndex] = exportDefault(ctx, node);
+    let [hoist, hoisted] = hoister(ctx);
+    let assign = [...transpileSpecialDestructure(ctx, node[symIndex]), "="];
+    let postHoist = [...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr)];
+    yield* prefix;
+    yield [node[0].value, node[0]];
+    yield " ";
+    if (hoisted.length > 0 || postHoist[0] !== assign[0]) {
+      yield* transpileNodeSymbol(ctx, node[symIndex]);
+      yield ";";
+      yield* hoisted;
     }
-    yield* transpileNodeStatement(ctx, node[i], a, hoist, evStat);
-    yield ";";
+    ;
+    return yield* postHoist;
   }
+  ;
+};
+var transpileSpecialBody = hoistable(function* (ctx, node, assign, hoist) {
+  for (let i = 0; i < node.length; i++) {
+    {
+      let a = null;
+      if (i === node.length - 1) {
+        a = assign;
+      }
+      ;
+      yield* transpileNodeStatement(ctx, node[i], a, hoist, evStat);
+      yield ";";
+    }
+    ;
+  }
+  ;
 });
-function* transpileBuiltinDo(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialBody(ctx, node.slice(1), assign, hoist, evKind);
-}
-function* transpileSpecialDestructure(ctx, node) {
+var transpileBuiltinDo = function* (ctx, node, assign, hoist, evKind) {
+  return yield* transpileSpecialBody(ctx, node.slice(1), assign, hoist, evKind);
+};
+var transpileSpecialDestructure = function* (ctx, node) {
   switch (node.kind) {
-    default:
-      throw err(ctx, node, `unexpected destructure "${node.kind}"`);
     case "symbol":
       ctx.bindings.add(node.name);
-      yield* transpileNodeSymbol(ctx, node);
-      break;
+      return yield* transpileNodeSymbol(ctx, node);
+      ;
     case "array":
       yield ["[", node];
-      for (const inner of node) {
+      for (let inner of node) {
         yield* transpileSpecialDestructure(ctx, inner);
         yield ",";
       }
-      yield "]";
-      break;
+      ;
+      return yield "]";
+      ;
     case "object":
-      const keys = [];
-      const rename = {};
-      const or = {};
-      for (let i = 0; i < node.length; i += 2) {
-        let key = node[i];
-        let value = node[i + 1];
-        if (key.kind === "symbol") {
-          rename[key.value] = value.value;
-          if (!keys.includes(key.value)) {
-            keys.push(key.value);
-          }
-          continue;
-        }
-        switch (key.value) {
-          default:
-            throw err(
-              ctx,
-              node[i],
-              `unexpected destructuring map op "${key.value}"`
-            );
-          case "keys":
-            for (const inner of value) {
-              keys.push(inner.value);
-            }
-            break;
-          case "or":
-            for (let j = 0; j < value.length; j += 2) {
-              or[value[j].value] = [...transpileNodeUnknown(ctx, value[j + 1])];
-              if (!keys.includes(value[j].value)) {
-                keys.push(value[j].value);
+      {
+        let keys = [];
+        let rename = {};
+        let or = {};
+        let comma = splitter(",");
+        for (let i = 0; i < node.length; i += 2) {
+          {
+            let key = node[i];
+            let value = node[i + 1];
+            if (key.kind === "symbol") {
+              rename[key.value] = value.value;
+              if (!keys.includes(key.value)) {
+                keys.push(key.value);
               }
+              ;
+              continue;
             }
-            break;
+            ;
+            switch (key.value) {
+              case "keys":
+                for (let inner of value) {
+                  keys.push(inner.value);
+                }
+                ;
+                break;
+              case "or":
+                for (let j = 0; j < value.length; j += 2) {
+                  or[value[j].value] = [...transpileNodeUnknown(ctx, value[j + 1])];
+                  if (!keys.includes(value[j].value)) {
+                    keys.push(value[j].value);
+                  }
+                  ;
+                }
+                ;
+                break;
+              default:
+                throw err(ctx, node[i], `unexpected destructuring map op "${key.value}"`);
+                break;
+            }
+            ;
+          }
+          ;
         }
+        ;
+        yield "{";
+        for (let key of keys) {
+          yield comma();
+          yield mangleSym(key);
+          if (Object.hasOwn(rename, key)) {
+            yield ":";
+            yield mangleSym(rename[key]);
+            ctx.bindings.add(rename[key]);
+          } else {
+            ctx.bindings.add(key);
+          }
+          ;
+          if (Object.hasOwn(or, key)) {
+            yield "=";
+            yield* or[key];
+          }
+          ;
+        }
+        ;
+        return yield "}";
       }
-      yield "{";
-      const comma = splitter(",");
-      for (const key of keys) {
-        yield comma();
-        yield mangleSym(key);
-        if (Object.hasOwn(rename, key)) {
-          yield ":";
-          yield mangleSym(rename[key]);
-          ctx.bindings.add(rename[key]);
-        } else {
-          ctx.bindings.add(key);
-        }
-        if (Object.hasOwn(or, key)) {
-          yield "=";
-          yield* or[key];
-        }
-      }
-      yield "}";
-      break;
+      ;
+    default:
+      throw err(ctx, node, `unexpected destructure "${node.kind}"`);
   }
-}
-function* transpileSpecialFnArgs(ctx, node) {
-  const comma = splitter(",");
-  yield "(";
-  for (const i of node) {
-    yield comma();
-    yield* transpileSpecialDestructure(ctx, i);
-  }
-  yield ")";
-}
-var makeFnTranspiler = (preArgs, postArgs) => function* transpileBuiltinFn(ctx, node, assign, _hoist, evKind) {
-  let pre = preArgs;
-  let post = postArgs;
-  let [prefix, index] = exportDefault(ctx, node);
-  yield* transpileSpecialAssign(ctx, assign);
-  yield* prefix;
-  let decl = false;
-  if (node[index].value === "^:decl") {
-    decl = true;
-    pre = "";
-    post = "";
-    index++;
-  }
-  let named = node[index].kind === "symbol";
-  let wrapped = evKind === evExpr || !named;
-  if (wrapped) {
+  ;
+};
+var transpileSpecialFnArgs = function* (ctx, node) {
+  {
+    let comma = splitter(",");
     yield "(";
-  }
-  if (decl) {
-    if (preArgs === "") {
-      yield ["function", node];
-    } else if (preArgs === "async") {
-      yield ["async function", node];
+    for (let i of node) {
+      yield comma();
+      yield* transpileSpecialDestructure(ctx, i);
     }
+    ;
+    return yield ")";
   }
-  if (named) {
-    if (decl) {
-      yield " ";
-      yield* transpileNodeSymbol(ctx, node[index]);
-    } else {
-      yield ["const ", node];
-      yield* transpileNodeSymbol(ctx, node[index]);
-      yield "=";
+  ;
+};
+var makeFnTranspiler = (preArgs, postArgs) => {
+  return function* (ctx, node, assign, _hoist, evKind) {
+    {
+      let pre = preArgs;
+      let post = postArgs;
+      let [prefix, index] = exportDefault(ctx, node);
+      let decl = false;
+      yield* transpileSpecialAssign(ctx, assign);
+      yield* prefix;
+      if (node[index].value === "^:decl") {
+        decl = true;
+        pre = "";
+        post = "";
+        index++;
+      }
+      ;
+      {
+        let named = node[index].kind === "symbol";
+        let wrapped = evKind === evExpr || !named;
+        if (wrapped) {
+          yield "(";
+        }
+        ;
+        if (decl) {
+          if (preArgs === "") {
+            yield ["function", node];
+          } else if (preArgs === "async") {
+            yield ["async function", node];
+          }
+          ;
+        }
+        ;
+        if (named) {
+          if (decl) {
+            yield " ";
+            yield* transpileNodeSymbol(ctx, node[index]);
+          } else {
+            yield ["const ", node];
+            yield* transpileNodeSymbol(ctx, node[index]);
+            yield "=";
+          }
+          ;
+          ctx.bindings.add(node[index].value);
+          index++;
+        }
+        ;
+        yield pre;
+        yield* transpileSpecialFnArgs(ctx, node[index]);
+        yield post;
+        yield "{";
+        yield* transpileSpecialBody(ctx, node.slice(index + 1), "return ", null, evStat);
+        yield "}";
+        if (wrapped) {
+          return yield ")";
+        }
+        ;
+      }
+      ;
     }
-    ctx.bindings.add(node[index].value);
-    index++;
-  }
-  yield pre;
-  yield* transpileSpecialFnArgs(ctx, node[index]);
-  yield post;
-  yield "{";
-  yield* transpileSpecialBody(
-    ctx,
-    node.slice(index + 1),
-    "return ",
-    null,
-    evStat
-  );
-  yield "}";
-  if (wrapped) {
-    yield ")";
-  }
+    ;
+  };
 };
 var transpileBuiltinFnArrow = makeFnTranspiler("", "=>");
 var transpileBuiltinFnArrowAsync = makeFnTranspiler("async", "=>");
 var transpileBuiltinFnGenerator = makeFnTranspiler("function*", "");
 var transpileBuiltinFnAsyncGenerator = makeFnTranspiler("async function*", "");
-var makeOpTranspiler = (op, unary = false) => function* transpileBuiltinOp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  yield "(";
-  if (unary && node.length === 2) {
+var makeOpTranspiler = (op, unary) => {
+  return function* (ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign);
+    yield "(";
+    if (unary && node.length === 2) {
+      yield op;
+    }
+    ;
+    {
+      let sp = splitter(op);
+      for (let i = 1; i < node.length; i++) {
+        yield sp();
+        yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
+      }
+      ;
+    }
+    ;
+    return yield ")";
+  };
+};
+var makePrefixOpTranspiler = (op) => {
+  return function* (ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign);
+    yield "(";
     yield op;
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+    return yield ")";
+  };
+};
+var makeSuffixOpTranspiler = (op) => {
+  return function* (ctx, node, assign, hoist, _evKind) {
+    yield* transpileSpecialAssign(ctx, assign);
+    yield "(";
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+    yield op;
+    return yield ")";
+  };
+};
+var cmpRemap = { ["="]: "===", ["not="]: "!==" };
+var transpileBuiltinCmp = function* (ctx, node, assign, hoist, _evKind) {
+  yield* transpileSpecialAssign(ctx, assign);
+  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+  {
+    let op = node[0].value;
+    yield [cmpRemap[op] ?? op, node[0]];
   }
-  const sp = splitter(op);
-  for (let i = 1; i < node.length; i++) {
-    yield sp();
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
-  }
-  yield ")";
+  ;
+  return yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr);
 };
-var makePrefixOpTranspiler = (op) => function* transpileBuiltinPrefixOp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  yield "(";
-  yield op;
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-  yield ")";
-};
-var makeSuffixOpTranspiler = (op) => function* transpileBuiltinSuffixOp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  yield "(";
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-  yield op;
-  yield ")";
-};
-var cmpRemap = {
-  "=": "===",
-  "not=": "!=="
-};
-function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign);
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-  const op = node[0].value;
-  yield [cmpRemap[op] ?? op, node[0]];
-  yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr);
-}
-function* transpileBuiltinLet(ctx, node, assign, hoist, evKind) {
+var transpileBuiltinLet = function* (ctx, node, assign, hoist, evKind) {
   if (node[1].kind === "array") {
-    yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind);
-    return;
+    return yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind);
+  } else {
+    return yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind);
   }
-  yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind);
-}
-function* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinLetMulti = function* (ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
     yield* hoist(transpileBuiltinLetMulti, node, assign);
     return;
   }
+  ;
   ctx.bindings.push();
   yield "{";
   for (let i = 0; i < node[1].length; i += 2) {
-    const binding = node[1][i];
-    let sym;
-    if (binding.kind === "symbol") {
-      ctx.bindings.add(binding.value);
-      sym = [...transpileNodeSymbol(ctx, binding)];
-    } else {
-      sym = [...transpileNodeSymbol(ctx, ctx.gensym("let_multi"))];
-    }
-    const assign2 = [...sym, "="];
-    const one = [
-      ...transpileNodeStatement(ctx, node[1][i + 1], assign2, hoist, evStat)
-    ];
-    if (one[0] === assign2[0]) {
-      if (binding.kind !== "symbol") {
-        yield ["let ", node];
-        yield* transpileSpecialDestructure(ctx, binding);
-        yield "=";
-        yield* one.slice(2);
+    {
+      let binding = node[1][i];
+      let sym = null;
+      if (binding.kind === "symbol") {
+        ctx.bindings.add(binding.value);
+        sym = [...transpileNodeSymbol(ctx, binding)];
       } else {
-        yield ["let ", node];
-        yield* one;
+        sym = [...transpileNodeSymbol(ctx, ctx.gensym("let_multi"))];
       }
-      yield ";";
-      continue;
+      ;
+      {
+        let assign2 = [...sym, "="];
+        let one = [...transpileNodeStatement(ctx, node[1][i + 1], assign2, hoist, evStat)];
+        if (one[0] === assign2[0]) {
+          if (binding.kind !== "symbol") {
+            yield ["let ", node];
+            yield* transpileSpecialDestructure(ctx, binding);
+            yield "=";
+            yield* one.slice(2);
+          } else {
+            yield ["let ", node];
+            yield* one;
+          }
+          ;
+          yield ";";
+          continue;
+        }
+        ;
+        yield "let ";
+        yield* sym;
+        yield ";";
+        yield* one;
+        yield ";";
+        if (binding.kind !== "symbol") {
+          yield "let ";
+          yield* transpileSpecialDestructure(ctx, binding);
+          yield "=";
+          yield* sym;
+          yield ";";
+        }
+        ;
+      }
+      ;
     }
-    yield "let ";
-    yield* sym;
-    yield ";";
-    yield* one;
-    yield ";";
-    if (binding.kind !== "symbol") {
-      yield "let ";
-      yield* transpileSpecialDestructure(ctx, binding);
-      yield "=";
-      yield* sym;
-      yield ";";
-    }
+    ;
   }
+  ;
   yield* transpileSpecialBody(ctx, node.slice(2), assign, hoist, evStat);
   yield "}";
-  ctx.bindings.pop();
-}
-function* transpileBuiltinKeywordExpr(ctx, node, assign, hoist, evKind) {
+  return ctx.bindings.pop();
+};
+var transpileBuiltinKeywordExpr = function* (ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign);
   if (evKind === evExpr) {
     yield "(";
   }
+  ;
   yield node[0].value;
   if (node.length !== 1) {
     yield " ";
     yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
   }
+  ;
   if (evKind === evExpr) {
-    yield ")";
+    return yield ")";
   }
-}
-function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist, _evKind) {
+  ;
+};
+var transpileBuiltinKeywordStatement = function* (ctx, node, _assign, hoist, _evKind) {
   if (node.length === 1) {
-    yield node[0].value;
+    return yield node[0].value;
   } else {
-    yield* transpileNodeStatement(
-      ctx,
-      node[1],
-      [node[0].value, " "],
-      hoist,
-      evStat
-    );
+    return yield* transpileNodeStatement(ctx, node[1], [node[0].value, " "], hoist, evStat);
   }
-}
-function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
-  const binding = node[1];
-  yield "for(let ";
-  yield* transpileNodeSymbol(ctx, binding[0]);
-  yield "=";
-  yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr);
-  yield ";";
-  yield* transpileNodeSymbol(ctx, binding[0]);
-  yield "<";
-  yield* transpileNodeExpr(ctx, binding[2], null, hoist, evExpr);
-  yield ";";
-  yield* transpileNodeSymbol(ctx, binding[0]);
-  if (binding.length === 3) {
-    yield "++";
-  } else {
-    yield "+=";
-    yield* transpileNodeExpr(ctx, binding[3], null, hoist, evExpr);
+  ;
+};
+var transpileBuiltinFor = function* (ctx, node, _assign, hoist, _evKind) {
+  {
+    let binding = node[1];
+    yield "for(let ";
+    yield* transpileNodeSymbol(ctx, binding[0]);
+    yield "=";
+    yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr);
+    yield ";";
+    yield* transpileNodeSymbol(ctx, binding[0]);
+    yield "<";
+    yield* transpileNodeExpr(ctx, binding[2], null, hoist, evExpr);
+    yield ";";
+    yield* transpileNodeSymbol(ctx, binding[0]);
+    if (binding.length === 3) {
+      yield "++";
+    } else {
+      yield "+=";
+      yield* transpileNodeExpr(ctx, binding[3], null, hoist, evExpr);
+    }
+    ;
+    yield "){";
+    yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
+    return yield "}";
   }
-  yield "){";
-  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
-  yield "}";
-}
+  ;
+};
 var makeForTranspiler = (prefix, middle) => {
   return function* (ctx, node, _assign, hoist, evKind) {
     {
@@ -2186,8 +2370,8 @@ var transpileBuiltinClass = function* (ctx, node, assign, hoist, evKind) {
 };
 var hashLambdaArgMap = (ctx, args, n) => {
   if (Array.isArray(n) && n?.[0]?.value !== "hash") {
-    n.forEach((lambda__1) => {
-      return hashLambdaArgMap(ctx, args, lambda__1);
+    n.forEach((lambda__7) => {
+      return hashLambdaArgMap(ctx, args, lambda__7);
     });
     return;
   } else if (n.kind !== "symbol") {
@@ -2227,14 +2411,14 @@ var hashLambdaArgMap = (ctx, args, n) => {
     ;
     {
       let replace = args[arg].value;
-      let hoist__2;
+      let hoist__8;
       if (dot < 0) {
-        hoist__2 = replace;
+        hoist__8 = replace;
       } else {
-        hoist__2 = `${replace}${sym.slice(dot)}`;
+        hoist__8 = `${replace}${sym.slice(dot)}`;
       }
       ;
-      return n.value = hoist__2;
+      return n.value = hoist__8;
     }
     ;
   }
@@ -2294,8 +2478,8 @@ var serializeNode = function* (ctx, node, hoist) {
 };
 var applyGensym = (ctx, existing, node) => {
   if (Array.isArray(node)) {
-    return node.forEach((lambda__3) => {
-      return applyGensym(ctx, existing, lambda__3);
+    return node.forEach((lambda__9) => {
+      return applyGensym(ctx, existing, lambda__9);
     });
   } else if (node.kind === "symbol" && node.value.endsWith("#")) {
     {
@@ -2324,8 +2508,8 @@ var transpileBuiltinQuote = function* (ctx, node, assign, hoist, _evKind) {
 };
 var transpileSpecialMacro = function* (ctx, node) {
   {
-    let args = node[2].map((lambda__4) => {
-      return partsStr(transpileSpecialDestructure(ctx, lambda__4));
+    let args = node[2].map((lambda__10) => {
+      return partsStr(transpileSpecialDestructure(ctx, lambda__10));
     });
     let body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
     return ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
