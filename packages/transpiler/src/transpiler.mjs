@@ -1312,18 +1312,3 @@ function* transpileClassLet(ctx, node, _assign, _hoist) {
   }
   yield ';'
 }
-
-const makeClassFnTranspiler = pre =>
-  function* transpileClassFn(ctx, node) {
-    yield [pre, node]
-    yield* transpileClassPrivateSymbol(ctx, node[1])
-    yield* transpileSpecialFnArgs(ctx, node[2])
-    yield '{'
-    yield* transpileSpecialBody(ctx, node.slice(3), 'return ', null, evStat)
-    yield '}'
-  }
-
-const transpileClassFnArrow = makeClassFnTranspiler('')
-const transpileClassFnArrowAsync = makeClassFnTranspiler('async ')
-const transpileClassFnGenerator = makeClassFnTranspiler('*')
-const transpileClassFnAsyncGenerator = makeClassFnTranspiler('async *')
