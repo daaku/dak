@@ -199,32 +199,3 @@ const readRegexp = (ctx, input, len, pos) => {
   }
   throw err(ctx, { pos }, 'unterminated regex')
 }
-
-const readSymbol = (ctx, input, len, pos) => {
-  let start = pos.offset
-  let end
-  for (end = start; end < len; end++) {
-    const c = input[end]
-    if (symbolBreaker.includes(c) || whitespace.includes(c) || c === ';') {
-      break
-    }
-    pos.offset++
-    pos.column++
-  }
-  return input.substring(start, end)
-}
-
-const readEOL = (ctx, input, len, pos) => {
-  let start = pos.offset
-  let end
-  for (end = start; end < len; end++) {
-    pos.offset++
-    pos.column++
-    if (input[end] === '\n') {
-      pos.line++
-      pos.column = 0
-      break
-    }
-  }
-  return input.substring(start, end)
-}

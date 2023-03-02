@@ -1,3 +1,26 @@
+(fn readSymbol [ctx input len pos]
+  (let [start pos.offset]
+    (for [end start len]
+      (let [c (. input end)]
+        (when (or (symbolBreaker.includes c)
+                  (whitespace.includes c)
+                  (= c ";"))
+          (return (input.substring start end))))
+      (++ pos.offset)
+      (++ pos.column))
+    (input.substring start len)))
+
+(fn readEOL [ctx input len pos]
+  (let [start pos.offset]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (when (= (. input end) "\n")
+        (++ pos.line)
+        (set pos.column 0)
+        (return (input.substring start end))))
+    (input.substring start len)))
+
 (fn* tokens [ctx input]
   (let [pos {:offset 0 :line 0 :column 0}
         len input.length
