@@ -1,3 +1,27 @@
+(fn* transpileClassLet [ctx node _assign _hoist]
+  (let [index 1
+        stic false]
+    (when (= (. node index :value) "^:static")
+      (set stic true)
+      (yield "static ")
+      (++ index))
+    ; (let [#one #two three]) style
+    (when (= (. node index :kind) :array)
+      (let [count (. node index :length)]
+        (for-of [sym (. node index)]
+          (yield* (transpileClassPrivateSymbol ctx sym))
+          (yield ";")
+          (-- count)
+          (when (and stic (pos? count))
+            (yield "static "))))
+      (return))
+    (yield* (transpileClassPrivateSymbol ctx (. node index)))
+    (++ index)
+    (when (. node index)
+      (yield "=")
+      (yield* (transpileNodeExpr ctx (. node index) null null evExpr)))
+    (yield ";")))
+
 (fn makeClassFnTranspiler [pre]
   (fn* [ctx node]
     (yield [pre node])
