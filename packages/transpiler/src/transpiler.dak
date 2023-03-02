@@ -1,3 +1,20 @@
+(const classBuiltins {:let transpileClassLet
+                      :fn transpileClassFnArrow
+                      "fn@" transpileClassFnArrowAsync
+                      "fn*" transpileClassFnGenerator
+                      "fn@*" transpileClassFnAsyncGenerator
+                      :static transpileClassStatic})
+
+(fn* transpileClassNodeList [ctx node assign hoist evKind]
+  (let [call (. node 0 :value)]
+    (when-let [builtin (. classBuiltins call)]
+      (yield* (builtin ctx node assign hoist evKind))
+      (return))
+    (when-let [macro (ctx.macros.get call)]
+      (yield* (transpileClassNodeList ctx (macro ...node) assign hoist evKind))
+      (return)))
+  (throw (err ctx (. node 0) `unexpected class body "${(. node 0 :kind)}"`)))
+
 (fn* transpileBuiltinClass [ctx node assign hoist evKind]
   (yield* (transpileSpecialAssign ctx assign))
   (let [[prefix index] (exportDefault ctx node)]

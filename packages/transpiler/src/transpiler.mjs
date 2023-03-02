@@ -1327,27 +1327,3 @@ const transpileClassFnArrow = makeClassFnTranspiler('')
 const transpileClassFnArrowAsync = makeClassFnTranspiler('async ')
 const transpileClassFnGenerator = makeClassFnTranspiler('*')
 const transpileClassFnAsyncGenerator = makeClassFnTranspiler('async *')
-
-const classBuiltins = {
-  let: transpileClassLet,
-  fn: transpileClassFnArrow,
-  'fn@': transpileClassFnArrowAsync,
-  'fn*': transpileClassFnGenerator,
-  'fn@*': transpileClassFnAsyncGenerator,
-  static: transpileClassStatic,
-}
-
-function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
-  const call = node[0].value
-  const builtin = classBuiltins[call]
-  if (builtin) {
-    yield* builtin(ctx, node, assign, hoist, evKind)
-    return
-  }
-  const macro = ctx.macros.get(call)
-  if (macro) {
-    yield* transpileClassNodeList(ctx, macro(...node), assign, hoist, evKind)
-    return
-  }
-  throw err(ctx, node[0], `unexpected class body "${node[0].kind}"`)
-}
