@@ -1,3 +1,31 @@
+(fn* transpileBuiltinImport [ctx node assign hoist evExpr]
+  (if (= (. node 1 :kind) :array)
+    (for [i 1 node.length]
+      (yield* (transpileBuiltinImportOne ctx (. node i))))
+    (yield* (transpileSpecialCall ctx node assign hoist evExpr))))
+
+(fn exportDefault [ctx node]
+  (if (= (?. node 1 :value) "^:export")
+    (let [prefix [["export " (. node 1)]]
+          index 2]
+      (when (= (?. node 2 :value) "^:default")
+        (prefix.push ["default " (. node 2)])
+        (++ index))
+      [prefix index])
+    [[] 1]))
+
+(const transpileBuiltinConst
+  (hoistable
+    (fn* [ctx node assign hoist]
+      (let [[prefix symIndex] (exportDefault ctx node)]
+        (yield* prefix)
+        (yield [(. node 0 :value) (. node 0)])
+        (yield " ")
+        (yield* (transpileSpecialDestructure ctx (. node symIndex)))
+        (yield "=")
+        (yield* (transpileNodeExpr ctx (. node (inc symIndex)) null hoist evExpr))
+        (yield ";")))))
+
 (fn* transpileBuiltinDef [ctx node _assign _hoist]
   (let [[prefix symIndex] (exportDefault ctx node)
         [hoist hoisted] (hoister ctx)
