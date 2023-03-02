@@ -1,3 +1,27 @@
+(fn astOne [ctx input]
+  (while true
+    (let [{:keys [value done]} (input.next)]
+      (when done
+        (return))
+      (return
+        (case value.kind
+          [:newline :comment] (continue)
+          [:string :template :regexp :symbol] value
+          "(" (setKind [(... (astUntil ctx input ")"))] "list" value)
+          "[" (setKind [(... (astUntil ctx input "]"))] "array" value)
+          "{" (setKind [(... (astUntil ctx input "}"))] "object" value)
+          "'" (astShorthand ctx value "quote" input)
+          "," (astShorthand ctx value "unquote" input)
+          "@" (astShorthand ctx value "await" input)
+          "#" (astHash ctx value input)
+          ":" (let [sym (astNeedOne ctx input)]
+                (when (not= sym.kind :symbol)
+                  (throw (err ctx value "invalid keyword")))
+                (set sym.kind "string")
+                (set sym.pos value.pos)
+                sym)
+          (throw (err ctx value `unknown token ${value.kind}`)))))))
+
 ; generators have cleanup logic which makes early returns void the rest of
 ; the generator run. this creates a custom iterator that disables
 ; that behavior. see:
