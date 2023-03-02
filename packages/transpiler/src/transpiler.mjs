@@ -530,35 +530,3 @@ const templateExprStart = (template, position) => {
   }
   return index + exprStart.length
 }
-
-function* transpileNodeTemplate(ctx, token, hoist) {
-  yield ['`', token]
-  let last = 0
-  let start = templateExprStart(token.value)
-  while (start !== -1) {
-    yield [token.value.slice(last, start), token]
-    last = token.value.indexOf(exprEnd, start)
-    if (last === -1) {
-      throw err(ctx, token, 'invalid template literal')
-    }
-    yield* transpileCtx(token.value.slice(start, last), ctx, false)
-    start = templateExprStart(token.value, start)
-  }
-  yield [token.value.slice(last), token]
-  yield '`'
-}
-
-function* transpileNodeRegExp(ctx, token) {
-  yield token.value
-}
-
-const mangleChars = {
-  '!': '_BANG_',
-  '?': '_QMARK_',
-  '*': '_STAR_',
-  '+': '_PLUS_',
-  '>': '_GT_',
-  '<': '_LT_',
-  '=': '_EQ_',
-  '-': '_DASH_',
-}
