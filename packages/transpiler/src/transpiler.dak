@@ -1,3 +1,57 @@
+(fn* transpileSpecialDestructure [ctx node]
+  (case node.kind
+    :symbol
+    (do
+      (ctx.bindings.add node.name)
+      (yield* (transpileNodeSymbol ctx node)))
+    :array
+    (do
+      (yield ["[" node])
+      (for-of [inner node]
+        (yield* (transpileSpecialDestructure ctx inner))
+        (yield ","))
+      (yield "]"))
+    :object
+    (let [keys []
+          rename {}
+          or {}
+          comma (splitter ",")]
+      (for [i 0 node.length 2]
+        (let [key (. node i)
+              value (. node (inc i))]
+          (when (= key.kind :symbol)
+            (set (. rename key.value) value.value)
+            (when (not (keys.includes key.value))
+              (keys.push key.value))
+            (continue))
+          (case key.value
+            :keys
+            (for-of [inner value]
+              (keys.push inner.value))
+            :or
+            (for [j 0 value.length 2]
+              (set (. or (. value j :value))
+                    [(... (transpileNodeUnknown ctx (. value (inc j))))])
+              (when (not (keys.includes (. value j :value)))
+                (keys.push (. value j :value))))
+            (throw (err ctx (. node i)
+                        `unexpected destructuring map op "${key.value}"`)))))
+      (yield "{")
+      (for-of [key keys]
+        (yield (comma))
+        (yield (mangleSym key))
+        (if (Object.hasOwn rename key)
+          (do
+            (yield ":")
+            (yield (mangleSym (. rename key)))
+            (ctx.bindings.add (. rename key)))
+          (ctx.bindings.add key))
+        (when (Object.hasOwn or key)
+          (yield "=")
+          (yield* (. or key))))
+      (yield "}"))
+    (throw (err ctx node `unexpected destructure "${node.kind}"`))))
+
 (fn* transpileSpecialFnArgs [ctx node]
   (let [comma (splitter ",")]
     (yield "(")
