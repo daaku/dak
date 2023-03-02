@@ -1874,95 +1874,116 @@ function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
   yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
   yield "}";
 }
-var makeForTranspiler = (prefix, middle) => function* transpileBuiltinForSpecial(ctx, node, _assign, hoist, evKind) {
-  const binding = node[1];
-  yield [prefix, node[0]];
-  yield "(let ";
-  yield* transpileSpecialDestructure(ctx, binding[0]);
-  yield [" ", node[0]];
-  yield middle;
-  yield " ";
-  yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr);
-  yield ["){", node[0]];
-  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
-  yield "}";
+var makeForTranspiler = (prefix, middle) => {
+  return function* (ctx, node, _assign, hoist, evKind) {
+    {
+      let binding = node[1];
+      yield [prefix, node[0]];
+      yield "(let ";
+      yield* transpileSpecialDestructure(ctx, binding[0]);
+      yield [" ", node[0]];
+      yield middle;
+      yield " ";
+      yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr);
+      yield ["){", node[0]];
+      yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
+      return yield "}";
+    }
+    ;
+  };
 };
 var transpileBuiltinForOf = makeForTranspiler("for", "of");
 var transpileBuiltinForIn = makeForTranspiler("for", "in");
 var transpileBuiltinForAwait = makeForTranspiler("for await", "of");
-function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
+var transpileBuiltinIf = function* (ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
     yield* hoist(transpileBuiltinIf, node, assign);
     return;
   }
-  const elif = splitter("else ");
-  const finalElse = node.length % 2 === 0;
-  for (let i = 1; i < node.length; i += 2) {
-    if (finalElse && i === node.length - 1) {
-      yield "else{";
-      yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat);
+  ;
+  {
+    let elif = splitter("else ");
+    let finalElse = node.length % 2 === 0;
+    for (let i = 1; i < node.length; i += 2) {
+      if (finalElse && i === node.length - 1) {
+        yield "else{";
+        yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat);
+        yield "}";
+        return;
+      }
+      ;
+      yield elif();
+      yield "if(";
+      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
+      yield "){";
+      yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat);
       yield "}";
-      return;
     }
-    yield elif();
-    yield "if(";
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
-    yield "){";
-    yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat);
-    yield "}";
+    ;
   }
-}
-function* transpileBuiltinWhile(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinWhile = function* (ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
     yield* hoist(transpileBuiltinWhile, node, assign);
     return;
   }
+  ;
   yield "while(";
   yield* transpileNodeExpr(ctx, node[1], null, evExpr);
   yield "){";
   yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat);
-  yield "}";
-}
-function* transpileBuiltinCase(ctx, node, assign, hoist, evKind) {
+  return yield "}";
+};
+var transpileBuiltinCase = function* (ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr && !assign) {
     yield* hoist(transpileBuiltinCase, node, assign);
     return;
   }
-  const finalDefault = node.length % 2 === 1;
-  yield "switch (";
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
-  yield "){";
-  for (let i = 2; i < node.length; i += 2) {
-    if (finalDefault && i === node.length - 1) {
-      yield "default:";
-      yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat);
+  ;
+  {
+    let finalDefault = node.length % 2 > 0;
+    yield "switch (";
+    yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
+    yield "){";
+    for (let i = 2; i < node.length; i += 2) {
+      if (finalDefault && i === node.length - 1) {
+        yield "default:";
+        yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat);
+        yield ";";
+        if (assign !== "return ") {
+          yield "break";
+        }
+        ;
+        yield "}";
+        return;
+      }
+      ;
+      if (node[i].kind === "array") {
+        for (let j = 0; j < node[i].length; j++) {
+          yield ["case ", node[i][j]];
+          yield* transpileNodeExpr(ctx, node[i][j], null, hoist, evExpr);
+          yield [":", node[i][j]];
+        }
+      } else {
+        yield ["case ", node[i]];
+        yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
+        yield [":", node[i]];
+      }
+      ;
+      yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat);
       yield ";";
       if (assign !== "return ") {
-        yield "break";
+        yield "break;";
       }
-      yield "}";
-      return;
+      ;
     }
-    if (node[i].kind === "array") {
-      for (let j = 0; j < node[i].length; j++) {
-        yield ["case ", node[i][j]];
-        yield* transpileNodeExpr(ctx, node[i][j], null, hoist, evExpr);
-        yield [":", node[i][j]];
-      }
-    } else {
-      yield ["case ", node[i]];
-      yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
-      yield [":", node[i]];
-    }
-    yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat);
-    yield ";";
-    if (assign !== "return ") {
-      yield "break;";
-    }
+    ;
+    return yield "}";
   }
-  yield "}";
-}
-function* transpileBuiltinQuestionDot(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinQuestionDot = function* (ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign);
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
   for (let i = 2; i < node.length; i++) {
@@ -1974,9 +1995,11 @@ function* transpileBuiltinQuestionDot(ctx, node, assign, hoist, evKind) {
       yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
       yield "]";
     }
+    ;
   }
-}
-function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinDot = function* (ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign);
   yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr);
   for (let i = 2; i < node.length; i++) {
@@ -1988,117 +2011,151 @@ function* transpileBuiltinDot(ctx, node, assign, hoist, evKind) {
       yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr);
       yield "]";
     }
+    ;
   }
-}
-function* transpileBuiltinRest(ctx, node, assign, hoist, evKind) {
+  ;
+};
+var transpileBuiltinRest = function* (ctx, node, assign, hoist, evKind) {
   yield "...";
-  yield* transpileNodeStatement(ctx, node[1], assign, hoist, evKind);
-}
-function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
+  return yield* transpileNodeStatement(ctx, node[1], assign, hoist, evKind);
+};
+var transpileBuiltinTry = function* (ctx, node, assign, hoist, evKind) {
   if (evKind === evExpr) {
     yield* hoist(transpileBuiltinTry, node, assign);
     return;
   }
-  let end = node.length;
-  let final;
-  if (node[end - 1]?.[0]?.value === "finally") {
-    final = node[end - 1];
-    end--;
-  }
-  let ctch;
-  if (node[end - 1]?.[0]?.value === "catch") {
-    ctch = node[end - 1];
-    end--;
-  }
-  if (!final && !ctch) {
-    throw err(ctx, node, "at least one of catch or finally must be provided");
-  }
-  yield "try{";
-  yield* transpileSpecialBody(ctx, node.slice(1, end), assign, hoist, evStat);
-  yield "}";
-  if (ctch) {
-    yield "catch(";
-    yield* transpileNodeExpr(ctx, ctch[1], null, null, evExpr);
-    yield "){";
-    yield* transpileSpecialBody(ctx, ctch.slice(2), assign, null, evStat);
+  ;
+  {
+    let end = node.length;
+    let ctch = null;
+    let final = null;
+    if (node?.[end - 1]?.[0]?.value === "finally") {
+      final = node[end - 1];
+      end--;
+    }
+    ;
+    if (node?.[end - 1]?.[0]?.value === "catch") {
+      ctch = node[end - 1];
+      end--;
+    }
+    ;
+    if (!final && !ctch) {
+      throw err(ctx, node, "at least one of catch or finally is required");
+    }
+    ;
+    yield "try{";
+    yield* transpileSpecialBody(ctx, node.slice(1, end), assign, hoist, evStat);
     yield "}";
+    if (ctch) {
+      yield "catch(";
+      yield* transpileNodeExpr(ctx, ctch[1], null, null, evExpr);
+      yield "){";
+      yield* transpileSpecialBody(ctx, ctch.slice(2), assign, null, evStat);
+      yield "}";
+    }
+    ;
+    if (final) {
+      yield "finally{";
+      yield* transpileSpecialBody(ctx, final.slice(1), null, null, evStat);
+      return yield "}";
+    }
+    ;
   }
-  if (final) {
-    yield "finally{";
-    yield* transpileSpecialBody(ctx, final.slice(1), null, null, evStat);
-    yield "}";
-  }
-}
-function* transpileClassStatic(ctx, node) {
+  ;
+};
+var transpileClassStatic = function* (ctx, node) {
   yield "static{";
   yield* transpileSpecialBody(ctx, node.slice(1), null, null, evStat);
-  yield "}";
-}
-function* transpileClassPrivateSymbol(ctx, token) {
-  yield [mangleSym(token.value, false), token];
-}
-function* transpileClassLet(ctx, node, _assign, _hoist) {
-  let index = 1;
-  let stic = false;
-  if (node[index].value === "^:static") {
-    stic = true;
-    yield "static ";
-    index++;
-  }
-  if (node[index].kind === "array") {
-    let count = node[index].length;
-    for (const sym of node[index]) {
-      yield* transpileClassPrivateSymbol(ctx, sym);
-      yield ";";
-      count--;
-      if (stic && count !== 0) {
-        yield "static ";
-      }
+  return yield "}";
+};
+var transpileClassPrivateSymbol = function* (ctx, token) {
+  return yield [mangleSym(token.value, false), token];
+};
+var transpileClassLet = function* (ctx, node, _assign, _hoist) {
+  {
+    let index = 1;
+    let stic = false;
+    if (node[index].value === "^:static") {
+      stic = true;
+      yield "static ";
+      index++;
     }
-    return;
+    ;
+    if (node[index].kind === "array") {
+      {
+        let count = node[index].length;
+        for (let sym of node[index]) {
+          yield* transpileClassPrivateSymbol(ctx, sym);
+          yield ";";
+          count--;
+          if (stic && count > 0) {
+            yield "static ";
+          }
+          ;
+        }
+        ;
+      }
+      ;
+      return;
+    }
+    ;
+    yield* transpileClassPrivateSymbol(ctx, node[index]);
+    index++;
+    if (node[index]) {
+      yield "=";
+      yield* transpileNodeExpr(ctx, node[index], null, null, evExpr);
+    }
+    ;
+    return yield ";";
   }
-  yield* transpileClassPrivateSymbol(ctx, node[index]);
-  index++;
-  if (node[index]) {
-    yield "=";
-    yield* transpileNodeExpr(ctx, node[index], null, null, evExpr);
-  }
-  yield ";";
-}
-var makeClassFnTranspiler = (pre) => function* transpileClassFn(ctx, node) {
-  yield [pre, node];
-  yield* transpileClassPrivateSymbol(ctx, node[1]);
-  yield* transpileSpecialFnArgs(ctx, node[2]);
-  yield "{";
-  yield* transpileSpecialBody(ctx, node.slice(3), "return ", null, evStat);
-  yield "}";
+  ;
+};
+var makeClassFnTranspiler = (pre) => {
+  return function* (ctx, node) {
+    yield [pre, node];
+    yield* transpileClassPrivateSymbol(ctx, node[1]);
+    yield* transpileSpecialFnArgs(ctx, node[2]);
+    yield "{";
+    yield* transpileSpecialBody(ctx, node.slice(3), "return ", null, evStat);
+    return yield "}";
+  };
 };
 var transpileClassFnArrow = makeClassFnTranspiler("");
 var transpileClassFnArrowAsync = makeClassFnTranspiler("async ");
 var transpileClassFnGenerator = makeClassFnTranspiler("*");
 var transpileClassFnAsyncGenerator = makeClassFnTranspiler("async *");
-var classBuiltins = {
-  let: transpileClassLet,
-  fn: transpileClassFnArrow,
-  "fn@": transpileClassFnArrowAsync,
-  "fn*": transpileClassFnGenerator,
-  "fn@*": transpileClassFnAsyncGenerator,
-  static: transpileClassStatic
-};
-function* transpileClassNodeList(ctx, node, assign, hoist, evKind) {
-  const call = node[0].value;
-  const builtin = classBuiltins[call];
-  if (builtin) {
-    yield* builtin(ctx, node, assign, hoist, evKind);
-    return;
+var classBuiltins = { let: transpileClassLet, fn: transpileClassFnArrow, ["fn@"]: transpileClassFnArrowAsync, ["fn*"]: transpileClassFnGenerator, ["fn@*"]: transpileClassFnAsyncGenerator, static: transpileClassStatic };
+var transpileClassNodeList = function* (ctx, node, assign, hoist, evKind) {
+  {
+    let call = node[0].value;
+    {
+      let macro__1 = classBuiltins[call];
+      if (macro__1) {
+        {
+          let builtin = macro__1;
+          yield* builtin(ctx, node, assign, hoist, evKind);
+          return;
+        }
+      }
+      ;
+    }
+    ;
+    {
+      let macro__1 = ctx.macros.get(call);
+      if (macro__1) {
+        {
+          let macro = macro__1;
+          yield* transpileClassNodeList(ctx, macro(...node), assign, hoist, evKind);
+          return;
+        }
+      }
+      ;
+    }
+    ;
   }
-  const macro = ctx.macros.get(call);
-  if (macro) {
-    yield* transpileClassNodeList(ctx, macro(...node), assign, hoist, evKind);
-    return;
-  }
+  ;
   throw err(ctx, node[0], `unexpected class body "${node[0].kind}"`);
-}
+};
 var transpileBuiltinClass = function* (ctx, node, assign, hoist, evKind) {
   yield* transpileSpecialAssign(ctx, assign);
   {
