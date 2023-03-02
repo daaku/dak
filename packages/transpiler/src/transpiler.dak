@@ -1,3 +1,38 @@
+(fn readString [ctx quote input len pos]
+  (let [buf []
+        start (inc pos.offset)]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (case (. input end)
+        quote
+        (do
+          (++ pos.offset)
+          (++ pos.column)
+          (if (zero? buf.length)
+            (return (input.substring start end))
+            (do
+              (buf.push (input.substring start end))
+              (return (buf.join "")))))
+        "\n"
+        (do
+          (++ pos.line)
+          (set pos.column 0)
+          (buf.push (input.substring start end) "\\n")
+          (set start (inc end)))
+        "\\"
+        (do
+          (++ end)
+          (++ pos.offset)
+          (if (= (. input end) "\n")
+            (do
+              (++ pos.line)
+              (set pos.column 0))
+            (+= pos.column 2)))))) ; TODO: why is this +2?
+  (throw (err ctx {:pos pos} "unterminated string")))
+
+(fn isLetter [c] (or (and (>= c "A") (<= c "Z")) (and (>= c "a") (<= c "z"))))
+
 (fn readRegexp [ctx input len pos]
   (let [start (inc pos.offset)]
     (for [end start len]
