@@ -21,7 +21,7 @@
   "scripts": {
     "dev": "dak build.dak",
     "build": "NODE_ENV=production dak build.dak",
-    "watch": "watchexec -cr -w .. -w ../../readme.md -- dak build.dak",
+    "watch": "watchexec -cr -w .. -w ../../readme.md -w ../transpiler/dist -- dak build.dak",
     "test": "dak tests/tour.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/tour.dak"
   },

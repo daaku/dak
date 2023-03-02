@@ -1,0 +1,10 @@
+{
+  "name": "@daklang/bootstrap",
+  "private": true,
+  "license": "MIT",
+  "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
+  "scripts": {
+    "rebuild": "esbuild --bundle --platform=node --format=esm ../cli/transpile.mjs > bootstrap.mjs"
+  }
+}

@@ -1,4 +1,4 @@
-import { transpile, transpileStr } from '../src/transpiler.mjs'
+import { transpile, transpileStr } from '../dist/transpiler.mjs'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -1266,7 +1266,7 @@ test(
   'try without catch or finally',
   testErr(
     '(try :foo)',
-    '<anonymous>:1:1: at least one of catch or finally must be provided',
+    '<anonymous>:1:1: at least one of catch or finally is required',
   ),
 )
 

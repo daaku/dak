@@ -1,0 +1,1345 @@
+(import ["source-map-js/lib/source-map-generator.js" [SourceMapGenerator]])
+
+(const symbolBreaker ["(" ")" "[" "]" "{" "}"])
+(const single [...symbolBreaker "@" "#" ":" "'" "~" ","])
+(const whitespace [" " "\r" "\n" "\t"])
+
+(const builtinMacros `
+(macro array? [v]
+  '(Array.isArray ,v))
+
+(macro boolean? [v]
+  '(= (typeof ,v) :boolean))
+
+(macro object? [v]
+  '(= (typeof ,v) :object))
+
+(macro number? [v]
+  '(= (typeof ,v) :number))
+
+(macro bigint? [v]
+  '(= (typeof ,v) :bigint))
+
+(macro string? [v]
+  '(= (typeof ,v) :string))
+
+(macro zero? [v]
+  '(= ,v 0))
+
+(macro pos? [v]
+  '(> ,v 0))
+
+(macro neg? [v]
+  '(< ,v 0))
+
+(macro true? [v]
+  '(= ,v true))
+
+(macro false? [v]
+  '(= ,v false))
+
+(macro undefined? [v]
+  '(= (typeof ,v) :undefined))
+
+(macro defined? [v]
+  '(not= (typeof ,v) :undefined))
+
+(macro isa? [v k]
+  '(instanceof ,v ,k))
+
+(macro null? [v]
+  '(= ,v null))
+
+(macro inc [v]
+  '(+ ,v 1))
+
+(macro dec [v]
+  '(- ,v 1))
+
+(macro when [cond ...body]
+  '(if ,cond
+     (do ,...body)))
+
+(macro -> [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (= f.kind :list)
+               (do
+                 (.splice f 1 0 c)
+                 f)
+               '(,f ,c)))
+           v))
+
+(macro if-let [[form tst] then el]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,then)
+       ,el)))
+
+(macro when-let [[form tst] ...body]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,...body))))
+
+(macro doto [x ...forms]
+  '(let [gx# ,x]
+     ,(... (forms.map #(if (= $.kind :list)
+                         '(,(. $ 0) gx# ,(... ($.splice 1)))
+                         '(,$ gx#))))
+     gx#))
+`)
+
+(fn err [ctx {:or {pos {}}} msg]
+  (let [e (Error `${(?? ctx.filename "<anonymous>")}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
+    (set e.pos pos)
+    e))
+
+(fn partsStr [gen]
+  (let [parts []]
+    (for-of [part gen]
+      (parts.push (if (string? part) part (. part 0))))
+    (parts.join "")))
+
+(fn bindings [initial]
+  {:scopes [{} initial]
+   :push (fn ^:decl [] (this.scopes.unshift {}))
+   :pop (fn ^:decl [] (this.scopes.shift))
+   :add (fn ^:decl [name value]
+          (set (. this :scopes 0 name) (?? value true)))
+   :get (fn ^:decl [name]
+          (for-of [scope this.scopes]
+            (when-let [binding (. scope name)]
+              (return binding))))})
+
+(fn readString [ctx quote input len pos]
+  (let [buf []
+        start (inc pos.offset)]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (case (. input end)
+        quote
+        (do
+          (++ pos.offset)
+          (++ pos.column)
+          (if (zero? buf.length)
+            (return (input.substring start end))
+            (do
+              (buf.push (input.substring start end))
+              (return (buf.join "")))))
+        "\n"
+        (do
+          (++ pos.line)
+          (set pos.column 0)
+          (buf.push (input.substring start end) "\\n")
+          (set start (inc end)))
+        "\\"
+        (do
+          (++ end)
+          (++ pos.offset)
+          (if (= (. input end) "\n")
+            (do
+              (++ pos.line)
+              (set pos.column 0))
+            (+= pos.column 2)))))) ; TODO: why is this +2?
+  (throw (err ctx {:pos pos} "unterminated string")))
+
+(fn isLetter [c] (or (and (>= c "A") (<= c "Z")) (and (>= c "a") (<= c "z"))))
+
+(fn readRegexp [ctx input len pos]
+  (let [start (inc pos.offset)]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (case (. input end)
+        "/"
+        (do
+          (++ pos.offset)
+          (++ pos.column)
+          ; flags
+          (while (< (++ end) len)
+            (when (not (isLetter (. input end)))
+              (return (input.substring (dec start) end)))
+            (++ pos.offset)
+            (++ pos.column)))
+        "\\"
+        (do
+          (++ end)
+          (++ pos.offset)
+          (++ pos.column)))))
+  (throw (err ctx {:pos pos} "unterminated regex")))
+
+(fn readSymbol [ctx input len pos]
+  (let [start pos.offset]
+    (for [end start len]
+      (let [c (. input end)]
+        (when (or (symbolBreaker.includes c)
+                  (whitespace.includes c)
+                  (= c ";"))
+          (return (input.substring start end))))
+      (++ pos.offset)
+      (++ pos.column))
+    (input.substring start len)))
+
+(fn readEOL [ctx input len pos]
+  (let [start pos.offset]
+    (for [end start len]
+      (++ pos.offset)
+      (++ pos.column)
+      (when (= (. input end) "\n")
+        (++ pos.line)
+        (set pos.column 0)
+        (return (input.substring start end))))
+    (input.substring start len)))
+
+(fn* tokens [ctx input]
+  (let [pos {:offset 0 :line 0 :column 0}
+        len input.length
+        value null
+        start null]
+    (while (< pos.offset len)
+      (let [c (. input pos.offset)]
+        (when (= c "\n")
+          (++ pos.line)
+          (set pos.column 0)
+          (set ctx.pos {...pos})
+          (yield {:kind :newline :value "\n" :pos pos})
+          (++ pos.offset)
+          (continue))
+        (when (whitespace.includes c)
+          (++ pos.offset)
+          (++ pos.column)
+          (continue))
+        ; shebang is dropped
+        (when (and (zero? pos.offset) (= c "#") (= (. input 1) "!"))
+          (readEOL ctx input len pos)
+          (continue))
+        (when (single.includes c)
+          ; special case #// for regexp
+          (if (and (= c "#") (= (. input (inc pos.offset)) "/"))
+            (do
+              (++ pos.offset)
+              (++ pos.column)
+              (set start {...pos})
+              (set value (readRegexp ctx input len pos))
+              (set ctx.pos {...start})
+              (yield {:kind :regexp :value value :pos start}))
+            (do
+              (set ctx.pos {...pos})
+              (yield {:kind c :pos {...pos}})
+              (++ pos.offset)
+              (++ pos.column)))
+          (continue))
+        (case c
+          "\""
+          (do
+            (set start {...pos})
+            (set value (readString ctx "\"" input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :string :value value :pos start}))
+          "`"
+          (do
+            (set start {...pos})
+            (set value (readString ctx "`" input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :template :value value :pos start}))
+          ";"
+          (do
+            (set start {...pos})
+            (set value (readEOL ctx input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :comment :value value :pos start}))
+          (do
+            (set start {...pos})
+            (set value (readSymbol ctx input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :symbol :value value :pos start})))))))
+
+(fn whitespaceOrComment [{:keys [kind]}]
+  (or (= kind :comment) (= kind :newline)))
+
+(fn setKind [o kind {:keys [pos]}]
+  (doto o
+    (Object.defineProperty :kind {:value kind :enumerable false})
+    (Object.defineProperty :pos {:value pos :enumerable false})))
+
+(fn* astUntil [ctx input kind]
+  (for-of [token input]
+    (when (whitespaceOrComment token)
+      (continue))
+    (when (= token.kind kind)
+      (return))
+    (yield (astOne ctx (prepend token input))))
+  (throw (err ctx ctx "unterminated form")))
+
+(fn astNeedOne [ctx input]
+  (if-let [node (astOne ctx input)]
+    node
+    (throw (err ctx ctx "unterminated form"))))
+
+(fn astShorthand [ctx token special input]
+  (setKind
+    [{:kind "symbol" :pos token.pos :value special} (astNeedOne ctx input)]
+    :list token))
+
+(fn astHash [ctx token input]
+  (let [node (astShorthand ctx token :hash input)]
+    (if (and (= node.length 2) (= (. node 1 :kind) :symbol))
+      {:kind :symbol :value (str "#" (. node 1 :value)) :pos node.pos}
+      node)))
+
+(fn astOne [ctx input]
+  (while true
+    (let [{:keys [value done]} (input.next)]
+      (when done
+        (return))
+      (return
+        (case value.kind
+          [:newline :comment] (continue)
+          [:string :template :regexp :symbol] value
+          "(" (setKind [(... (astUntil ctx input ")"))] "list" value)
+          "[" (setKind [(... (astUntil ctx input "]"))] "array" value)
+          "{" (setKind [(... (astUntil ctx input "}"))] "object" value)
+          "'" (astShorthand ctx value "quote" input)
+          "," (astShorthand ctx value "unquote" input)
+          "@" (astShorthand ctx value "await" input)
+          "#" (astHash ctx value input)
+          ":" (let [sym (astNeedOne ctx input)]
+                (when (not= sym.kind :symbol)
+                  (throw (err ctx value "invalid keyword")))
+                (set sym.kind "string")
+                (set sym.pos value.pos)
+                sym)
+          (throw (err ctx value `unknown token ${value.kind}`)))))))
+
+; generators have cleanup logic which makes early returns void the rest of
+; the generator run. this creates a custom iterator that disables
+; that behavior. see:
+; https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
+(fn uninterrupt [it]
+  {:next (fn [] (it.next))
+   Symbol.iterator (fn ^:decl [] this)})
+
+(fn prepend [one rest]
+  (uninterrupt ((fn* ()
+                  (yield one)
+                  (yield* rest)))))
+
+(const evExpr "evExpr")
+(const evStat "evStat")
+
+(fn hoister [ctx]
+  (const collected [])
+  (fn hoist [transpile node givenAssign]
+    (let [sym [(... (transpileNodeSymbol ctx (ctx.gensym :hoist)))]
+          assign [...sym "="]]
+      (collected.push "let " ...sym ";"
+                      (... (transpile ctx node assign hoist evStat)) ";")
+      [(... (transpileSpecialAssign ctx givenAssign)) ...sym]))
+  [hoist collected])
+
+(fn hoistable [transpile]
+  (fn* [ctx node assign _hoist evKind]
+    (let [[hoist hoisted] (hoister ctx)
+          postHoist [(... (transpile ctx node assign hoist evKind))]]
+      (yield* hoisted)
+      (yield* postHoist))))
+
+(fn splitter [s]
+  (let first true)
+  (fn []
+    (if first
+      (do
+        (set first false)
+        "")
+      s)))
+
+; be conservative
+(fn isValidIdentifier [s] (s.match #/^[a-zA-Z_$][0-9a-zA-Z_$]*$/))
+
+(fn canLiteralIdentifier [node]
+  (and (= node.kind :string) (isValidIdentifier node.value)))
+
+(fn* transpileNodeObject [ctx node hoist]
+  (yield ["{" node])
+  (for [i 0 node.length]
+    (if (and (= (. node i :kind) :symbol) (.startsWith (. node i :value) "..."))
+        (yield* (transpileNodeSymbol ctx (. node i))) ; ...foo
+        (and (= (. node i :kind) :list)
+             (= (. node i 0 :kind) :symbol)
+             (= (. node i 0 :value) "..."))
+        (do ; (... (foo :bar))
+          (yield "...")
+          (yield* (transpileNodeExpr ctx (. node i 1) null hoist evExpr)))
+        (do
+          (if (canLiteralIdentifier (. node i))
+            (yield [(. node i :value) (. node i)])
+            (do
+              (yield "[")
+              (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+              (yield "]")))
+          (yield ":")
+          (yield* (transpileNodeExpr ctx (. node (inc i)) null hoist evExpr))
+          (++ i))) ; we consumed the value too
+    (yield ","))
+  (yield "}"))
+
+(fn* transpileNodeArray [ctx node hoist]
+  (yield ["[" node])
+  (for-of [i node]
+    (yield* (transpileNodeExpr ctx i null hoist evExpr))
+    (yield ","))
+  (yield "]"))
+
+(fn* transpileNodeString [ctx token]
+  (yield ["\"" token])
+  (yield token.value)
+  (yield "\""))
+
+(const exprStart "${")
+(const exprEnd "}")
+
+(fn templateExprStart [template position]
+  (let [index (template.indexOf exprStart position)]
+    (if (= index -1) -1
+        (zero? index) exprStart.length
+        (= (. template (dec index)) "\\") (templateExprStart template index)
+        (+ index exprStart.length))))
+
+(fn* transpileNodeTemplate [ctx token hoist]
+  (yield ["`" token])
+  (let [last 0
+        start (templateExprStart token.value)]
+    (while (!= start -1)
+      (yield [(token.value.slice last start) token])
+      (set last (token.value.indexOf exprEnd start))
+      (when (= last -1)
+        (throw (err ctx token "invalid template literal")))
+      (yield* (transpileCtx (token.value.slice start last) ctx false))
+      (set start (templateExprStart token.value start)))
+    (yield [(token.value.slice last) token])
+    (yield "`")))
+
+(fn* transpileNodeRegExp [ctx token]
+  (yield token.value))
+
+(const mangleChars {"!" "_BANG_"
+                    "?" "_QMARK_"
+                    "*" "_STAR_"
+                    "+" "_PLUS_"
+                    ">" "_GT_"
+                    "<" "_LT_"
+                    "=" "_EQ_"
+                    "-" "_DASH_"})
+
+(fn mangleSym [sym autoThis]
+  (??= autoThis true)
+  ; dont mangle numbers
+  (let [first (. sym 0)]
+    (when (= first "-")
+      (return sym))
+    (when (= first ".")
+      (set first (sym.at 1)))
+    (when (and (>= first "0") (<= first "9"))
+      (return sym)))
+  (let [parts []
+        start 0]
+    (when (and autoThis (sym.startsWith "...#"))
+      (parts.push "...this.#")
+      (set start 4))
+    (for [end 0 sym.length]
+      (let [c (. sym end)]
+        (when (and autoThis (zero? end) (= c "#"))
+          (parts.push "this."))
+        (when-let [found (. mangleChars c)]
+          (when (and found (or (not= c "?") (not= (. sym (inc end)) ".")))
+            (parts.push (sym.slice start end) found)
+            (set start (inc end))))))
+    (if (zero? parts.length)
+      sym
+      (do
+        (parts.push (sym.slice start sym.length))
+        (parts.join "")))))
+
+(fn* transpileNodeSymbol [ctx token]
+  (yield [(mangleSym token.value) token]))
+
+(fn* transpileSpecialAssign [ctx assign]
+  (when assign
+    (if (string? assign)
+      (yield assign)
+      (yield* assign))))
+
+(fn* transpileNodeUnknown [ctx node assign hoist evExpr]
+  ; list will handle it's own assign, all others are expressions
+  (if (= node.kind :list)
+    (yield* (transpileNodeList ctx node assign hoist evExpr))
+    (do
+      (yield* (transpileSpecialAssign ctx assign))
+      (case node.kind
+        :object (yield* (transpileNodeObject ctx node hoist))
+        :array (yield* (transpileNodeArray ctx node hoist))
+        :regexp (yield* (transpileNodeRegExp ctx node))
+        :string (yield* (transpileNodeString ctx node))
+        :template (yield* (transpileNodeTemplate ctx node hoist))
+        :symbol (yield* (transpileNodeSymbol ctx node))
+        (throw (err ctx node `unhandled node "${node.kind}"`))))))
+
+(const transpileNodeExpr transpileNodeUnknown)
+(const transpileNodeStatement (hoistable transpileNodeUnknown))
+
+(fn* transpileBuiltinImportOne [ctx node]
+  (let [defaultName null
+        asName null
+        inner []
+        needFrom false
+        comma (splitter ",")]
+    (for [i 1 node.length]
+      (let [c (. node i)]
+        (case c.kind
+          :array ; list of simple names to import
+          (for-of [name c]
+            (inner.push (mangleSym name.value)))
+          :symbol
+          (set defaultName c)
+          :string
+          (do
+            (when (not= c.value :as)
+              (throw (err ctx c `unexpected import string "${c.value}"`)))
+            (++ i)
+            (set asName (. node i)))
+          :object ; rename
+          (for [i 0 c.length 2]
+            (inner.push `${(mangleSym (. c i :value))} as ${(mangleSym (. c (inc i) :value))}`))
+          (throw (err ctx c "unexpected import")))))
+    (yield ["import " node])
+    (when defaultName
+      (set needFrom true)
+      (yield (comma))
+      (yield* (transpileNodeSymbol ctx defaultName)))
+    (when (pos? inner.length)
+      (set needFrom true)
+      (yield (comma))
+      (yield "{")
+      (yield (inner.join ","))
+      (yield "}"))
+    (when asName
+      (set needFrom true)
+      (yield (comma))
+      (yield ["* as " asName])
+      (yield* (transpileNodeSymbol ctx asName)))
+    (when needFrom
+      (yield " from "))
+    (yield* (transpileNodeString ctx (. node 0)))
+    (yield ";")))
+
+(fn* transpileBuiltinImport [ctx node assign hoist evExpr]
+  (if (= (. node 1 :kind) :array)
+    (for [i 1 node.length]
+      (yield* (transpileBuiltinImportOne ctx (. node i))))
+    (yield* (transpileSpecialCall ctx node assign hoist evExpr))))
+
+(fn exportDefault [ctx node]
+  (if (= (?. node 1 :value) "^:export")
+    (let [prefix [["export " (. node 1)]]
+          index 2]
+      (when (= (?. node 2 :value) "^:default")
+        (prefix.push ["default " (. node 2)])
+        (++ index))
+      [prefix index])
+    [[] 1]))
+
+(const transpileBuiltinConst
+  (hoistable
+    (fn* [ctx node assign hoist]
+      (let [[prefix symIndex] (exportDefault ctx node)]
+        (yield* prefix)
+        (yield [(. node 0 :value) (. node 0)])
+        (yield " ")
+        (yield* (transpileSpecialDestructure ctx (. node symIndex)))
+        (yield "=")
+        (yield* (transpileNodeExpr ctx (. node (inc symIndex)) null hoist evExpr))
+        (yield ";")))))
+
+(fn* transpileBuiltinDef [ctx node _assign _hoist]
+  (let [[prefix symIndex] (exportDefault ctx node)
+        [hoist hoisted] (hoister ctx)
+        assign [(... (transpileSpecialDestructure ctx (. node symIndex))) "="]
+        postHoist [(... (transpileNodeExpr ctx (. node (inc symIndex))
+                                           assign hoist evExpr))]]
+    (yield* prefix)
+    (yield [(. node 0 :value) (. node 0)])
+    (yield " ")
+    ; if we hoisted, then split the let, otherwise assign expression directly
+    (when (or (pos? hoisted.length) (not= (. postHoist 0) (. assign 0)))
+      (yield* (transpileNodeSymbol ctx (. node symIndex)))
+      (yield ";")
+      (yield* hoisted))
+    (yield* postHoist)))
+
+(const transpileSpecialBody
+  (hoistable
+    (fn* [ctx node assign hoist]
+      (for [i 0 node.length]
+        (let [a null]
+          (when (= i (dec node.length))
+            (set a assign))
+          (yield* (transpileNodeStatement ctx (. node i) a hoist evStat))
+          (yield ";"))))))
+
+(fn* transpileBuiltinDo [ctx node assign hoist evKind]
+  (yield* (transpileSpecialBody ctx (node.slice 1) assign hoist evKind)))
+
+(fn* transpileSpecialDestructure [ctx node]
+  (case node.kind
+    :symbol
+    (do
+      (ctx.bindings.add node.name)
+      (yield* (transpileNodeSymbol ctx node)))
+    :array
+    (do
+      (yield ["[" node])
+      (for-of [inner node]
+        (yield* (transpileSpecialDestructure ctx inner))
+        (yield ","))
+      (yield "]"))
+    :object
+    (let [keys []
+          rename {}
+          or {}
+          comma (splitter ",")]
+      (for [i 0 node.length 2]
+        (let [key (. node i)
+              value (. node (inc i))]
+          (when (= key.kind :symbol)
+            (set (. rename key.value) value.value)
+            (when (not (keys.includes key.value))
+              (keys.push key.value))
+            (continue))
+          (case key.value
+            :keys
+            (for-of [inner value]
+              (keys.push inner.value))
+            :or
+            (for [j 0 value.length 2]
+              (set (. or (. value j :value))
+                    [(... (transpileNodeUnknown ctx (. value (inc j))))])
+              (when (not (keys.includes (. value j :value)))
+                (keys.push (. value j :value))))
+            (throw (err ctx (. node i)
+                        `unexpected destructuring map op "${key.value}"`)))))
+      (yield "{")
+      (for-of [key keys]
+        (yield (comma))
+        (yield (mangleSym key))
+        (if (Object.hasOwn rename key)
+          (do
+            (yield ":")
+            (yield (mangleSym (. rename key)))
+            (ctx.bindings.add (. rename key)))
+          (ctx.bindings.add key))
+        (when (Object.hasOwn or key)
+          (yield "=")
+          (yield* (. or key))))
+      (yield "}"))
+    (throw (err ctx node `unexpected destructure "${node.kind}"`))))
+
+(fn* transpileSpecialFnArgs [ctx node]
+  (let [comma (splitter ",")]
+    (yield "(")
+    (for-of [i node]
+      (yield (comma))
+      (yield* (transpileSpecialDestructure ctx i)))
+    (yield ")")))
+
+(fn makeFnTranspiler [preArgs postArgs]
+  (fn* [ctx node assign _hoist evKind]
+    (let [pre preArgs
+          post postArgs
+          [prefix index] (exportDefault ctx node)
+          decl false]
+      (yield* (transpileSpecialAssign ctx assign))
+      (yield* prefix)
+      (when (= (. node index :value) "^:decl")
+        (set decl true)
+        (set pre "")
+        (set post "")
+        (++ index))
+      (let [named (= (. node index :kind) :symbol)
+            wrapped (or (= evKind evExpr) (not named))]
+        (when wrapped
+          (yield "("))
+        (when decl
+          (if (= preArgs "")
+              (yield ["function" node])
+              (= preArgs "async")
+              (yield ["async function" node])))
+        (when named
+          (if decl
+            (do
+              (yield " ")
+              (yield* (transpileNodeSymbol ctx (. node index))))
+            (do
+              (yield ["const " node])
+              (yield* (transpileNodeSymbol ctx (. node index)))
+              (yield "=")))
+          (ctx.bindings.add (. node index :value))
+          (++ index))
+        (yield pre)
+        (yield* (transpileSpecialFnArgs ctx (. node index)))
+        (yield post)
+        (yield "{")
+        (yield* (transpileSpecialBody ctx (node.slice (inc index)) "return "
+                                      null evStat))
+        (yield "}")
+        (when wrapped
+          (yield ")"))))))
+
+(const transpileBuiltinFnArrow (makeFnTranspiler "" "=>"))
+(const transpileBuiltinFnArrowAsync (makeFnTranspiler "async" "=>"))
+(const transpileBuiltinFnGenerator (makeFnTranspiler "function*" ""))
+(const transpileBuiltinFnAsyncGenerator (makeFnTranspiler "async function*" ""))
+
+(fn makeOpTranspiler [op unary]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (when (and unary (= node.length 2))
+      (yield op))
+    (let [sp (splitter op)]
+      (for [i 1 node.length]
+        (yield (sp))
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))))
+    (yield ")")))
+
+(fn makePrefixOpTranspiler [op]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (yield op)
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield ")")))
+
+(fn makeSuffixOpTranspiler [op]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield op)
+    (yield ")")))
+
+(const cmpRemap {"=" "==="
+                 "not=" "!=="})
+
+(fn* transpileBuiltinCmp [ctx node assign hoist _evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+  (let [op (. node 0 :value)]
+    (yield [(?? (. cmpRemap op) op) (. node 0)]))
+  (yield* (transpileNodeExpr ctx (. node 2) null hoist evExpr)))
+
+(fn* transpileBuiltinLet [ctx node assign hoist evKind]
+  (if (= (. node 1 :kind) :array)
+    (yield* (transpileBuiltinLetMulti ctx node assign hoist evKind))
+    (yield* (transpileBuiltinDef ctx node assign hoist evKind))))
+
+(fn* transpileBuiltinLetMulti [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinLetMulti node assign))
+    (return))
+  (ctx.bindings.push)
+  (yield "{")
+  (for [i 0 (. node 1 :length) 2]
+    (let [binding (. node 1 i)
+          sym null]
+      ; for non destructuring (simple) assignments, use symbol directly.
+      ; for destructuring, assign to gensym first.
+      (if (= binding.kind :symbol)
+        (do
+          (ctx.bindings.add binding.value)
+          (set sym [(... (transpileNodeSymbol ctx binding))]))
+        (set sym [(... (transpileNodeSymbol ctx (ctx.gensym :let_multi)))]))
+      ; generated the statement and check if we can assign directly
+      ; assign to simple symbol
+      (let [assign [...sym "="]
+            one [(... (transpileNodeStatement ctx (. node 1 (inc i)) assign
+                                              hoist evStat))]]
+        (when (= (. one 0) (. assign 0))
+          ; we can directly destructure, forget the gensym
+          (if (not= binding.kind :symbol)
+            (do
+              (yield ["let " node])
+              (yield* (transpileSpecialDestructure ctx binding))
+              (yield "=")
+              (yield* (one.slice 2)))
+            (do
+              (yield ["let " node])
+              (yield* one)))
+          (yield ";")
+          (continue))
+        ; declare the simple symbol
+        (yield "let ")
+        (yield* sym)
+        (yield ";")
+        (yield* one)
+        (yield ";")
+
+      ; if destructuring, then we need to assign our generated symbol now
+      (when (not= binding.kind :symbol)
+        (yield "let ")
+        (yield* (transpileSpecialDestructure ctx binding))
+        (yield "=")
+        (yield* sym)
+        (yield ";")))))
+  (yield* (transpileSpecialBody ctx (node.slice 2) assign hoist evStat))
+  (yield "}")
+  (ctx.bindings.pop))
+
+(fn* transpileBuiltinKeywordExpr [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (when (= evKind evExpr)
+    (yield "("))
+  (yield (. node 0 :value))
+  (when (not= node.length 1)
+    (yield " ")
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr)))
+  (when (= evKind evExpr)
+    (yield ")")))
+
+(fn* transpileBuiltinKeywordStatement [ctx node _assign hoist _evKind]
+  (if (= node.length 1)
+    (yield (. node 0 :value))
+    (yield* (transpileNodeStatement
+              ctx (. node 1) [(. node 0 :value) " "] hoist evStat))))
+
+(fn* transpileBuiltinFor [ctx node _assign hoist _evKind]
+  (let [binding (. node 1)]
+    (yield "for(let ")
+    (yield* (transpileNodeSymbol ctx (. binding 0)))
+    (yield "=")
+    (yield* (transpileNodeExpr ctx (. binding 1) null hoist evExpr))
+    (yield ";")
+    (yield* (transpileNodeSymbol ctx (. binding 0)))
+    (yield "<")
+    (yield* (transpileNodeExpr ctx (. binding 2) null hoist evExpr))
+    (yield ";")
+    (yield* (transpileNodeSymbol ctx (. binding 0)))
+    (if (= binding.length 3)
+      (yield "++")
+      (do
+        (yield "+=")
+        (yield* (transpileNodeExpr ctx (. binding 3) null hoist evExpr))))
+    (yield "){")
+    (yield* (transpileSpecialBody ctx (node.slice 2) null hoist evStat))
+    (yield "}")))
+
+(fn makeForTranspiler [prefix middle]
+  (fn* [ctx node _assign hoist evKind]
+    (let [binding (. node 1)]
+      (yield [prefix (. node 0)])
+      (yield "(let ")
+      (yield* (transpileSpecialDestructure ctx (. binding 0)))
+      (yield [" " (. node 0)])
+      (yield middle)
+      (yield " ")
+      (yield* (transpileNodeExpr ctx (. binding 1) null hoist evExpr))
+      (yield ["){" (. node 0)])
+      (yield* (transpileSpecialBody ctx (node.slice 2) null hoist evStat))
+      (yield "}"))))
+
+(const transpileBuiltinForOf (makeForTranspiler "for" "of"))
+(const transpileBuiltinForIn (makeForTranspiler "for" "in"))
+(const transpileBuiltinForAwait (makeForTranspiler "for await" "of"))
+
+(fn* transpileBuiltinIf [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinIf node assign))
+    (return))
+  (let [elif (splitter "else ")
+        finalElse (zero? (% node.length 2))]
+    (for [i 1 node.length 2]
+      (when (and finalElse (= i (dec node.length)))
+        (yield "else{")
+        (yield* (transpileNodeStatement ctx (. node i) assign hoist evStat))
+        (yield "}")
+        (return))
+      (yield (elif))
+      (yield "if(")
+      (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+      (yield "){")
+      (yield* (transpileNodeStatement ctx (. node (inc i)) assign hoist evStat))
+      (yield "}"))))
+
+(fn* transpileBuiltinWhile [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinWhile node assign))
+    (return))
+  (yield "while(")
+  (yield* (transpileNodeExpr ctx (. node 1) null evExpr))
+  (yield "){")
+  (yield* (transpileSpecialBody ctx (node.slice 2) null hoist evStat))
+  (yield "}"))
+
+(fn* transpileBuiltinCase [ctx node assign hoist evKind]
+  (when (and (= evKind evExpr) (not assign))
+    (yield* (hoist transpileBuiltinCase node assign))
+    (return))
+  (let [finalDefault (pos? (% node.length 2))]
+    (yield "switch (")
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield "){")
+    (for [i 2 node.length 2]
+      (when (and finalDefault (= i (dec node.length)))
+        (yield "default:")
+        (yield* (transpileNodeStatement ctx (. node i) assign hoist evStat))
+        (yield ";")
+        (when (not= assign "return ")
+          (yield "break"))
+        (yield "}")
+        (return))
+      (if (= (. node i :kind) :array)
+        (for [j 0 (. node i :length)]
+          (yield ["case " (. node i j)])
+          (yield* (transpileNodeExpr ctx (. node i j) null hoist evExpr))
+          (yield [":" (. node i j)]))
+        (do
+          (yield ["case " (. node i)])
+          (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+          (yield [":" (. node i)])))
+      (yield* (transpileNodeStatement ctx (. node (inc i)) assign hoist evStat))
+      (yield ";")
+      (when (not= assign "return ")
+        (yield "break;")))
+    (yield "}")))
+
+(fn* transpileBuiltinQuestionDot [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+  (for [i 2 node.length]
+    (yield "?.")
+    (if (canLiteralIdentifier (. node i))
+      (yield [(. node i :value) (. node i)])
+      (do
+        (yield "[")
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+        (yield "]")))))
+
+(fn* transpileBuiltinDot [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+  (for [i 2 node.length]
+    (if (canLiteralIdentifier (. node i))
+      (do
+        (yield ".")
+        (yield [(. node i :value) (. node i)]))
+      (do
+        (yield "[")
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+        (yield "]")))))
+
+(fn* transpileBuiltinRest [ctx node assign hoist evKind]
+  (yield "...")
+  (yield* (transpileNodeStatement ctx (. node 1) assign hoist evKind)))
+
+(fn* transpileBuiltinTry [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinTry node assign))
+    (return))
+  (let [end node.length
+        ctch null
+        final null]
+    (when (= (?. node (dec end) 0 :value) :finally)
+      (set final (. node (dec end)))
+      (-- end))
+    (when (= (?. node (dec end) 0 :value) :catch)
+      (set ctch (. node (dec end)))
+      (-- end))
+    (when (and (not final) (not ctch))
+      (throw (err ctx node "at least one of catch or finally is required")))
+    (yield "try{")
+    (yield* (transpileSpecialBody ctx (node.slice 1 end) assign hoist evStat))
+    (yield "}")
+    (when ctch
+      (yield "catch(")
+      (yield* (transpileNodeExpr ctx (. ctch 1) null null evExpr))
+      (yield "){")
+      (yield* (transpileSpecialBody ctx (ctch.slice 2) assign null evStat))
+      (yield "}"))
+    (when final
+      (yield "finally{")
+      (yield* (transpileSpecialBody ctx (final.slice 1) null null evStat))
+      (yield "}"))))
+
+(fn* transpileClassStatic [ctx node]
+  (yield "static{")
+  (yield* (transpileSpecialBody ctx (node.slice 1) null null evStat))
+  (yield "}"))
+
+(fn* transpileClassPrivateSymbol [ctx token]
+  (yield [(mangleSym token.value false) token]))
+
+(fn* transpileClassLet [ctx node _assign _hoist]
+  (let [index 1
+        stic false]
+    (when (= (. node index :value) "^:static")
+      (set stic true)
+      (yield "static ")
+      (++ index))
+    ; (let [#one #two three]) style
+    (when (= (. node index :kind) :array)
+      (let [count (. node index :length)]
+        (for-of [sym (. node index)]
+          (yield* (transpileClassPrivateSymbol ctx sym))
+          (yield ";")
+          (-- count)
+          (when (and stic (pos? count))
+            (yield "static "))))
+      (return))
+    (yield* (transpileClassPrivateSymbol ctx (. node index)))
+    (++ index)
+    (when (. node index)
+      (yield "=")
+      (yield* (transpileNodeExpr ctx (. node index) null null evExpr)))
+    (yield ";")))
+
+(fn makeClassFnTranspiler [pre]
+  (fn* [ctx node]
+    (yield [pre node])
+    (yield* (transpileClassPrivateSymbol ctx (. node 1)))
+    (yield* (transpileSpecialFnArgs ctx (. node 2)))
+    (yield "{")
+    (yield* (transpileSpecialBody ctx (node.slice 3) "return " null evStat))
+    (yield "}")))
+
+(const transpileClassFnArrow (makeClassFnTranspiler ""))
+(const transpileClassFnArrowAsync (makeClassFnTranspiler "async "))
+(const transpileClassFnGenerator (makeClassFnTranspiler "*"))
+(const transpileClassFnAsyncGenerator (makeClassFnTranspiler "async *"))
+
+(const classBuiltins {:let transpileClassLet
+                      :fn transpileClassFnArrow
+                      "fn@" transpileClassFnArrowAsync
+                      "fn*" transpileClassFnGenerator
+                      "fn@*" transpileClassFnAsyncGenerator
+                      :static transpileClassStatic})
+
+(fn* transpileClassNodeList [ctx node assign hoist evKind]
+  (let [call (. node 0 :value)]
+    (when-let [builtin (. classBuiltins call)]
+      (yield* (builtin ctx node assign hoist evKind))
+      (return))
+    (when-let [macro (ctx.macros.get call)]
+      (yield* (transpileClassNodeList ctx (macro ...node) assign hoist evKind))
+      (return)))
+  (throw (err ctx (. node 0) `unexpected class body "${(. node 0 :kind)}"`)))
+
+(fn* transpileBuiltinClass [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [[prefix index] (exportDefault ctx node)]
+    (yield* prefix)
+    (yield [:class (. node 0)])
+    ; named
+    (when (= (?. node index :kind) :symbol)
+      (yield " ")
+      (yield* (transpileNodeSymbol ctx (. node index)))
+      (ctx.bindings.add (. node index :value))
+      (++ index))
+    (when (and (= (?. node index :kind) :string) (= (?. node index :value) :extends))
+      (yield [" extends " (. node index)])
+      (yield* (transpileNodeExpr ctx (. node (inc index)) null hoist evExpr))
+      (+= index 2))
+    (yield "{")
+    (for [i index node.length]
+      (yield* (transpileClassNodeList ctx (. node i) null null evStat)))
+    (yield "}")))
+
+(fn hashLambdaArgMap [ctx args n]
+  (if (and (Array.isArray n) (not= (?. n 0 :value) :hash))
+      (do
+        (n.forEach #(hashLambdaArgMap ctx args $))
+        (return))
+      (not= n.kind :symbol)
+      (return)
+      (n.value.startsWith "...$")
+      (do
+        (when (not args.rest)
+          (set args.rest (ctx.gensym :lambda_rest)))
+        (set n.value `${args.rest.value}${(n.value.slice 4)}`)
+        (return))
+      (not (n.value.startsWith "$"))
+      (return))
+
+  ; check if we have a dot, indicates we're replacing part of a symbol
+  ; like $2.replace
+  (let [sym n.value
+        dot (sym.indexOf ".")
+        target (if (neg? dot) sym (sym.slice 0 dot))
+        arg 0]
+    (when (not= target "$")
+      (set arg (dec (parseInt (target.slice 1) 10))))
+    (for [i 0 (inc arg)]
+      (when (not (. args i))
+        (set (. args i) (ctx.gensym :lambda))))
+    (let [replace (. args arg :value)]
+      (set n.value (if (neg? dot) replace `${replace}${(sym.slice dot)}`)))))
+
+(fn* transpileHashLambda [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [args []
+        comma (splitter ",")]
+    (hashLambdaArgMap ctx args (. node 1))
+    (yield "((")
+    (for-of [arg args]
+      (yield (comma))
+      (yield* (transpileNodeSymbol ctx arg)))
+    (when args.rest
+      (yield (comma))
+      (yield "...")
+      (yield* (transpileNodeSymbol ctx args.rest)))
+    (yield ")=>{")
+    (yield* (transpileNodeStatement ctx (. node 1) "return " hoist evStat))
+    (yield "})")))
+
+(fn* transpileBuiltinHash [ctx node assign hoist evKind]
+  (if (= (. node 1 :kind) :list)
+    (yield* (transpileHashLambda ctx node assign hoist evKind))
+    (throw (err ctx ctx `unexpected hash "${(. node 1 :kind)}"`))))
+
+(fn* serializeNode [ctx node hoist]
+  (if (Array.isArray node)
+    (if (= (?. node 0 :value) :unquote)
+      (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+      (do
+        (yield "Object.defineProperties([")
+        (for-of [i node]
+          (yield* (serializeNode ctx i hoist))
+          (yield ","))
+        (yield "],")
+        (yield (JSON.stringify
+                 {:kind {:value node.kind :enumerable false}
+                  :pos {:value node.pos :enumerable false}}))
+        (yield ")")))
+    (yield (JSON.stringify node))))
+
+(fn applyGensym [ctx existing node]
+  (if (Array.isArray node)
+      (node.forEach #(applyGensym ctx existing $))
+      (and (= node.kind :symbol) (node.value.endsWith "#"))
+      (if-let [found (. existing node.value)]
+        (set node.value found)
+        (let [gen (. (ctx.gensym :macro) :value)]
+          (set (. existing node.value) gen)
+          (set node.value gen)))))
+
+(fn* transpileBuiltinQuote [ctx node assign hoist _evKind]
+  (applyGensym ctx {} node)
+  (yield* (transpileSpecialAssign ctx assign))
+  (yield* (serializeNode ctx (. node 1) hoist)))
+
+(fn* transpileSpecialMacro [ctx node]
+  (let [args (-> node (. 2) (.map #(partsStr (transpileSpecialDestructure ctx $))))
+        body (partsStr (transpileSpecialBody ctx (node.slice 3) "return "))]
+    ; (when (= (?. node 1 :value) :deftest)
+    ;   (console.log body))
+    (ctx.macros.add (. node 1 :value) (Function. :_macroName ...args body))))
+
+; function, method or constructor call
+(fn* transpileSpecialCall [ctx node assign hoist evKind]
+  (yield* (transpileSpecialAssign ctx assign))
+  (let [argStart 1]
+    (if (= (. node 0 :kind) :symbol)
+      (let [call (. node 0 :value)]
+        (if (call.endsWith ".")
+            (do
+              (yield ["new " (. node 0)])
+              (yield [(mangleSym (call.slice 0 -1)) (. node 0)])) ; drop the trailing .
+            (call.startsWith ".")
+            (do
+              (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+              (yield [(mangleSym call) (. node 0)])
+              (set argStart 2))
+            (yield [(mangleSym call) node])))
+      (yield* (transpileNodeExpr ctx (. node 0) null hoist evExpr)))
+    (let [comma (splitter ",")]
+      (yield "(")
+      (for [i argStart node.length]
+        (yield (comma))
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr)))
+      (yield ")"))))
+
+(fn* transpileNodeList [ctx node assign hoist evKind]
+  (let [call (. node 0 :value)
+        binding (ctx.bindings.get call)]
+    (when (true? binding)
+      (yield* (transpileSpecialCall ctx node assign hoist evKind))
+      (return))
+    (when binding
+      (yield* (binding ctx node assign hoist evKind))
+      (return))
+    (when-let [macro (ctx.macros.get call)]
+      (yield* (transpileNodeUnknown ctx (macro ...node) assign hoist evKind))
+      (return)))
+  (yield* (transpileSpecialCall ctx node assign hoist evKind)))
+
+(fn* transpileBuiltinTypeof [ctx node assign hoist _evKind]
+  (yield "typeof ")
+  (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr)))
+
+(fn* transpileBuiltinInstanceof [ctx node assign hoist _evKind]
+  (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr))
+  (yield " instanceof ")
+  (yield* (transpileNodeExpr ctx (. node 2) assign hoist evExpr)))
+
+(fn* transpileBuiltinDelete [ctx node assign hoist _evKind]
+  (yield "delete ")
+  (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr)))
+
+(fn* transpileBuiltinSet [ctx node assign hoist _evKind]
+  (yield*
+    (transpileNodeExpr ctx (. node 2)
+      [(... (transpileNodeExpr ctx (. node 1) assign hoist evExpr)) "="]
+      hoist evExpr)))
+
+(const builtins
+  {:import transpileBuiltinImport
+   :const transpileBuiltinConst
+   :var transpileBuiltinDef
+   :fn transpileBuiltinFnArrow
+   "fn@" transpileBuiltinFnArrowAsync
+   "fn*" transpileBuiltinFnGenerator
+   "fn@*" transpileBuiltinFnAsyncGenerator
+   :str (makeOpTranspiler "+")
+   "+" (makeOpTranspiler "+" true)
+   "-" (makeOpTranspiler "-" true)
+   "*" (makeOpTranspiler "*")
+   "/" (makeOpTranspiler "/")
+   "**" (makeOpTranspiler "**")
+   "%" (makeOpTranspiler "%")
+   "+=" (makeOpTranspiler "+=")
+   "-=" (makeOpTranspiler "-=")
+   "&=" (makeOpTranspiler "&=")
+   "|=" (makeOpTranspiler "|=")
+   "/=" (makeOpTranspiler "/=")
+   "*=" (makeOpTranspiler "*=")
+   "**=" (makeOpTranspiler "**=")
+   "<<=" (makeOpTranspiler "<<=")
+   ">>=" (makeOpTranspiler ">>=")
+   ">>>=" (makeOpTranspiler ">>>=")
+   "||=" (makeOpTranspiler "||=")
+   "??=" (makeOpTranspiler "??=")
+   "%=" (makeOpTranspiler "%=")
+   "??" (makeOpTranspiler "??")
+   "<<" (makeOpTranspiler "<<")
+   ">>" (makeOpTranspiler ">>")
+   ">>>" (makeOpTranspiler ">>>")
+   "++" (makeSuffixOpTranspiler "++")
+   "--" (makeSuffixOpTranspiler "--")
+   :bit-and (makeOpTranspiler "&")
+   :bit-or (makeOpTranspiler "|")
+   :bit-not (makePrefixOpTranspiler "~")
+   :bit-xor (makeOpTranspiler "^")
+   "||" (makeOpTranspiler "||")
+   :or (makeOpTranspiler "||")
+   "&&" (makeOpTranspiler "&&")
+   :and (makeOpTranspiler "&&")
+   :not (makePrefixOpTranspiler "!")
+   :in (makeOpTranspiler " in ")
+   "=" transpileBuiltinCmp
+   "==" transpileBuiltinCmp
+   "!=" transpileBuiltinCmp
+   "not=" transpileBuiltinCmp
+   "<" transpileBuiltinCmp
+   ">" transpileBuiltinCmp
+   "<=" transpileBuiltinCmp
+   ">=" transpileBuiltinCmp
+   :let transpileBuiltinLet
+   :throw transpileBuiltinKeywordStatement
+   :return transpileBuiltinKeywordStatement
+   :yield transpileBuiltinKeywordExpr
+   "yield*" transpileBuiltinKeywordExpr
+   :break transpileBuiltinKeywordStatement
+   :continue transpileBuiltinKeywordStatement
+   :await transpileBuiltinKeywordExpr
+   :for transpileBuiltinFor
+   "for@" transpileBuiltinForAwait
+   "for-of" transpileBuiltinForOf
+   "for-in" transpileBuiltinForIn
+   :case transpileBuiltinCase
+   :do transpileBuiltinDo
+   :if transpileBuiltinIf
+   :while transpileBuiltinWhile
+   "." transpileBuiltinDot
+   "?." transpileBuiltinQuestionDot
+   "..." transpileBuiltinRest
+   :typeof transpileBuiltinTypeof
+   :instanceof transpileBuiltinInstanceof
+   :set transpileBuiltinSet
+   :delete transpileBuiltinDelete
+   :hash transpileBuiltinHash
+   :quote transpileBuiltinQuote
+   :macro transpileSpecialMacro
+   :try transpileBuiltinTry
+   :class transpileBuiltinClass})
+
+(let macros {})
+
+(fn newCtx [config macros]
+  (let gensym 0)
+  {...config
+   :bindings (bindings builtins)
+   :macros (bindings macros)
+   :gensym (fn [prefix]
+              (set prefix (?? prefix "gensym"))
+              {:kind :symbol :value `${prefix}__${(++ gensym)}` :pos {}})})
+
+(set macros
+  ((fn []
+    (let [ctx (newCtx {} {})
+          input (uninterrupt (tokens ctx builtinMacros))]
+      (while true
+        (if-let [node (astOne ctx input)]
+          [(... (transpileNodeStatement ctx node null null evStat))]
+          (return (. ctx.macros.scopes 0))))))))
+
+(fn* transpileCtx [code ctx semi]
+  (let [input (uninterrupt (tokens ctx code))]
+    (set semi (?? semi true))
+    (while true
+      (if-let [node (astOne ctx input)]
+        (do
+          (yield* (transpileNodeStatement ctx node null null evStat))
+          (when semi
+            (yield ";")))
+        (return)))))
+
+(fn* ^:export transpile [code config]
+  (yield* (transpileCtx code (newCtx (or config {}) macros))))
+
+(fn ^:export transpileStr [code config]
+  (set config (?? config {}))
+  (let [source (?? config.filename "<anonymous>")
+        parts []
+        map (SourceMapGenerator.)
+        column 0]
+    (for-of [out (transpile code config)]
+      (let [[part partToken] (if (string? out) [out] out)]
+        (when (number? partToken?.pos?.line)
+          (map.addMapping
+            {:source source
+             :original {:line (inc partToken.pos.line)
+                        :column partToken.pos.column}
+             :generated {:line 1 :column column}
+             :name (if (and (= partToken.kind :symbol)
+                            (not (partToken.value.includes ".")))
+                      (mangleSym partToken.value)
+                      null)}))
+        (+= column part.length)
+        (parts.push part)))
+    (map.setSourceContent source code)
+    (let [mapJSON (map.toJSON)]
+      (when (= config.sourcemap :inline)
+        (parts.push "\n//# sourceMappingURL=data:application/json;base64,"
+                    (btoa (JSON.stringify mapJSON))))
+      {:code (parts.join "") :map mapJSON})))

@@ -5,6 +5,7 @@
     "packages/loader",
     "packages/rollup",
     "packages/html",
+    "packages/bootstrap",
     "packages/website"
   ],
   "devDependencies": {

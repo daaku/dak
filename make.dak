@@ -63,13 +63,14 @@
     (console.log (r-dep-graph pkgs))))
 
 (fn@ pkg-needs-bump [ws]
-  (let [version-line @(out "grep -n '\"version\"' package.json|cut -d : -f 1"
-                           {:cwd ws})
-        last-version-rev @(out (str "git log -1 --quiet --format=%H -L "
-                                    version-line "," version-line ":"
-                                    (join ws "package.json")))]
-    (not= "" @(out (str "git log -1 --format=%H "
-                        last-version-rev "..main " ws)))))
+  (if-let [version-line @(out "grep -n '\"version\"' package.json|cut -d : -f 1"
+                          {:cwd ws})]
+    (let [last-version-rev @(out (str "git log -1 --quiet --format=%H -L "
+                                      version-line "," version-line ":"
+                                      (join ws "package.json")))]
+      (not= "" @(out (str "git log -1 --format=%H "
+                          last-version-rev "..main " ws))))
+    false))
 
 (fn ws-to-name [workspaces pkgs]
   (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
@@ -80,7 +81,7 @@
 (fn@ release [...argv]
   (let [args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
         release (?? (. args._ 0) :minor)
-        workspaces (.filter @(all-workspaces) #(not= $ :packages/website))
+        workspaces @(all-workspaces)
         [needs-bump pkgs]
         @(Promise.all
            [(Promise.all (workspaces.map pkg-needs-bump))
