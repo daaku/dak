@@ -1,3 +1,25 @@
+(fn err [ctx {:or {pos {}}} msg]
+  (let [e (Error `${(?? ctx.filename "<anonymous>")}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
+    (set e.pos pos)
+    e))
+
+(fn partsStr [gen]
+  (let [parts []]
+    (for-of [part gen]
+      (parts.push (if (string? part) part (. part 0))))
+    (parts.join "")))
+
+(fn bindings [initial]
+  {:scopes [{} initial]
+   :push (fn ^:decl [] (this.scopes.unshift {}))
+   :pop (fn ^:decl [] (this.scopes.shift))
+   :add (fn ^:decl [name value]
+          (set (. this :scopes 0 name) (?? value true)))
+   :get (fn ^:decl [name]
+          (for-of [scope this.scopes]
+            (when-let [binding (. scope name)]
+              (return binding))))})
+
 (fn readString [ctx quote input len pos]
   (let [buf []
         start (inc pos.offset)]
