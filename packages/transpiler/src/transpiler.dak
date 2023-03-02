@@ -1,3 +1,32 @@
+(fn* transpileBuiltinTry [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinTry node assign))
+    (return))
+  (let [end node.length
+        ctch null
+        final null]
+    (when (= (?. node (dec end) 0 :value) :finally)
+      (set final (. node (dec end)))
+      (-- end))
+    (when (= (?. node (dec end) 0 :value) :catch)
+      (set ctch (. node (dec end)))
+      (-- end))
+    (when (and (not final) (not ctch))
+      (throw (err ctx node "at least one of catch or finally is required")))
+    (yield "try{")
+    (yield* (transpileSpecialBody ctx (node.slice 1 end) assign hoist evStat))
+    (yield "}")
+    (when ctch
+      (yield "catch(")
+      (yield* (transpileNodeExpr ctx (. ctch 1) null null evExpr))
+      (yield "){")
+      (yield* (transpileSpecialBody ctx (ctch.slice 2) assign null evStat))
+      (yield "}"))
+    (when final
+      (yield "finally{")
+      (yield* (transpileSpecialBody ctx (final.slice 1) null null evStat))
+      (yield "}"))))
+
 (fn* transpileClassStatic [ctx node]
   (yield "static{")
   (yield* (transpileSpecialBody ctx (node.slice 1) null null evStat))

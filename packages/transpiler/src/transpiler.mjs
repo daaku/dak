@@ -1236,39 +1236,3 @@ function* transpileBuiltinRest(ctx, node, assign, hoist, evKind) {
   yield '...'
   yield* transpileNodeStatement(ctx, node[1], assign, hoist, evKind)
 }
-
-function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
-  if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinTry, node, assign)
-    return
-  }
-  let end = node.length
-  let final
-  if (node[end - 1]?.[0]?.value === 'finally') {
-    final = node[end - 1]
-    end--
-  }
-  let ctch
-  if (node[end - 1]?.[0]?.value === 'catch') {
-    ctch = node[end - 1]
-    end--
-  }
-  if (!final && !ctch) {
-    throw err(ctx, node, 'at least one of catch or finally must be provided')
-  }
-  yield 'try{'
-  yield* transpileSpecialBody(ctx, node.slice(1, end), assign, hoist, evStat)
-  yield '}'
-  if (ctch) {
-    yield 'catch('
-    yield* transpileNodeExpr(ctx, ctch[1], null, null, evExpr)
-    yield '){'
-    yield* transpileSpecialBody(ctx, ctch.slice(2), assign, null, evStat)
-    yield '}'
-  }
-  if (final) {
-    yield 'finally{'
-    yield* transpileSpecialBody(ctx, final.slice(1), null, null, evStat)
-    yield '}'
-  }
-}
