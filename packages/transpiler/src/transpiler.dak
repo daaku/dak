@@ -1,3 +1,66 @@
+(fn* tokens [ctx input]
+  (let [pos {:offset 0 :line 0 :column 0}
+        len input.length
+        value null
+        start null]
+    (while (< pos.offset len)
+      (let [c (. input pos.offset)]
+        (when (= c "\n")
+          (++ pos.line)
+          (set pos.column 0)
+          (set ctx.pos {...pos})
+          (yield {:kind :newline :value "\n" :pos pos})
+          (++ pos.offset)
+          (continue))
+        (when (whitespace.includes c)
+          (++ pos.offset)
+          (++ pos.column)
+          (continue))
+        ; shebang is dropped
+        (when (and (zero? pos.offset) (= c "#") (= (. input 1) "!"))
+          (readEOL ctx input len pos)
+          (continue))
+        (when (single.includes c)
+          ; special case #// for regexp
+          (if (and (= c "#") (= (. input (inc pos.offset)) "/"))
+            (do
+              (++ pos.offset)
+              (++ pos.column)
+              (set start {...pos})
+              (set value (readRegexp ctx input len pos))
+              (set ctx.pos {...start})
+              (yield {:kind :regexp :value value :pos start}))
+            (do
+              (set ctx.pos {...pos})
+              (yield {:kind c :pos {...pos}})
+              (++ pos.offset)
+              (++ pos.column)))
+          (continue))
+        (case c
+          "\""
+          (do
+            (set start {...pos})
+            (set value (readString ctx "\"" input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :string :value value :pos start}))
+          "`"
+          (do
+            (set start {...pos})
+            (set value (readString ctx "`" input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :template :value value :pos start}))
+          ";"
+          (do
+            (set start {...pos})
+            (set value (readEOL ctx input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :comment :value value :pos start}))
+          (do
+            (set start {...pos})
+            (set value (readSymbol ctx input len pos))
+            (set ctx.pos {...start})
+            (yield {:kind :symbol :value value :pos start})))))))
+
 (fn whitespaceOrComment [{:keys [kind]}]
   (or (= kind :comment) (= kind :newline)))
 
