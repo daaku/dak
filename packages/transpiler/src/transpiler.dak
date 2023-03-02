@@ -1,3 +1,36 @@
+(fn whitespaceOrComment [{:keys [kind]}]
+  (or (= kind :comment) (= kind :newline)))
+
+(fn setKind [o kind {:keys [pos]}]
+  (doto o
+    (Object.defineProperty :kind {:value kind :enumerable false})
+    (Object.defineProperty :pos {:value pos :enumerable false})))
+
+(fn* astUntil [ctx input kind]
+  (for-of [token input]
+    (when (whitespaceOrComment token)
+      (continue))
+    (when (= token.kind kind)
+      (return))
+    (yield (astOne ctx (prepend token input))))
+  (throw (err ctx ctx "unterminated form")))
+
+(fn astNeedOne [ctx input]
+  (if-let [node (astOne ctx input)]
+    node
+    (throw (err ctx ctx "unterminated form"))))
+
+(fn astShorthand [ctx token special input]
+  (setKind
+    [{:kind "symbol" :pos token.pos :value special} (astNeedOne ctx input)]
+    :list token))
+
+(fn astHash [ctx token input]
+  (let [node (astShorthand ctx token :hash input)]
+    (if (and (= node.length 2) (= (. node 1 :kind) :symbol))
+      {:kind :symbol :value (str "#" (. node 1 :value)) :pos node.pos}
+      node)))
+
 (fn astOne [ctx input]
   (while true
     (let [{:keys [value done]} (input.next)]
