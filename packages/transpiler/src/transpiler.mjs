@@ -1081,26 +1081,3 @@ function* transpileBuiltinKeywordStatement(ctx, node, _assign, hoist, _evKind) {
     )
   }
 }
-
-function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
-  const binding = node[1]
-  yield 'for(let '
-  yield* transpileNodeSymbol(ctx, binding[0])
-  yield '='
-  yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr)
-  yield ';'
-  yield* transpileNodeSymbol(ctx, binding[0])
-  yield '<'
-  yield* transpileNodeExpr(ctx, binding[2], null, hoist, evExpr)
-  yield ';'
-  yield* transpileNodeSymbol(ctx, binding[0])
-  if (binding.length === 3) {
-    yield '++'
-  } else {
-    yield '+='
-    yield* transpileNodeExpr(ctx, binding[3], null, hoist, evExpr)
-  }
-  yield '){'
-  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
-  yield '}'
-}
