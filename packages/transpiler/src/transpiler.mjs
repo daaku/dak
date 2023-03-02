@@ -751,22 +751,3 @@ const transpileBuiltinConst = hoistable(function* transpileBuiltinConst(
   yield* transpileNodeExpr(ctx, node[symIndex + 1], null, hoist, evExpr)
   yield ';'
 })
-
-function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
-  let [prefix, symIndex] = exportDefault(ctx, node)
-  yield* prefix
-  // if we hoisted, then split the let, otherwise assign expression directly
-  const [hoist, hoisted] = hoister(ctx)
-  const assign = [...transpileSpecialDestructure(ctx, node[symIndex]), '=']
-  const postHoist = [
-    ...transpileNodeExpr(ctx, node[symIndex + 1], assign, hoist, evExpr),
-  ]
-  yield [node[0].value, node[0]]
-  yield ' '
-  if (hoisted.length !== 0 || postHoist[0] != assign[0]) {
-    yield* transpileNodeSymbol(ctx, node[symIndex])
-    yield ';'
-    yield* hoisted
-  }
-  yield* postHoist
-}
