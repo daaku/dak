@@ -1,3 +1,35 @@
+(fn* transpileBuiltinCase [ctx node assign hoist evKind]
+  (when (and (= evKind evExpr) (not assign))
+    (yield* (hoist transpileBuiltinCase node assign))
+    (return))
+  (let [finalDefault (pos? (% node.length 2))]
+    (yield "switch (")
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield "){")
+    (for [i 2 node.length 2]
+      (when (and finalDefault (= i (dec node.length)))
+        (yield "default:")
+        (yield* (transpileNodeStatement ctx (. node i) assign hoist evStat))
+        (yield ";")
+        (when (not= assign "return ")
+          (yield "break"))
+        (yield "}")
+        (return))
+      (if (= (. node i :kind) :array)
+        (for [j 0 (. node i :length)]
+          (yield ["case " (. node i j)])
+          (yield* (transpileNodeExpr ctx (. node i j) null hoist evExpr))
+          (yield [":" (. node i j)]))
+        (do
+          (yield ["case " (. node i)])
+          (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+          (yield [":" (. node i)])))
+      (yield* (transpileNodeStatement ctx (. node (inc i)) assign hoist evStat))
+      (yield ";")
+      (when (not= assign "return ")
+        (yield "break;")))
+    (yield "}")))
+
 (fn* transpileBuiltinQuestionDot [ctx node assign hoist evKind]
   (yield* (transpileSpecialAssign ctx assign))
   (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
