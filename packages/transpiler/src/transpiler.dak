@@ -1,3 +1,16 @@
+(const transpileSpecialBody
+  (hoistable
+    (fn* [ctx node assign hoist]
+      (for [i 0 node.length]
+        (let [a null]
+          (when (= i (dec node.length))
+            (set a assign))
+          (yield* (transpileNodeStatement ctx (. node i) a hoist evStat))
+          (yield ";"))))))
+
+(fn* transpileBuiltinDo [ctx node assign hoist evKind]
+  (yield* (transpileSpecialBody ctx (node.slice 1) assign hoist evKind)))
+
 (fn* transpileSpecialDestructure [ctx node]
   (case node.kind
     :symbol

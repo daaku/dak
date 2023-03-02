@@ -770,23 +770,3 @@ function* transpileBuiltinDef(ctx, node, _assign, _hoist) {
   }
   yield* postHoist
 }
-
-const transpileSpecialBody = hoistable(function* transpileSpecialBody(
-  ctx,
-  node,
-  assign,
-  hoist,
-) {
-  for (let i = 0; i < node.length; i++) {
-    let a
-    if (i === node.length - 1) {
-      a = assign
-    }
-    yield* transpileNodeStatement(ctx, node[i], a, hoist, evStat)
-    yield ';'
-  }
-})
-
-function* transpileBuiltinDo(ctx, node, assign, hoist, evKind) {
-  yield* transpileSpecialBody(ctx, node.slice(1), assign, hoist, evKind)
-}
