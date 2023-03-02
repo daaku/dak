@@ -1,3 +1,13 @@
+(fn* transpileBuiltinWhile [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinWhile node assign))
+    (return))
+  (yield "while(")
+  (yield* (transpileNodeExpr ctx (. node 1) null evExpr))
+  (yield "){")
+  (yield* (transpileSpecialBody ctx (node.slice 2) null hoist evStat))
+  (yield "}"))
+
 (fn* transpileBuiltinCase [ctx node assign hoist evKind]
   (when (and (= evKind evExpr) (not assign))
     (yield* (hoist transpileBuiltinCase node assign))

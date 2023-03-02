@@ -1147,15 +1147,3 @@ function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
     yield '}'
   }
 }
-
-function* transpileBuiltinWhile(ctx, node, assign, hoist, evKind) {
-  if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinWhile, node, assign)
-    return
-  }
-  yield 'while('
-  yield* transpileNodeExpr(ctx, node[1], null, evExpr)
-  yield '){'
-  yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
-  yield '}'
-}
