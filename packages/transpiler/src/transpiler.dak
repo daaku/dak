@@ -1,3 +1,22 @@
+(fn* transpileBuiltinIf [ctx node assign hoist evKind]
+  (when (= evKind evExpr)
+    (yield* (hoist transpileBuiltinIf node assign))
+    (return))
+  (let [elif (splitter "else ")
+        finalElse (zero? (% node.length 2))]
+    (for [i 1 node.length 2]
+      (when (and finalElse (= i (dec node.length)))
+        (yield "else{")
+        (yield* (transpileNodeStatement ctx (. node i) assign hoist evStat))
+        (yield "}")
+        (return))
+      (yield (elif))
+      (yield "if(")
+      (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+      (yield "){")
+      (yield* (transpileNodeStatement ctx (. node (inc i)) assign hoist evStat))
+      (yield "}"))))
+
 (fn* transpileBuiltinWhile [ctx node assign hoist evKind]
   (when (= evKind evExpr)
     (yield* (hoist transpileBuiltinWhile node assign))

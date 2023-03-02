@@ -1123,27 +1123,3 @@ const makeForTranspiler = (prefix, middle) =>
 const transpileBuiltinForOf = makeForTranspiler('for', 'of')
 const transpileBuiltinForIn = makeForTranspiler('for', 'in')
 const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
-
-function* transpileBuiltinIf(ctx, node, assign, hoist, evKind) {
-  if (evKind === evExpr) {
-    yield* hoist(transpileBuiltinIf, node, assign)
-    return
-  }
-
-  const elif = splitter('else ')
-  const finalElse = node.length % 2 === 0
-  for (let i = 1; i < node.length; i += 2) {
-    if (finalElse && i === node.length - 1) {
-      yield 'else{'
-      yield* transpileNodeStatement(ctx, node[i], assign, hoist, evStat)
-      yield '}'
-      return
-    }
-    yield elif()
-    yield 'if('
-    yield* transpileNodeExpr(ctx, node[i], null, hoist, evExpr)
-    yield '){'
-    yield* transpileNodeStatement(ctx, node[i + 1], assign, hoist, evStat)
-    yield '}'
-  }
-}
