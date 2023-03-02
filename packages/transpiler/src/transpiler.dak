@@ -1,3 +1,33 @@
+; be conservative
+(fn isValidIdentifier [s] (s.match #/^[a-zA-Z_$][0-9a-zA-Z_$]*$/))
+
+(fn canLiteralIdentifier [node]
+  (and (= node.kind :string) (isValidIdentifier node.value)))
+
+(fn* transpileNodeObject [ctx node hoist]
+  (yield ["{" node])
+  (for [i 0 node.length]
+    (if (and (= (. node i :kind) :symbol) (.startsWith (. node i :value) "..."))
+        (yield* (transpileNodeSymbol ctx (. node i))) ; ...foo
+        (and (= (. node i :kind) :list)
+             (= (. node i 0 :kind) :symbol)
+             (= (. node i 0 :value) "..."))
+        (do ; (... (foo :bar))
+          (yield "...")
+          (yield* (transpileNodeExpr ctx (. node i 1) null hoist evExpr)))
+        (do
+          (if (canLiteralIdentifier (. node i))
+            (yield [(. node i :value) (. node i)])
+            (do
+              (yield "[")
+              (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
+              (yield "]")))
+          (yield ":")
+          (yield* (transpileNodeExpr ctx (. node (inc i)) null hoist evExpr))
+          (++ i))) ; we consumed the value too
+    (yield ","))
+  (yield "}"))
+
 (fn* transpileNodeArray [ctx node hoist]
   (yield ["[" node])
   (for-of [i node]
