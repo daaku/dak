@@ -1272,13 +1272,3 @@ function* transpileBuiltinTry(ctx, node, assign, hoist, evKind) {
     yield '}'
   }
 }
-
-function* transpileClassStatic(ctx, node) {
-  yield 'static{'
-  yield* transpileSpecialBody(ctx, node.slice(1), null, null, evStat)
-  yield '}'
-}
-
-function* transpileClassPrivateSymbol(ctx, token) {
-  yield [mangleSym(token.value, false), token]
-}

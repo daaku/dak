@@ -1,3 +1,11 @@
+(fn* transpileClassStatic [ctx node]
+  (yield "static{")
+  (yield* (transpileSpecialBody ctx (node.slice 1) null null evStat))
+  (yield "}"))
+
+(fn* transpileClassPrivateSymbol [ctx token]
+  (yield [(mangleSym token.value false) token]))
+
 (fn* transpileClassLet [ctx node _assign _hoist]
   (let [index 1
         stic false]
