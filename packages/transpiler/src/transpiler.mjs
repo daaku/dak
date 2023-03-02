@@ -972,19 +972,3 @@ const cmpRemap = {
   '=': '===',
   'not=': '!==',
 }
-
-function* transpileBuiltinCmp(ctx, node, assign, hoist, _evKind) {
-  yield* transpileSpecialAssign(ctx, assign)
-  yield* transpileNodeExpr(ctx, node[1], null, hoist, evExpr)
-  const op = node[0].value
-  yield [cmpRemap[op] ?? op, node[0]]
-  yield* transpileNodeExpr(ctx, node[2], null, hoist, evExpr)
-}
-
-function* transpileBuiltinLet(ctx, node, assign, hoist, evKind) {
-  if (node[1].kind === 'array') {
-    yield* transpileBuiltinLetMulti(ctx, node, assign, hoist, evKind)
-    return
-  }
-  yield* transpileBuiltinDef(ctx, node, assign, hoist, evKind)
-}
