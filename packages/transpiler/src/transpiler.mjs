@@ -498,35 +498,3 @@ function* transpileNodeObject(ctx, node, hoist) {
   }
   yield '}'
 }
-
-function* transpileNodeArray(ctx, node, hoist) {
-  yield ['[', node]
-  for (const i of node) {
-    yield* transpileNodeExpr(ctx, i, null, hoist, evExpr)
-    yield ','
-  }
-  yield ']'
-}
-
-function* transpileNodeString(ctx, token) {
-  yield ['"', token]
-  yield token.value
-  yield '"'
-}
-
-const exprStart = '${'
-const exprEnd = '}'
-
-const templateExprStart = (template, position) => {
-  let index = template.indexOf(exprStart, position)
-  if (index === -1) {
-    return -1
-  }
-  if (index === 0) {
-    return exprStart.length
-  }
-  if (template[index - 1] === '\\') {
-    return templateExprStart(template, index)
-  }
-  return index + exprStart.length
-}

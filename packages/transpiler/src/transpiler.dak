@@ -1,3 +1,25 @@
+(fn* transpileNodeArray [ctx node hoist]
+  (yield ["[" node])
+  (for-of [i node]
+    (yield* (transpileNodeExpr ctx i null hoist evExpr))
+    (yield ","))
+  (yield "]"))
+
+(fn* transpileNodeString [ctx token]
+  (yield ["\"" token])
+  (yield token.value)
+  (yield "\""))
+
+(const exprStart "${")
+(const exprEnd "}")
+
+(fn templateExprStart [template position]
+  (let [index (template.indexOf exprStart position)]
+    (if (= index -1) -1
+        (zero? index) exprStart.length
+        (= (. template (dec index)) "\\") (templateExprStart template index)
+        (+ index exprStart.length))))
+
 (fn* transpileNodeTemplate [ctx token hoist]
   (yield ["`" token])
   (let [last 0
