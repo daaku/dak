@@ -1,3 +1,32 @@
+(fn mangleSym [sym autoThis]
+  (??= autoThis true)
+  ; dont mangle numbers
+  (let [first (. sym 0)]
+    (when (= first "-")
+      (return sym))
+    (when (= first ".")
+      (set first (sym.at 1)))
+    (when (and (>= first "0") (<= first "9"))
+      (return sym)))
+  (let [parts []
+        start 0]
+    (when (and autoThis (sym.startsWith "...#"))
+      (parts.push "...this.#")
+      (set start 4))
+    (for [end 0 sym.length]
+      (let [c (. sym end)]
+        (when (and autoThis (zero? end) (= c "#"))
+          (parts.push "this."))
+        (when-let [found (. mangleChars c)]
+          (when (and found (or (not= c "?") (not= (. sym (inc end)) ".")))
+            (parts.push (sym.slice start end) found)
+            (set start (inc end))))))
+    (if (zero? parts.length)
+      sym
+      (do
+        (parts.push (sym.slice start sym.length))
+        (parts.join "")))))
+
 (fn* transpileNodeSymbol [ctx token]
   (yield [(mangleSym token.value) token]))
 
