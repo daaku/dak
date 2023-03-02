@@ -1,3 +1,39 @@
+(const transpileBuiltinFnArrow (makeFnTranspiler "" "=>"))
+(const transpileBuiltinFnArrowAsync (makeFnTranspiler "async" "=>"))
+(const transpileBuiltinFnGenerator (makeFnTranspiler "function*" ""))
+(const transpileBuiltinFnAsyncGenerator (makeFnTranspiler "async function*" ""))
+
+(fn makeOpTranspiler [op unary]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (when (and unary (= node.length 2))
+      (yield op))
+    (let [sp (splitter op)]
+      (for [i 1 node.length]
+        (yield (sp))
+        (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))))
+    (yield ")")))
+
+(fn makePrefixOpTranspiler [op]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (yield op)
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield ")")))
+
+(fn makeSuffixOpTranspiler [op]
+  (fn* [ctx node assign hoist _evKind]
+    (yield* (transpileSpecialAssign ctx assign))
+    (yield "(")
+    (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
+    (yield op)
+    (yield ")")))
+
+(const cmpRemap {"=" "==="
+                 "not=" "!=="})
+
 (fn* transpileBuiltinCmp [ctx node assign hoist _evKind]
   (yield* (transpileSpecialAssign ctx assign))
   (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
