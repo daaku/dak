@@ -396,26 +396,3 @@ const astOne = (ctx, input) => {
     }
   }
 }
-
-// generators have cleanup logic which makes early returns void the rest of
-// the generator run. this creates a custom iterator that disables
-// that behavior. see:
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
-const uninterrupt = it => {
-  return {
-    next() {
-      return it.next()
-    },
-    [Symbol.iterator]() {
-      return this
-    },
-  }
-}
-
-const prepend = (one, rest) =>
-  uninterrupt(
-    (function* () {
-      yield one
-      yield* rest
-    })(),
-  )

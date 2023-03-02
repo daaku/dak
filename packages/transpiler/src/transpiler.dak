@@ -1,3 +1,16 @@
+; generators have cleanup logic which makes early returns void the rest of
+; the generator run. this creates a custom iterator that disables
+; that behavior. see:
+; https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of#early_exiting
+(fn uninterrupt [it]
+  {:next (fn [] (it.next))
+   Symbol.iterator (fn ^:decl [] this)})
+
+(fn prepend [one rest]
+  (uninterrupt ((fn* ()
+                  (yield one)
+                  (yield* rest)))))
+
 (const evExpr "evExpr")
 (const evStat "evStat")
 
