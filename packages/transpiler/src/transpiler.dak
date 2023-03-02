@@ -1,3 +1,51 @@
+(const transpileNodeExpr transpileNodeUnknown)
+(const transpileNodeStatement (hoistable transpileNodeUnknown))
+
+(fn* transpileBuiltinImportOne [ctx node]
+  (let [defaultName null
+        asName null
+        inner []
+        needFrom false
+        comma (splitter ",")]
+    (for [i 1 node.length]
+      (let [c (. node i)]
+        (case c.kind
+          :array ; list of simple names to import
+          (for-of [name c]
+            (inner.push (mangleSym name.value)))
+          :symbol
+          (set defaultName c)
+          :string
+          (do
+            (when (not= c.value :as)
+              (throw (err ctx c `unexpected import string "${c.value}"`)))
+            (++ i)
+            (set asName (. node i)))
+          :object ; rename
+          (for [i 0 c.length 2]
+            (inner.push `${(mangleSym (. c i :value))} as ${(mangleSym (. c (inc i) :value))}`))
+          (throw (err ctx c "unexpected import")))))
+    (yield ["import " node])
+    (when defaultName
+      (set needFrom true)
+      (yield (comma))
+      (yield* (transpileNodeSymbol ctx defaultName)))
+    (when (pos? inner.length)
+      (set needFrom true)
+      (yield (comma))
+      (yield "{")
+      (yield (inner.join ","))
+      (yield "}"))
+    (when asName
+      (set needFrom true)
+      (yield (comma))
+      (yield ["* as " asName])
+      (yield* (transpileNodeSymbol ctx asName)))
+    (when needFrom
+      (yield " from "))
+    (yield* (transpileNodeString ctx (. node 0)))
+    (yield ";")))
+
 (fn* transpileBuiltinImport [ctx node assign hoist evExpr]
   (if (= (. node 1 :kind) :array)
     (for [i 1 node.length]
