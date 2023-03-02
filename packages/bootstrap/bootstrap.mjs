@@ -977,78 +977,105 @@ var builtinMacros = `
      gx#))
 `;
 var err = (ctx, { pos = {} }, msg) => {
-  const e = Error(
-    `${ctx.filename ?? "<anonymous>"}:${pos.line + 1}:${pos.column + 1}: ${msg}`
-  );
-  e.pos = pos;
-  return e;
+  {
+    let e = Error(`${ctx.filename ?? "<anonymous>"}:${pos.line + 1}:${pos.column + 1}: ${msg}`);
+    e.pos = pos;
+    return e;
+  }
+  ;
 };
 var partsStr = (gen) => {
-  const parts = [];
-  for (const part of gen) {
-    parts.push(typeof part === "string" ? part : part[0]);
+  {
+    let parts = [];
+    for (let part of gen) {
+      let hoist__0;
+      if (typeof part === "string") {
+        hoist__0 = part;
+      } else {
+        hoist__0 = part[0];
+      }
+      ;
+      parts.push(hoist__0);
+    }
+    ;
+    return parts.join("");
   }
-  return parts.join("");
+  ;
 };
 var bindings = (initial) => {
-  return {
-    scopes: [{}, initial],
-    push() {
-      this.scopes.unshift({});
-    },
-    pop() {
-      this.scopes.shift();
-    },
-    add(name, value) {
-      this.scopes[0][name] = value ?? true;
-    },
-    get(name) {
-      for (const scope of this.scopes) {
-        const binding = scope[name];
-        if (binding) {
-          return binding;
+  return { scopes: [{}, initial], push: function() {
+    return this.scopes.unshift({});
+  }, pop: function() {
+    return this.scopes.shift();
+  }, add: function(name, value) {
+    return this.scopes[0][name] = value ?? true;
+  }, get: function(name) {
+    for (let scope of this.scopes) {
+      {
+        let macro__1 = scope[name];
+        if (macro__1) {
+          {
+            let binding = macro__1;
+            return binding;
+          }
         }
+        ;
       }
+      ;
     }
-  };
+    ;
+  } };
 };
 var readString = (ctx, quote, input2, len, pos) => {
-  let buf = [];
-  let start = pos.offset + 1;
-  for (let end = start; end < len; end++) {
-    pos.offset++;
-    pos.column++;
-    switch (input2[end]) {
-      case quote:
-        pos.offset++;
-        pos.column++;
-        if (buf.length === 0) {
-          return input2.substring(start, end);
-        } else {
-          buf.push(input2.substring(start, end));
-          return buf.join("");
-        }
-      case "\n":
-        pos.line++;
-        pos.column = 0;
-        buf.push(input2.substring(start, end), "\\n");
-        start = end + 1;
-        break;
-      case "\\":
-        end++;
-        pos.offset++;
-        if (input2[end] === "\n") {
+  {
+    let buf = [];
+    let start = pos.offset + 1;
+    for (let end = start; end < len; end++) {
+      pos.offset++;
+      pos.column++;
+      switch (input2[end]) {
+        case quote:
+          pos.offset++;
+          pos.column++;
+          if (buf.length === 0) {
+            return input2.substring(start, end);
+          } else {
+            buf.push(input2.substring(start, end));
+            return buf.join("");
+          }
+          ;
+          ;
+          break;
+        case "\n":
           pos.line++;
           pos.column = 0;
-        } else {
-          pos.column += 2;
-        }
-        break;
+          buf.push(input2.substring(start, end), "\\n");
+          start = end + 1;
+          ;
+          break;
+        case "\\":
+          end++;
+          pos.offset++;
+          if (input2[end] === "\n") {
+            pos.line++;
+            pos.column = 0;
+          } else {
+            pos.column += 2;
+          }
+          ;
+          ;
+          break;
+      }
+      ;
     }
+    ;
   }
+  ;
   throw err(ctx, { pos }, "unterminated string");
 };
-var isLetter = (c) => c >= "A" && c <= "Z" || c >= "a" && c <= "z";
+var isLetter = (c) => {
+  return c >= "A" && c <= "Z" || c >= "a" && c <= "z";
+};
 var readRegexp = (ctx, input2, len, pos) => {
   {
     let start = pos.offset + 1;
@@ -2370,8 +2397,8 @@ var transpileBuiltinClass = function* (ctx, node, assign, hoist, evKind) {
 };
 var hashLambdaArgMap = (ctx, args, n) => {
   if (Array.isArray(n) && n?.[0]?.value !== "hash") {
-    n.forEach((lambda__7) => {
-      return hashLambdaArgMap(ctx, args, lambda__7);
+    n.forEach((lambda__8) => {
+      return hashLambdaArgMap(ctx, args, lambda__8);
     });
     return;
   } else if (n.kind !== "symbol") {
@@ -2411,14 +2438,14 @@ var hashLambdaArgMap = (ctx, args, n) => {
     ;
     {
       let replace = args[arg].value;
-      let hoist__8;
+      let hoist__9;
       if (dot < 0) {
-        hoist__8 = replace;
+        hoist__9 = replace;
       } else {
-        hoist__8 = `${replace}${sym.slice(dot)}`;
+        hoist__9 = `${replace}${sym.slice(dot)}`;
       }
       ;
-      return n.value = hoist__8;
+      return n.value = hoist__9;
     }
     ;
   }
@@ -2478,8 +2505,8 @@ var serializeNode = function* (ctx, node, hoist) {
 };
 var applyGensym = (ctx, existing, node) => {
   if (Array.isArray(node)) {
-    return node.forEach((lambda__9) => {
-      return applyGensym(ctx, existing, lambda__9);
+    return node.forEach((lambda__10) => {
+      return applyGensym(ctx, existing, lambda__10);
     });
   } else if (node.kind === "symbol" && node.value.endsWith("#")) {
     {
@@ -2508,8 +2535,8 @@ var transpileBuiltinQuote = function* (ctx, node, assign, hoist, _evKind) {
 };
 var transpileSpecialMacro = function* (ctx, node) {
   {
-    let args = node[2].map((lambda__10) => {
-      return partsStr(transpileSpecialDestructure(ctx, lambda__10));
+    let args = node[2].map((lambda__11) => {
+      return partsStr(transpileSpecialDestructure(ctx, lambda__11));
     });
     let body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
     return ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
