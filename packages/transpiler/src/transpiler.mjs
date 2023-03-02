@@ -1104,22 +1104,3 @@ function* transpileBuiltinFor(ctx, node, _assign, hoist, _evKind) {
   yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
   yield '}'
 }
-
-const makeForTranspiler = (prefix, middle) =>
-  function* transpileBuiltinForSpecial(ctx, node, _assign, hoist, evKind) {
-    const binding = node[1]
-    yield [prefix, node[0]]
-    yield '(let '
-    yield* transpileSpecialDestructure(ctx, binding[0])
-    yield [' ', node[0]]
-    yield middle
-    yield ' '
-    yield* transpileNodeExpr(ctx, binding[1], null, hoist, evExpr)
-    yield ['){', node[0]]
-    yield* transpileSpecialBody(ctx, node.slice(2), null, hoist, evStat)
-    yield '}'
-  }
-
-const transpileBuiltinForOf = makeForTranspiler('for', 'of')
-const transpileBuiltinForIn = makeForTranspiler('for', 'in')
-const transpileBuiltinForAwait = makeForTranspiler('for await', 'of')
