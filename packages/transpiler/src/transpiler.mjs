@@ -601,17 +601,3 @@ const mangleSym = (sym, autoThis = true) => {
   parts.push(sym.slice(start, sym.length))
   return parts.join('')
 }
-
-function* transpileNodeSymbol(ctx, token) {
-  yield [mangleSym(token.value), token]
-}
-
-function* transpileSpecialAssign(ctx, assign) {
-  if (assign) {
-    if (typeof assign === 'string') {
-      yield assign
-    } else {
-      yield* assign
-    }
-  }
-}

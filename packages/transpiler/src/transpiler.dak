@@ -1,3 +1,12 @@
+(fn* transpileNodeSymbol [ctx token]
+  (yield [(mangleSym token.value) token]))
+
+(fn* transpileSpecialAssign [ctx assign]
+  (when assign
+    (if (string? assign)
+      (yield assign)
+      (yield* assign))))
+
 (fn* transpileNodeUnknown [ctx node assign hoist evExpr]
   ; list will handle it's own assign, all others are expressions
   (if (= node.kind :list)
