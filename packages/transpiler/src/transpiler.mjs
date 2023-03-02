@@ -864,13 +864,3 @@ function* transpileSpecialDestructure(ctx, node) {
       break
   }
 }
-
-function* transpileSpecialFnArgs(ctx, node) {
-  const comma = splitter(',')
-  yield '('
-  for (const i of node) {
-    yield comma()
-    yield* transpileSpecialDestructure(ctx, i)
-  }
-  yield ')'
-}

@@ -1,3 +1,11 @@
+(fn* transpileSpecialFnArgs [ctx node]
+  (let [comma (splitter ",")]
+    (yield "(")
+    (for-of [i node]
+      (yield (comma))
+      (yield* (transpileSpecialDestructure ctx i)))
+    (yield ")")))
+
 (fn makeFnTranspiler [preArgs postArgs]
   (fn* [ctx node assign _hoist evKind]
     (let [pre preArgs
