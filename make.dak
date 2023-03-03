@@ -7,6 +7,7 @@
         [:mri mri]
         [:semver/functions/inc.js semver-inc])
 
+(const ws-pad-target 18)
 (const exec (promisify execCB))
 (const PASS "\x1b[32mPASS\x1b[0m")
 (const FAIL "\x1b[31m\x1b[1mFAIL\x1b[0m")
@@ -31,12 +32,12 @@
         (console.log PASS (ws.padEnd ws-pad-target " ")
           (.padStart (since start) 5 " ") sh)
         (when (not= cmd :test)
-          (console.log stdout)
-          (console.log stderr)))
+          (when stdout (console.log stdout))
+          (when stderr (console.log stderr))))
       (catch e
-        (console.log FAIL ws sh)
-        (console.error e.stdout)
-        (console.error e.stderr)
+        (console.error FAIL ws sh)
+        (when stdout (console.error stdout))
+        (when stderr (console.error stderr))
         false))))
 
 (fn@ run [cmd]
@@ -45,6 +46,24 @@
     (if (.some @(Promise.allSettled (workspaces.map #(run-ws $ cmd ws-pad-target)))
                #(false? $.value))
       (process.exit 1))))
+
+(fn array-remove [vs v]
+  (let [index (vs.indexOf v)]
+    (when (not= index -1)
+      (vs.splice index 1)))
+  vs)
+
+; TODO: doesn't handle failed prepare commands
+(fn@ prepare []
+  (let [[_ workspaces]
+        @(Promise.all
+          [((fn@ []
+              @(run-ws :packages/transpiler :prepare ws-pad-target)
+              @(run-ws :packages/loader :prepare ws-pad-target)))
+            (all-workspaces)])
+         pending (-> workspaces (array-remove :packages/transpiler)
+                                (array-remove :packages/loader))]
+    @(Promise.all @(workspaces.map #(run-ws $ :prepare ws-pad-target)))))
 
 (fn r-dep-graph [pkgs]
   (let [graph {}]
@@ -142,6 +161,7 @@ run      run package scripts in parallel
 (const commands {:run run
                  :test #(run :test)
                  :cover #(run :cover)
+                 :prepare prepare
                  :r-dep r-dep
                  :release release
                  :help help})
