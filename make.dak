@@ -7,7 +7,7 @@
         [:mri mri]
         [:semver/functions/inc.js semver-inc])
 
-(const ws-pad-target 18)
+(const ws-pad-target 19)
 (const exec (promisify execCB))
 (const PASS "\x1b[32mPASS\x1b[0m")
 (const FAIL "\x1b[31m\x1b[1mFAIL\x1b[0m")
@@ -157,8 +157,7 @@ release  build and publish releases
   [-n|--dry-run]
 r-dep    show internal reverse dependencies
 run      run package scripts in parallel
-  [command] script command
-`)
+  [command] script command`)
 
 (fn@ help []
   (console.log help-text))
