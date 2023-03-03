@@ -65,6 +65,10 @@
                                 (array-remove :packages/loader))]
     @(Promise.all @(workspaces.map #(run-ws $ :prepare ws-pad-target)))))
 
+(fn@ test []
+  @(prepare)
+  @(run :test))
+
 (fn r-dep-graph [pkgs]
   (let [graph {}]
     (pkgs.map #(set (. graph $.name) []))
@@ -146,8 +150,9 @@
 (const help-text
 `./make.dak [command] [options]
 
-test     run unit tests
+test     prepare and test
 cover    run unit tests with coverage
+prepare  prepare packages
 release  build and publish releases
   [-n|--dry-run]
 r-dep    show internal reverse dependencies
@@ -159,7 +164,7 @@ run      run package scripts in parallel
   (console.log help-text))
 
 (const commands {:run run
-                 :test #(run :test)
+                 :test test
                  :cover #(run :cover)
                  :prepare prepare
                  :r-dep r-dep
