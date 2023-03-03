@@ -1,4 +1,4 @@
-#!/usr/bin/env dak
+#!./node_modules/.bin/dak
 
 (import [:node:fs/promises [readFile writeFile]]
         [:node:path [join]]
@@ -124,11 +124,27 @@
         @(exec "git push")
         @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
 
+(const help-text
+`./make.dak [command] [options]
+
+test     run unit tests
+cover    run unit tests with coverage
+release  build and publish releases
+  [-n|--dry-run]
+r-dep    show internal reverse dependencies
+run      run package scripts in parallel
+  [command] script command
+`)
+
+(fn@ help []
+  (console.log help-text))
+
 (const commands {:run run
                  :test #(run :test)
                  :cover #(run :cover)
                  :r-dep r-dep
-                 :release release})
+                 :release release
+                 :help help})
 
 (fn@ main []
   (set process.env.PATH
