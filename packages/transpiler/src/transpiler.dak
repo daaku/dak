@@ -281,7 +281,7 @@
 
 (fn astShorthand [ctx token special input]
   (setKind
-    [{:kind "symbol" :pos token.pos :value special} (astNeedOne ctx input)]
+    [{:kind :symbol :pos token.pos :value special} (astNeedOne ctx input)]
     :list token))
 
 (fn astHash [ctx token input]
@@ -299,17 +299,17 @@
         (case value.kind
           [:newline :comment] (continue)
           [:string :template :regexp :symbol] value
-          "(" (setKind [(... (astUntil ctx input ")"))] "list" value)
-          "[" (setKind [(... (astUntil ctx input "]"))] "array" value)
-          "{" (setKind [(... (astUntil ctx input "}"))] "object" value)
-          "'" (astShorthand ctx value "quote" input)
-          "," (astShorthand ctx value "unquote" input)
-          "@" (astShorthand ctx value "await" input)
+          "(" (setKind [(... (astUntil ctx input ")"))] :list value)
+          "[" (setKind [(... (astUntil ctx input "]"))] :array value)
+          "{" (setKind [(... (astUntil ctx input "}"))] :object value)
+          "'" (astShorthand ctx value :quote input)
+          "," (astShorthand ctx value :unquote input)
+          "@" (astShorthand ctx value :await input)
           "#" (astHash ctx value input)
           ":" (let [sym (astNeedOne ctx input)]
                 (when (not= sym.kind :symbol)
                   (throw (err ctx value "invalid keyword")))
-                (set sym.kind "string")
+                (set sym.kind :string)
                 (set sym.pos value.pos)
                 sym)
           (throw (err ctx value `unknown token ${value.kind}`)))))))
@@ -327,8 +327,8 @@
                   (yield one)
                   (yield* rest)))))
 
-(const evExpr "evExpr")
-(const evStat "evStat")
+(const evExpr :evExpr)
+(const evStat :evStat)
 
 (fn hoister [ctx]
   (const collected [])
@@ -1291,7 +1291,7 @@
    :bindings (bindings builtins)
    :macros (bindings macros)
    :gensym (fn [prefix]
-              (set prefix (?? prefix "gensym"))
+              (set prefix (?? prefix :gensym))
               {:kind :symbol :value `${prefix}__${(++ gensym)}` :pos {}})})
 
 (set macros
