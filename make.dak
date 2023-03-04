@@ -9,8 +9,8 @@
 
 (const ws-pad-target 19)
 (const exec (promisify execCB))
-(const PASS "\x1b[32mPASS\x1b[0m")
-(const FAIL "\x1b[31m\x1b[1mFAIL\x1b[0m")
+(const PASS "\x1b[32m\u2713\x1b[0m")
+(const FAIL "\x1b[31m\x1b[1mx\x1b[0m")
 
 (fn since [start]
   (str (- (Date.now) start) "ms"))
@@ -24,21 +24,24 @@
 (fn@ workspace-package-json [ws]
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
 
+(fn run-log-cmd [prefix ws cmd sh start]
+  (console.log prefix (str "[" cmd "]") (ws.padEnd ws-pad-target " ")
+    (.padStart (since start) 5 " ") sh))
+
 (fn@ run-ws [ws cmd ws-pad-target]
   (when-let [sh (-> @(workspace-package-json ws) (?. :scripts cmd))]
-    (try
-      (let [start (Date.now)
-            {:keys [stdout stderr]} @(exec sh {:cwd ws})]
-        (console.log PASS (ws.padEnd ws-pad-target " ")
-          (.padStart (since start) 5 " ") sh)
-        (when (not= cmd :test)
-          (when stdout (console.log stdout))
-          (when stderr (console.log stderr))))
-      (catch e
-        (console.error FAIL ws sh)
-        (when stdout (console.error stdout))
-        (when stderr (console.error stderr))
-        false))))
+    (let [start (Date.now)]
+      (try
+        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
+          (run-log-cmd PASS ws cmd sh start)
+          (when (not= cmd :test)
+            (when stdout (console.log stdout))
+            (when stderr (console.log stderr))))
+        (catch e
+          (run-log-cmd FAIL ws cmd sh start)
+          (when e.stdout (console.error e.stdout))
+          (when e.stderr (console.error e.stderr))
+          false)))))
 
 (fn@ run [cmd]
   (let [workspaces @(all-workspaces)
