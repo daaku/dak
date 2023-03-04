@@ -41,12 +41,12 @@
           (run-log-cmd FAIL ws cmd sh start)
           (when e.stdout (console.error e.stdout))
           (when e.stderr (console.error e.stderr))
-          false)))))
+          (throw e))))))
 
 (fn@ run [cmd]
   (let [workspaces @(all-workspaces)]
     (if (.some @(Promise.allSettled (workspaces.map #(run-ws $ cmd)))
-               #(false? $.value))
+               #(= $.status :rejected))
       (process.exit 1))))
 
 (fn array-remove [vs v]
@@ -55,7 +55,6 @@
       (vs.splice index 1)))
   vs)
 
-; TODO: doesn't handle failed prepare commands
 (fn@ prepare []
   (let [[_ workspaces]
         @(Promise.all
