@@ -1,0 +1,171 @@
+(import [:node:path [join]]
+        [:mri mri]
+        [:semver/functions/inc.js semver-inc])
+
+(const ws-pad-target 19)
+(const PASS "\x1b[32m\u2713\x1b[0m")
+(const FAIL "\x1b[31m\x1b[1mx\x1b[0m")
+
+(fn since [start]
+  (str (- (Date.now) start) "ms"))
+
+(fn@ out [{:keys [exec]} ...args]
+  (.trim (. @(exec ...args) :stdout)))
+
+(fn@ all-workspaces [{:keys [readFile]}]
+  (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces)))
+
+(fn@ workspace-package-json [{:keys [readFile]} ws]
+  (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
+
+(fn run-log-cmd [{:keys [console]} prefix ws cmd sh start]
+  (console.log prefix (str "[" cmd "]") (ws.padEnd ws-pad-target " ")
+    (.padStart (since start) 5 " ") sh))
+
+(fn@ run-ws [env ws cmd]
+  (let {:keys [exec console]} env)
+  (when-let [sh (-> @(workspace-package-json env ws) (?. :scripts cmd))]
+    (let [start (Date.now)]
+      (try
+        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
+          (run-log-cmd env PASS ws cmd sh start)
+          (when (not= cmd :test)
+            (when stdout (console.log stdout))
+            (when stderr (console.log stderr))))
+        (catch e
+          (run-log-cmd env FAIL ws cmd sh start)
+          (when e.stdout (console.error e.stdout))
+          (when e.stderr (console.error e.stderr))
+          (throw e))))))
+
+(fn@ ^:export run [env cmd]
+  (let [workspaces @(all-workspaces env)]
+    (if (.some @(Promise.allSettled (workspaces.map #(run-ws env $ cmd)))
+               #(= $.status :rejected))
+      (process.exit 1))))
+      ; TODO: dont use process.exit
+
+(fn array-remove [vs v]
+  (let [index (vs.indexOf v)]
+    (when (not= index -1)
+      (vs.splice index 1)))
+  vs)
+
+(fn@ ^:export prepare [env]
+  (let [[_ workspaces]
+        @(Promise.all
+          [((fn@ []
+              @(run-ws env :packages/transpiler :prepare)
+              @(run-ws env :packages/loader :prepare)))
+            (all-workspaces env)])
+         pending (-> workspaces (array-remove :packages/transpiler)
+                                (array-remove :packages/loader))]
+    @(Promise.all @(workspaces.map #(run-ws env $ :prepare)))))
+
+(fn@ ^:export test [env]
+  @(prepare env)
+  @(run env :test))
+
+(fn r-dep-graph [pkgs]
+  (let [graph {}]
+    (pkgs.map #(set (. graph $.name) []))
+    (pkgs.map
+      (fn [pkg]
+        (when-let [deps pkg.dependencies]
+          (-> deps Object.keys
+              (.map #(when (in $ graph)
+                      (.push (. graph $) pkg.name)))))))
+    graph))
+
+(fn@ ^:export r-dep [env]
+  (let [{:keys [console]} env
+        workspaces @(all-workspaces env)
+        pkgs @(Promise.all (workspaces.map #(workspace-package-json env $)))]
+    (console.log (r-dep-graph pkgs))))
+
+(fn@ pkg-needs-bump [env ws]
+  (if-let [version-line
+           @(out env "grep -n '\"version\"' package.json|cut -d : -f 1"
+                 {:cwd ws})]
+    (let [last-version-rev @(out env (str "git log -1 --quiet --format=%H -L "
+                                           version-line "," version-line ":"
+                                           (join ws "package.json")))]
+      (not= "" @(out env (str "git log -1 --format=%H "
+                                last-version-rev "..main " ws))))
+    false))
+
+(fn ws-to-name [workspaces pkgs]
+  (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
+
+(fn name-to-index [pkgs]
+  (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
+
+(fn@ ^:export release [env ...argv]
+  (let [{:keys [exec writeFile console]} env
+        args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
+        release (?? (. args._ 0) :minor)
+        workspaces @(all-workspaces env)
+        [needs-bump pkgs]
+        @(Promise.all
+           [(Promise.all (workspaces.map #(pkg-needs-bump env $)))
+            (Promise.all (workspaces.map #(workspace-package-json env $)))])
+        ws-names (ws-to-name workspaces pkgs)
+        name-index (name-to-index pkgs)
+        graph (r-dep-graph pkgs)
+        all-bump (needs-bump.reduce
+                   (fn [all needs index]
+                     (when needs
+                       (all.add (. ws-names (. workspaces index)))
+                       (.map (. graph (. pkgs index :name)) #(all.add $)))
+                     all)
+                   (Set.))
+        write-indexes (Set.)
+        writes []]
+    (for-of [name all-bump]
+      (let [index (. name-index name)
+            pkg (. pkgs index)
+            new-version (semver-inc pkg.version release)]
+        (console.log name pkg.version "=>" new-version)
+        (when (not args.n)
+          (set pkg.version new-version)
+          (write-indexes.add index)
+          (for-of [r-dep-name (. graph name)]
+            (let [r-dep-index (. name-index r-dep-name)
+                  r-dep-pkg (. pkgs r-dep-index)]
+              (set (. r-dep-pkg.dependencies name) (str "^" new-version))
+              (write-indexes.add r-dep-index))))))
+    (when (pos? write-indexes.size)
+      (let [ws-to-publish []]
+        (for-of [index write-indexes]
+          (let [ws (. workspaces index)]
+            (ws-to-publish.push ws)
+            (writes.push (writeFile (join ws "package.json")
+                                    [(JSON.stringify (. pkgs index) null 2)
+                                    "\n"]))))
+        @(Promise.all writes)
+        @(exec "git commit -a -m 'publishing releases'")
+        @(exec "git push")
+        @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
+
+(const help-text
+`./make.dak [command] [options]
+
+test     prepare and test
+cover    run unit tests with coverage
+prepare  prepare packages
+release  build and publish releases
+  [-n|--dry-run]
+r-dep    show internal reverse dependencies
+run      run package scripts in parallel
+  [command] script command`)
+
+(fn@ ^:export help [{:keys [console]}]
+  (console.log help-text))
+
+(const ^:export commands {:run run
+                          :test test
+                          :cover #(run $ :cover)
+                          :prepare prepare
+                          :r-dep r-dep
+                          :release release
+                          :help help})

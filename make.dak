@@ -4,181 +4,22 @@
         [:node:path [join]]
         [:node:util [promisify]]
         [:node:child_process {exec execCB}]
-        [:mri mri]
-        [:semver/functions/inc.js semver-inc])
+        ["./packages/build/build.dak" [commands]])
 
-(const ws-pad-target 19)
 (const exec (promisify execCB))
-(const PASS "\x1b[32m\u2713\x1b[0m")
-(const FAIL "\x1b[31m\x1b[1mx\x1b[0m")
-
-(fn since [start]
-  (str (- (Date.now) start) "ms"))
-
-(fn@ out [...args]
-  (.trim (. @(exec ...args) :stdout)))
-
-(fn@ all-workspaces []
-  (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces)))
-
-(fn@ workspace-package-json [ws]
-  (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
-
-(fn run-log-cmd [prefix ws cmd sh start]
-  (console.log prefix (str "[" cmd "]") (ws.padEnd ws-pad-target " ")
-    (.padStart (since start) 5 " ") sh))
-
-(fn@ run-ws [ws cmd]
-  (when-let [sh (-> @(workspace-package-json ws) (?. :scripts cmd))]
-    (let [start (Date.now)]
-      (try
-        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
-          (run-log-cmd PASS ws cmd sh start)
-          (when (not= cmd :test)
-            (when stdout (console.log stdout))
-            (when stderr (console.log stderr))))
-        (catch e
-          (run-log-cmd FAIL ws cmd sh start)
-          (when e.stdout (console.error e.stdout))
-          (when e.stderr (console.error e.stderr))
-          (throw e))))))
-
-(fn@ run [cmd]
-  (let [workspaces @(all-workspaces)]
-    (if (.some @(Promise.allSettled (workspaces.map #(run-ws $ cmd)))
-               #(= $.status :rejected))
-      (process.exit 1))))
-
-(fn array-remove [vs v]
-  (let [index (vs.indexOf v)]
-    (when (not= index -1)
-      (vs.splice index 1)))
-  vs)
-
-(fn@ prepare []
-  (let [[_ workspaces]
-        @(Promise.all
-          [((fn@ []
-              @(run-ws :packages/transpiler :prepare)
-              @(run-ws :packages/loader :prepare)))
-            (all-workspaces)])
-         pending (-> workspaces (array-remove :packages/transpiler)
-                                (array-remove :packages/loader))]
-    @(Promise.all @(workspaces.map #(run-ws $ :prepare)))))
-
-(fn@ test []
-  @(prepare)
-  @(run :test))
-
-(fn r-dep-graph [pkgs]
-  (let [graph {}]
-    (pkgs.map #(set (. graph $.name) []))
-    (pkgs.map
-      (fn [pkg]
-        (when-let [deps pkg.dependencies]
-          (-> deps Object.keys
-              (.map #(when (in $ graph)
-                      (.push (. graph $) pkg.name)))))))
-    graph))
-
-(fn@ r-dep []
-  (let [workspaces @(all-workspaces)
-        pkgs @(Promise.all (workspaces.map workspace-package-json))]
-    (console.log (r-dep-graph pkgs))))
-
-(fn@ pkg-needs-bump [ws]
-  (if-let [version-line @(out "grep -n '\"version\"' package.json|cut -d : -f 1"
-                          {:cwd ws})]
-    (let [last-version-rev @(out (str "git log -1 --quiet --format=%H -L "
-                                      version-line "," version-line ":"
-                                      (join ws "package.json")))]
-      (not= "" @(out (str "git log -1 --format=%H "
-                          last-version-rev "..main " ws))))
-    false))
-
-(fn ws-to-name [workspaces pkgs]
-  (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
-
-(fn name-to-index [pkgs]
-  (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
-
-(fn@ release [...argv]
-  (let [args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
-        release (?? (. args._ 0) :minor)
-        workspaces @(all-workspaces)
-        [needs-bump pkgs]
-        @(Promise.all
-           [(Promise.all (workspaces.map pkg-needs-bump))
-            (Promise.all (workspaces.map workspace-package-json))])
-        ws-names (ws-to-name workspaces pkgs)
-        name-index (name-to-index pkgs)
-        graph (r-dep-graph pkgs)
-        all-bump (needs-bump.reduce
-                   (fn [all needs index]
-                     (when needs
-                       (all.add (. ws-names (. workspaces index)))
-                       (.map (. graph (. pkgs index :name)) #(all.add $)))
-                     all)
-                   (Set.))
-        write-indexes (Set.)
-        writes []]
-    (for-of [name all-bump]
-      (let [index (. name-index name)
-            pkg (. pkgs index)
-            new-version (semver-inc pkg.version release)]
-        (console.log name pkg.version "=>" new-version)
-        (when (not args.n)
-          (set pkg.version new-version)
-          (write-indexes.add index)
-          (for-of [r-dep-name (. graph name)]
-            (let [r-dep-index (. name-index r-dep-name)
-                  r-dep-pkg (. pkgs r-dep-index)]
-              (set (. r-dep-pkg.dependencies name) (str "^" new-version))
-              (write-indexes.add r-dep-index))))))
-    (when (pos? write-indexes.size)
-      (let [ws-to-publish []]
-        (for-of [index write-indexes]
-          (let [ws (. workspaces index)]
-            (ws-to-publish.push ws)
-            (writes.push (writeFile (join ws "package.json")
-                                    [(JSON.stringify (. pkgs index) null 2)
-                                     "\n"]))))
-        @(Promise.all writes)
-        @(exec "git commit -a -m 'publishing releases'")
-        @(exec "git push")
-        @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
-
-(const help-text
-`./make.dak [command] [options]
-
-test     prepare and test
-cover    run unit tests with coverage
-prepare  prepare packages
-release  build and publish releases
-  [-n|--dry-run]
-r-dep    show internal reverse dependencies
-run      run package scripts in parallel
-  [command] script command`)
-
-(fn@ help []
-  (console.log help-text))
-
-(const commands {:run run
-                 :test test
-                 :cover #(run :cover)
-                 :prepare prepare
-                 :r-dep r-dep
-                 :release release
-                 :help help})
 
 (fn@ main []
   (set process.env.PATH
        (str process.env.PATH ":" (join (process.cwd) "./node_modules/.bin")))
   (let [cmd-name (. process.argv 2)
-        cmd (. commands cmd-name)]
+        cmd (. commands cmd-name)
+        env {:exec exec
+             :console console
+             :readFile readFile
+             :writeFile writeFile}]
     (when (not cmd)
       (console.error "unknown command:" cmd-name)
       (process.exit 1))
-    (cmd (... (process.argv.slice 3)))))
+    (cmd env (... (process.argv.slice 3)))))
 
 @(main)

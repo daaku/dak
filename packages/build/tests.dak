@@ -1,0 +1,16 @@
+#!/usr/bin/env dak
+
+(import [:uvu [test]]
+        [:uvu/assert [equal match]]
+        [:./build.dak [help]])
+
+(macro deftest [name data str]
+  '(test ,name
+     (fn []
+      (equal (html ,data) ,str))))
+
+(test :help
+  (fn@ []
+    @(help {:console {:log #(match $ "build and publish")}})))
+
+(test.run)
