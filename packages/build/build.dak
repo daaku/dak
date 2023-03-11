@@ -163,7 +163,7 @@
         @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
 
 (const help-text
-`./make.dak [command] [options]
+`usage: ./make.dak [command] [options]
 
 test     prepare and test
 cover    run unit tests with coverage

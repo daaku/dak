@@ -4,7 +4,7 @@
         [:node:path [join]]
         [:node:util [promisify]]
         [:node:child_process {exec execCB}]
-        ["./packages/build/build.dak" [commands]])
+        ["./packages/build/build.dak" [commands help]])
 
 (const exec (promisify execCB))
 
@@ -19,7 +19,9 @@
              :readFile readFile
              :writeFile writeFile}]
     (when (not cmd)
-      (console.error "unknown command:" cmd-name)
+      (if cmd-name
+        (console.error "unknown command:" cmd-name)
+        @(help env))
       (process.exit 1))
     (cmd env (... (process.argv.slice 3)))))
 
