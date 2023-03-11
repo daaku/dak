@@ -1,16 +1,62 @@
 #!/usr/bin/env dak
 
-(import [:uvu [test]]
+(import [:node:fs/promises [readFile writeFile]]
+        [:node:path [join dirname]]
+        [:node:util [promisify]]
+        [:node:child_process {exec execCB}]
+        [:uvu [test]]
         [:uvu/assert [equal match]]
-        [:./build.dak [help]])
+        [:./build.dak [help r-dep]])
 
 (macro deftest [name data str]
   '(test ,name
      (fn []
       (equal (html ,data) ,str))))
 
+(const fake-pkgs
+  [{:path "packages/dak" :name "@daklang/dak" :version "0.0.1"
+    :dependencies {"@daklang/transpiler" "^0.0.1"}}
+   {:path "packages/website" :name "@daklang/website" :version "0.1.1"
+    :dependencies {"@daklang/dak" "^0.1.1"}}
+   {:path "not-in-subdir" :name "@daklang/transpiler" :version "0.1.0"}
+   {:path "not-scoped" :name "daklang" :version "1.1.1"
+    :dependencies {"@daklang/dak" "^0.0.1"
+                   "@daklang/transpiler" "^1.1.1"}}])
+(const fake-pkg-paths (fake-pkgs.map #(. $ :path)))
+
+(fn fake-pkg-by [prop v]
+  (fake-pkgs.find #(= (. $ prop) v)))
+
+;(macro memo-fn@)
+
+(fn@ fake-readFile [name]
+  (when (name.endsWith "/package.json")
+    (when-let [pkg (fake-pkg-by :path (dirname name))]
+      (return (JSON.stringify pkg))))
+  (case name
+    "package.json" (JSON.stringify {:workspaces fake-pkg-paths})
+    (throw (Error `mock not defined for: ${name}`))))
+
+(macro let-assert [bindings ...body]
+  '(let '[,(... (bindings.filter #(not= (% $1 3) 2)))]
+     ,(... body)
+     ,(bindings.filter #(= (% $1 3) 2))))
+
 (test :help
   (fn@ []
-    @(help {:console {:log #(match $ "build and publish")}})))
+    (let-assert [stdout (writable) (match stdout "build and publish")]
+      @(help {:stdout stdout}))))
+
+(test :r-dep
+  (fn@ []
+    (const r-dep-out `{
+  '@daklang/dak': [ '@daklang/website', 'daklang' ],
+  '@daklang/website': [],
+  '@daklang/transpiler': [ '@daklang/dak', 'daklang' ],
+  daklang: []
+}`)
+    @(r-dep {:readFile fake-readFile
+             ;:console {:log #(console.log (JSON.stringify $))}})))
+             :console {:log #(equal $ r-dep-out)}})))
 
 (test.run)

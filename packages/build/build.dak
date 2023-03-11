@@ -6,6 +6,15 @@
 (const PASS "\x1b[32m\u2713\x1b[0m")
 (const FAIL "\x1b[31m\x1b[1mx\x1b[0m")
 
+(fn cwrite [w ...args]
+  (when (and (in :cork w)
+             (in :writableCorked w)
+             (not w.writableCorked))
+    (w.cork)
+    (process.nextTick #(w.uncork)))
+  (for-of [v args]
+    (w.write v)))
+
 (fn since [start]
   (str (- (Date.now) start) "ms"))
 
@@ -13,29 +22,33 @@
   (.trim (. @(exec ...args) :stdout)))
 
 (fn@ all-workspaces [{:keys [readFile]}]
-  (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces)))
+  (try
+    (-> @(readFile "package.json" :utf8) JSON.parse (. :workspaces))
+    (catch er
+      (throw (Error (str "problem reading workspaces from package.json"
+                         (if er.message (str ": " er.message) "")))))))
 
 (fn@ workspace-package-json [{:keys [readFile]} ws]
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
 
-(fn run-log-cmd [{:keys [console]} prefix ws cmd sh start]
-  (console.log prefix (str "[" cmd "]") (ws.padEnd ws-pad-target " ")
-    (.padStart (since start) 5 " ") sh))
+(fn run-log-cmd [{:keys [stdout]} prefix ws cmd sh start]
+  (cwrite stdout prefix (str " [" cmd "] ") (ws.padEnd ws-pad-target " ")
+    (.padStart (since start) 6 " ") " " sh "\n"))
 
 (fn@ run-ws [env ws cmd]
-  (let {:keys [exec console]} env)
+  (let {:keys [exec stdout stderr]} env)
   (when-let [sh (-> @(workspace-package-json env ws) (?. :scripts cmd))]
     (let [start (Date.now)]
       (try
-        (let [{:keys [stdout stderr]} @(exec sh {:cwd ws})]
+        (let [r @(exec sh {:cwd ws})]
           (run-log-cmd env PASS ws cmd sh start)
           (when (not= cmd :test)
-            (when stdout (console.log stdout))
-            (when stderr (console.log stderr))))
+            (when r.stdout (cwrite stdout r.stdout))
+            (when r.stderr (cwrite stderr r.stderr))))
         (catch e
           (run-log-cmd env FAIL ws cmd sh start)
-          (when e.stdout (console.error e.stdout))
-          (when e.stderr (console.error e.stderr))
+          (when e.stdout (cwrite stderr e.stdout))
+          (when e.stderr (cwrite stderr e.stderr))
           (throw e))))))
 
 (fn@ ^:export run [env cmd]
@@ -78,10 +91,11 @@
     graph))
 
 (fn@ ^:export r-dep [env]
-  (let [{:keys [console]} env
+  (let [{:keys [stdout]} env
         workspaces @(all-workspaces env)
         pkgs @(Promise.all (workspaces.map #(workspace-package-json env $)))]
-    (console.log (r-dep-graph pkgs))))
+    (for-of [[name r-deps] (-> pkgs r-dep-graph Object.entries)]
+      (cwrite stdout name ": " (r-deps.join ", ") "\n"))))
 
 (fn@ pkg-needs-bump [env ws]
   (if-let [version-line
@@ -101,7 +115,7 @@
   (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
 
 (fn@ ^:export release [env ...argv]
-  (let [{:keys [exec writeFile console]} env
+  (let [{:keys [exec writeFile stdout]} env
         args (mri argv {:boolean [:dry-run] :alias {:dry-run :n}})
         release (?? (. args._ 0) :minor)
         workspaces @(all-workspaces env)
@@ -125,7 +139,7 @@
       (let [index (. name-index name)
             pkg (. pkgs index)
             new-version (semver-inc pkg.version release)]
-        (console.log name pkg.version "=>" new-version)
+        (cwrite stdout name " " pkg.version " => " new-version "\n")
         (when (not args.n)
           (set pkg.version new-version)
           (write-indexes.add index)
@@ -157,10 +171,11 @@ release  build and publish releases
   [-n|--dry-run]
 r-dep    show internal reverse dependencies
 run      run package scripts in parallel
-  [command] script command`)
+  [command] script command
+`)
 
-(fn@ ^:export help [{:keys [console]}]
-  (console.log help-text))
+(fn@ ^:export help [{:keys [stdout]}]
+  (cwrite stdout help-text))
 
 (const ^:export commands {:run run
                           :test test
