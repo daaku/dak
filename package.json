@@ -6,6 +6,7 @@
     "packages/rollup",
     "packages/html",
     "packages/bootstrap",
+    "packages/build",
     "packages/website"
   ],
   "devDependencies": {

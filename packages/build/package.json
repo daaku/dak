@@ -1,0 +1,11 @@
+{
+  "name": "@daklang/build",
+  "private": true,
+  "license": "MIT",
+  "author": "Naitik Shah <n@daaku.org>",
+  "type": "module",
+  "scripts": {
+    "test": "dak tests.dak",
+    "cover": "c8 -e .dak -r html -r text dak tests.dak"
+  }
+}
