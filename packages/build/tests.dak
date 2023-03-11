@@ -38,9 +38,9 @@
     (throw (Error `mock not defined for: ${name}`))))
 
 (macro let-assert [bindings ...body]
-  '(let '[,(... (bindings.filter #(not= (% $1 3) 2)))]
+  '(let [,(... (bindings.filter #(not= (% $2 3) 2)))]
      ,(... body)
-     ,(bindings.filter #(= (% $1 3) 2))))
+     ,(... (bindings.filter #(= (% $2 3) 2)))))
 
 (test :help
   (fn@ []
