@@ -11,7 +11,7 @@
              (in :writableCorked w)
              (not w.writableCorked))
     (w.cork)
-    (process.nextTick #(w.uncork)))
+    (queueMicrotask #(w.uncork)))
   (for-of [v args]
     (w.write v)))
 
@@ -95,7 +95,8 @@
         workspaces @(all-workspaces env)
         pkgs @(Promise.all (workspaces.map #(workspace-package-json env $)))]
     (for-of [[name r-deps] (-> pkgs r-dep-graph Object.entries)]
-      (cwrite stdout name ": " (r-deps.join ", ") "\n"))))
+      (cwrite stdout name ": "
+        (if (zero? r-deps.length) "<none>" (r-deps.join ", ")) "\n"))))
 
 (fn@ pkg-needs-bump [env ws]
   (if-let [version-line
