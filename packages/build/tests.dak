@@ -6,7 +6,6 @@
         [:node:child_process {exec execCB}]
         [:node:stream [Writable]]
         [:uvu [test]]
-        [:chai [assert]]
         [:uvu/assert [equal match unreachable]]
         [:./build.dak [run help r-dep]])
 
@@ -63,7 +62,7 @@
 (test :run-error
   (fn@ []
     (let-assert [stderr (WriteCollector.)
-                 (assert.include @(stderr.content) "fail whale")]
+                 (match @(stderr.content) "fail whale")]
       (try
         @(run {:readFile fake-readFile
                :exec #(throw {:stderr "fail whale"})
@@ -71,7 +70,7 @@
               :prepare)
         (unreachable "expected to throw")
         (catch e
-          (assert.include e.message `error running "prepare"`))))))
+          (match e.message `error running "prepare"`))))))
 
 (test :help
   (fn@ []
