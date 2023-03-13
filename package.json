@@ -10,7 +10,10 @@
     "packages/website"
   ],
   "devDependencies": {
+    "c8": "^7.13.0",
+    "esbuild": "^0.17.6",
     "mri": "^1.2.0",
-    "semver": "^7.3.8"
+    "semver": "^7.3.8",
+    "uvu": "^0.5.6"
   }
 }

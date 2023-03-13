@@ -28,8 +28,5 @@
     "prepare": "mkdir -p dist && node ../cli/transpile.mjs < html.dak > dist/html.mjs",
     "test": "dak tests/html.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/html.dak"
-  },
-  "devDependencies": {
-    "uvu": "^0.5.6"
   }
 }
