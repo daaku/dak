@@ -1,0 +1,1030 @@
+#!/usr/bin/env dak
+
+(import [:uvu [test]]
+        [:uvu/assert [equal ok]]
+        ["../src/transpiler.dak" [transpile transpileStr]])
+
+(fn tostr [code log]
+  (let [pieces []]
+    (try
+      (for-of [p (transpile code)]
+        (pieces.push (if (string? p) p (. p 0))))
+      (pieces.join "")
+      (catch e
+        (when log
+          (console.error (pieces.join "")))
+        (throw e)))))
+
+(test "transpileStr"
+  (fn []
+    (equal (. (transpileStr ":hello") :code) `"hello";`)))
+
+(test "transpileStr sourcemap: inline"
+  (fn []
+    (ok
+      (.includes
+        (. (transpileStr "hello" {:sourcemap :inline}) :code)
+        "sourceMappingURL=data:application/json;base64"))))
+
+(macro good [name input output]
+  '(test ,name
+     (fn []
+       (equal (tostr ,input) ,output))))
+
+(macro bad [name input msg]
+  '(test ,name
+     (fn []
+       (let input# ,input)
+       (let msg# ,msg)
+       (let output# null)
+       (try
+         (set output# (tostr input#))
+         (catch e#
+           (equal (. e# :message) msg# e#) ; BUG: issue #18
+           (return)))
+       (throw (Error (str "was expecting error: " msg#
+                          "\nINPUT:\n" input# "\nOUTPUT:\n" output#))))))
+
+(good "shebang is dropped"
+  "#!foo
+   :bar"
+  `"bar";`)
+
+(good "string escape"
+  `"\\t"`
+  `"\\t";`)
+
+(good "string with escaped newline"
+  `"\\n"`
+  `"\\n";`)
+
+(good "string with unescaped newline"
+  `"hello\nworld"`
+  `"hello\\nworld";`)
+
+(good "symbol: replaces all"
+  ">>"
+  "_GT__GT_;")
+
+(good "symbol: bang"
+  "foo!"
+  "foo_BANG_;")
+
+(good "symbol: qmark"
+  "foo?"
+  "foo_QMARK_;")
+
+(good "symbol: qmark option chaining"
+  "foo?.bar"
+  "foo?.bar;")
+
+(good "symbol: star"
+  "foo*"
+  "foo_STAR_;")
+
+(good "symbol: plus"
+  "foo+"
+  "foo_PLUS_;")
+
+(good "symbol: gt"
+  ">"
+  "_GT_;")
+
+(good "symbol: lt"
+  "<"
+  "_LT_;")
+
+(good "symbol: eq"
+  "="
+  "_EQ_;")
+
+(good "symbol: float: normal"
+  "3.1415926"
+  "3.1415926;")
+
+(good "symbol: float: without whole"
+  ".123456789"
+  ".123456789;")
+
+(good "symbol: float: scientific"
+  "3.1E+12"
+  "3.1E+12;")
+
+(good "symbol: float: scientific without whole"
+  ".1e-23"
+  ".1e-23;")
+
+(good "symbol: negative number"
+  "-42"
+  "-42;")
+
+(good "symbol: dot prop"
+  ".a-b"
+  ".a_DASH_b;")
+
+(good "symbol: class private"
+  "#foo"
+  "this.#foo;")
+
+(good "symbol: class private spread"
+  "...#foo"
+  "...this.#foo;")
+
+(good "template: simple"
+  "`foo`"
+  "`foo`;")
+
+(good "template: with symbol"
+  "`foo ${#bar} baz`"
+  "`foo ${this.#bar} baz`;")
+
+(good "template: with add"
+  "`foo ${(+ bar #baz)} boom`"
+  "`foo ${(bar+this.#baz)} boom`;")
+
+(good "template: with dot"
+  "`foo ${(. foo 1)} boom`"
+  "`foo ${foo[1]} boom`;")
+
+(good "plain keyword"
+  ":foo"
+  `"foo";`)
+
+(good "nested arrays"
+  "[[1 2 3] [4 5 6]]"
+  "[[1,2,3,],[4,5,6,],];")
+
+(good "data structures"
+  `{:a 1 :b [1 2] :c [3 4] "d e" 5}`
+  `{a:1,b:[1,2,],c:[3,4,],["d e"]:5,};`)
+
+(good "object with symbol rest"
+  "{:a 1 ...b :c 2 ...d}"
+  "{a:1,...b,c:2,...d,};")
+
+(good "object with method rest"
+  "{:a 1 (... (b 2)) :c 3 (... (d 4))}"
+  "{a:1,...b(2),c:3,...d(4),};")
+
+(good "regexp"
+  `(.match #/fo[o]\\/|"bar"/ig :foo)`
+  `/fo[o]\\/|"bar"/ig.match("foo");`)
+
+(good "function call"
+  "(a {:b c})"
+  "a({b:c,});")
+
+(good "method call"
+  "(.a b {:c d})"
+  "b.a({c:d,});")
+
+(good "constructor call"
+  "(String. 42)"
+  "new String(42);")
+
+(good "multiple: list"
+  "(add 1)(add 2)"
+  "add(1);add(2);")
+
+(good "value call"
+  "(fn run [a] ((. Array :isArray) a))"
+  "const run=(a)=>{return Array.isArray(a);};")
+
+(good "anonymous fn call"
+  "((fn [a] a) 1)"
+  "((a)=>{return a;})(1);")
+
+(good "call nested hoisted"
+  "(do (String. (Number. (if true 42 43))))"
+  "let hoist__0;if(true){hoist__0=42}else{hoist__0=43};new String(new Number(hoist__0));;")
+
+(good "comments"
+  `; this is the truth
+   "use strict" ; really sure
+  `
+  `"use strict";`)
+
+(good "comment at EOF"
+  "a\n;"
+  "a;")
+
+(good "comment middle line"
+  "a;b"
+  "a;")
+
+(good "builtin: import"
+  `(import ["./named.js" [A B cD]]
+           ["./default.js" TheDefault {A MyA D MyD} [E F]]
+           ["./index.css"]
+           ["./as.js" :as TheNamed])
+  `
+  `import {A,B,cD} from "./named.js";import TheDefault,{A as MyA,D as MyD,E,F} from "./default.js";import "./index.css";import * as TheNamed from "./as.js";;`)
+
+(good "builtin: import dynamic symbol"
+  "(import foo)"
+  "import(foo);")
+
+(good "builtin: import dynamic string"
+  `(import "foo")`
+  `import("foo");`)
+
+(good "builtin: const"
+  "(const a 42)"
+  "const a=42;;")
+
+(good "builtin: export const"
+  "(const ^:export a 42)"
+  "export const a=42;;")
+
+(good "builtin: export default const"
+  "(const ^:export ^:default a 42)"
+  "export default const a=42;;")
+
+(good "builtin: const with hoist"
+  "(const a (case v
+              42 true
+              43 false))"
+  "let hoist__0;switch (v){case 42:hoist__0=true;break;case 43:hoist__0=false;break;};const a=hoist__0;;")
+
+(good "builtin: var"
+  "(var a 42)"
+  "var a=42;")
+
+(good "builtin: let"
+  "(let a 42)"
+  "let a=42;")
+
+(good "builtin: let destructure"
+  "(let {:keys [a b]} c)"
+  "let {a,b}=c;")
+
+(good "builtin: const destructure"
+  "(const [a b] c)"
+  "const [a,b,]=c;;")
+
+(good "builtin: export let"
+  "(let ^:export a 42)"
+  "export let a=42;")
+
+(good "builtin: export default let"
+  "(let ^:export ^:default a 42)"
+  "export default let a=42;")
+
+(good "builtin: let with direct assign"
+  "(let a (case v
+            42 true
+            43 false))"
+  "let a;switch (v){case 42:a=true;break;case 43:a=false;break;};")
+
+(good "builtin: let with simple assign"
+  "(let a (do 42))"
+  "let a=42;;")
+
+(good "builtin: let with hoist and simple assign"
+  "(let a (do
+            (prn true)
+            42))"
+  "let a;prn(true);a=42;;")
+
+(good "builtin: fn"
+  "(fn add [a b]
+     (+ a b))"
+  "const add=(a,b)=>{return (a+b);};")
+
+(good "builtin: fn ^:decl"
+  "(fn ^:decl add [a b]
+     (+ a b))"
+  "function add(a,b){return (a+b);};")
+
+(good "builtin: export fn"
+  "(fn ^:export i [a] a)"
+  "export const i=(a)=>{return a;};")
+
+(good "builtin: export fn ^:decl"
+  "(fn ^:export ^:decl i [a] a)"
+  "export function i(a){return a;};")
+
+(good "builtin: export default fn"
+  "(fn ^:export ^:default i [a] a)"
+  "export default const i=(a)=>{return a;};")
+
+(good "builtin: export default fn ^:decl"
+  "(fn ^:export ^:default ^:decl i [a] a)"
+  "export default function i(a){return a;};")
+
+(good "builtin: export default anonymous fn"
+  "(fn ^:export ^:default [a] a)"
+  "export default ((a)=>{return a;});")
+
+(good "fn with array destructuring"
+  "(fn first [[first second] other] first)"
+  "const first=([first,second,],other)=>{return first;};")
+
+(good "fn with object destructuring"
+  "(fn run [{y x :keys [b c] :or {a 1 b 2 d 3}}] a)"
+  "const run=({y:x,b=2,c,a=1,d=3})=>{return a;};")
+
+(good "fn with rest"
+  "(fn run [a ...rest] (a ...rest))"
+  "const run=(a,...rest)=>{return a(...rest);};")
+
+(good "builtin: fn@"
+  "(fn@ run [v] @(v 42))"
+  "const run=async(v)=>{return await v(42);};")
+
+(good "builtin: fn@ ^:decl"
+  "(fn@ ^:decl run [v] @(v 42))"
+  "async function run(v){return await v(42);};")
+
+(good "builtin: fn*"
+  "(fn* run [v] (yield v))"
+  "const run=function*(v){return yield v;};")
+
+(good "builtin: fn@*"
+  "(fn@* run [v] (yield v))"
+  "const run=async function*(v){return yield v;};")
+
+(good "builtin: anonymous fn"
+  "(fn [v] (v 42))"
+  "((v)=>{return v(42);});")
+
+(good "builtin: anonymous fn ^:decl"
+  "(fn ^:decl [v] (v 42))"
+  "(function(v){return v(42);});")
+
+(good "builtin: anonymous fn@"
+  "(fn@ [v] @(v 42))"
+  "(async(v)=>{return await v(42);});")
+
+(good "builtin: anonymous fn@ ^:decl"
+  "(fn@ ^:decl [v] @(v 42))"
+  "(async function(v){return await v(42);});")
+
+(good "builtin: anonymous fn*"
+  "(fn* [v] (yield v))"
+  "(function*(v){return yield v;});")
+
+(good "builtin: anonymous fn@*"
+  "(fn@* [v] (yield v))"
+  "(async function*(v){return yield v;});")
+
+(good "builtin: anonymous fn to const"
+  "(const a (fn [b] (inc b)))"
+  "const a=((b)=>{return (b+1);});;")
+
+(good "builtin: fn ^:decl to const"
+  "(const a (fn ^:decl foo [b] (inc b)))"
+  "const a=(function foo(b){return (b+1);});;")
+
+(good "builtin: fn with this"
+  "(fn ^:decl TheClass [a] (set this.a a))"
+  "function TheClass(a){return this.a=a;};")
+
+(good "builtin: let"
+  "(fn run []
+     (let [a 0
+           b (inc a)]
+       (console.log a)
+       b))"
+  "const run=()=>{{let a=0;let b=(a+1);console.log(a);return b;};};")
+
+(good "builtin: let without assign"
+  "(fn run []
+     (let [a 0
+           b (inc a)]
+       (console.log a)
+       b)
+      null)"
+  "const run=()=>{{let a=0;let b=(a+1);console.log(a);b;};return null;};")
+
+(good "builtin: let as arg"
+  "(fn run [a] a)
+   (do (run (let [a 0
+                  b (inc a)]
+              (+ a b))))"
+  "const run=(a)=>{return a;};let hoist__0;{let a=0;let b=(a+1);hoist__0=(a+b);};run(hoist__0);;")
+
+(good "builtin: let with destructuring"
+  "(fn run []
+     (let [{:keys [a b]} (foo)]
+       [a b]))"
+  "const run=()=>{{let {a,b}=foo();return [a,b,];};};")
+
+(good "builtin: let with gensym + destructuring"
+  "(fn run []
+     (let [{:keys [a b]} (do (println true) (foo))]
+       [a b]))"
+  "const run=()=>{{let let_multi__0;println(true);let_multi__0=foo();;let {a,b}=let_multi__0;return [a,b,];};};")
+
+(good "builtin: throw"
+  "(throw (error 42))"
+  "throw error(42);")
+
+(good "builtin: return with value"
+  "(return 42)"
+  "return 42;")
+
+(good "builtin: return bare"
+  "(return)"
+  "return;")
+
+(good "builtin: return hoist"
+  "(fn run [] (return (if true 42)))"
+  "const run=()=>{if(true){return 42};};")
+
+(good "builtin: yield"
+  "(yield)"
+  "yield;")
+
+(good "builtin: yield*"
+  "(yield* [1 2])"
+  "yield* [1,2,];")
+
+(good "builtin: break"
+  "(break)"
+  "break;")
+
+(good "builtin: continue"
+  "(continue)"
+  "continue;")
+
+(good "builtin: for with step"
+  "(for [i 0 len step]
+     (console.log i))"
+  "for(let i=0;i<len;i+=step){console.log(i);};")
+
+(good "builtin: for without step"
+  "(for [i 0 len]
+     (console.log i))"
+  "for(let i=0;i<len;i++){console.log(i);};")
+
+(good "builtin: for-of"
+  "(for-of [v vs]
+     (console.log v))"
+  "for(let v of vs){console.log(v);};")
+
+(good "builtin: for-of with destructure"
+  "(for-of [[a b] vs]
+     (console.log a b))"
+  "for(let [a,b,] of vs){console.log(a,b);};")
+
+(good "builtin: for-in"
+  "(for-in [v vs]
+     (console.log v))"
+  "for(let v in vs){console.log(v);};")
+
+(good "builtin: for@"
+  "(for@ [v vs]
+     (console.log v))"
+  "for await(let v of vs){console.log(v);};")
+
+(good "builtin: case return position"
+  `(fn run []
+      (case (inc 1)
+      "foo" :bar
+      "baz" :boo
+      :otherwise))
+  `
+  `const run=()=>{switch ((1+1)){case "foo":return "bar";case "baz":return "boo";default:return "otherwise";};};`)
+
+(good "builtin: case assign"
+  `(fn run []
+     (let [v (case (inc 1)
+               "foo" :bar
+               "baz" :boo
+               :otherwise)]
+       v))
+  `
+  `const run=()=>{{let v;switch ((1+1)){case "foo":v="bar";break;case "baz":v="boo";break;default:v="otherwise";break};return v;};};`)
+
+(good "builtin: case array matches"
+  `(const v (case (inc 1)
+               ["foo" "bar"] 42
+               :otherwise))
+  `
+  `let hoist__0;switch ((1+1)){case "foo":case "bar":hoist__0=42;break;default:hoist__0="otherwise";break};const v=hoist__0;;`)
+
+(good "builtin: do"
+  "(do
+     (add 1 1)
+     42)"
+  "add(1,1);42;;")
+
+(good "builtin: while"
+  "(while (= a 1)
+     (println a)
+     (set a (+ a 1)))"
+  "while(a===1){println(a);a=(a+1);};")
+
+(good "builtin: while hoisted"
+  "(yield (while (= a 1)
+            (println a)
+            (set a (+ a 1))))"
+  "let hoist__0;while(a===1){println(a);a=(a+1);};yield hoist__0;")
+
+(good "builtin: if hoisted"
+  "(const a (if true 42 43))"
+  "let hoist__0;if(true){hoist__0=42}else{hoist__0=43};const a=hoist__0;;")
+
+(good "builtin: if without else"
+  "(fn run [] (if true 42))"
+  "const run=()=>{if(true){return 42};};")
+
+(good "builtin: if and else if"
+  "(fn run [a b] (if a 42 b 43))"
+  "const run=(a,b)=>{if(a){return 42}else if(b){return 43};};")
+
+(good "builtin: if return"
+  "(fn run [] (if true 42 43))"
+  "const run=()=>{if(true){return 42}else{return 43};};")
+
+(good "builtin: if let"
+  "(.foo (let [a (if true 42 43)]
+            a)
+         true)"
+  "let hoist__0;{let a;if(true){a=42}else{a=43};hoist__0=a;};hoist__0.foo(true);")
+
+(good "builtin: double if hoisting"
+  "(.foo (if (if true 40 41) 42 43)
+         true)"
+  "let hoist__1;if(true){hoist__1=40}else{hoist__1=41};let hoist__0;if(hoist__1){hoist__0=42}else{hoist__0=43};hoist__0.foo(true);")
+
+(good "builtin: dot"
+  "(. foo bar)"
+  "foo[bar];")
+
+(good "builtin: dot double"
+  "(. foo bar baz)"
+  "foo[bar][baz];")
+
+(good "builtin: dot hoist"
+  "(fn run [] (. foo (if true 42)))"
+  "const run=()=>{let hoist__0;if(true){hoist__0=42};return foo[hoist__0];};")
+
+(good "builtin: ?."
+  "(?. foo bar baz)"
+  "foo?.[bar]?.[baz];")
+
+(good "builtin: ?. with strings"
+  `(?. foo :bar "baz boo")`
+  `foo?.bar?.["baz boo"];`)
+
+(good "builtin: await"
+  "@42"
+  "await 42;")
+
+(good "builtin: await method call"
+  "@(make 42)"
+  "await make(42);")
+
+(good "builtin: await expr"
+  "(a @(make 42))"
+  "a((await make(42)));")
+
+(good "builtin: op str"
+  "(str :a :b :c)"
+  `("a"+"b"+"c");`)
+
+(good "builtin: op +"
+  "(+ 1 2 3)"
+  "(1+2+3);")
+
+(good "builtin: op + unary"
+  "(+ 1)"
+  "(+1);")
+
+(good "builtin: op -"
+  "(- 1 2 3)"
+  "(1-2-3);")
+
+(good "builtin: op - unary"
+  "(- 1)"
+  "(-1);")
+
+(good "builtin: op *"
+  "(* 1 2 3)"
+  "(1*2*3);")
+
+(good "builtin: op /"
+  "(/ 1 2 3)"
+  "(1/2/3);")
+
+(good "builtin: op **"
+  "(** 1 2 3)"
+  "(1**2**3);")
+
+(good "builtin: op %"
+  "(% 1 2 3)"
+  "(1%2%3);")
+
+(good "builtin: op <<"
+  "(<< 1 2 3)"
+  "(1<<2<<3);")
+
+(good "builtin: op >>"
+  "(>> 1 2 3)"
+  "(1>>2>>3);")
+
+(good "builtin: op bit-and"
+  "(bit-and 1 2 3)"
+  "(1&2&3);")
+
+(good "builtin: op bit-or"
+  "(bit-or 1 2 3)"
+  "(1|2|3);")
+
+(good "builtin: op bit-xor"
+  "(bit-xor 1 2 3)"
+  "(1^2^3);")
+
+(good "builtin: op ||"
+  "(|| 1 2 3)"
+  "(1||2||3);")
+
+(good "builtin: op or"
+  "(or 1 2 3)"
+  "(1||2||3);")
+
+(good "builtin: op &&"
+  "(&& 1 2 3)"
+  "(1&&2&&3);")
+
+(good "builtin: op and"
+  "(and 1 2 3)"
+  "(1&&2&&3);")
+
+(good "builtin: op in"
+  "(in a b)"
+  "(a in b);")
+
+(good "builtin: prefix bit-not"
+  "(bit-not 1)"
+  "(~1);")
+
+(good "builtin: prefix not"
+  "(not 1)"
+  "(!1);")
+
+(good "builtin: suffix ++"
+  "(++ a)"
+  "(a++);")
+
+(good "builtin: cmp ="
+  "(= a b)"
+  "a===b;")
+
+(good "builtin: cmp not="
+  "(not= a b)"
+  "a!==b;")
+
+(good "builtin: cmp =="
+  "(== a b)"
+  "a==b;")
+
+(good "builtin: cmp !="
+  "(!= a b)"
+  "a!=b;")
+
+(good "builtin: cmp <"
+  "(< a b)"
+  "a<b;")
+
+(good "builtin: cmp >"
+  "(> a b)"
+  "a>b;")
+
+(good "builtin: cmp >="
+  "(>= a b)"
+  "a>=b;")
+
+(good "builtin: cmp <="
+  "(<= a b)"
+  "a<=b;")
+
+(good "lambda"
+  "#(do [(if $ true false) $2 :$3])"
+  `((lambda__0,lambda__1)=>{let hoist__2;if(lambda__0){hoist__2=true}else{hoist__2=false};return [hoist__2,lambda__1,"$3",];});`)
+
+(good "lambda with $ dot"
+  "#($.a $2.b)"
+  "((lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)});")
+
+(good "lambda with rest ...$"
+  "#(...$.map console.log)"
+  "((...lambda_rest__0)=>{return lambda_rest__0.map(console.log)});")
+
+(good "lambda with assign"
+  "(#(do [$]) 42)"
+  "((lambda__0)=>{return [lambda__0,];})(42);")
+
+(good "lambda with skipped arg"
+  "#(. assets $2)"
+  "((lambda__0,lambda__1)=>{return assets[lambda__1]});")
+
+(good "lambda in lambda"
+  "#($ #($))"
+  "((lambda__0)=>{return lambda__0(((lambda__1)=>{return lambda__1()}))});")
+
+(good "lambda with empty list"
+  "#($ [])"
+  "((lambda__0)=>{return lambda__0([])});")
+
+(good "builtin: typeof"
+  "(typeof 1)"
+  "typeof 1;")
+
+(good "builtin: instanceof"
+  "(instanceof a 1)"
+  "a instanceof 1;")
+
+(good "builtin: isa? shorthand"
+  "(isa? a 1)"
+  "a instanceof 1;")
+
+(good "builtin: set"
+  "(set a 1)"
+  "a=1;")
+
+(good "builtin: delete"
+  "(delete a.b)"
+  "delete a.b;")
+
+(good "builtin: set returns"
+  "(fn run [a] (set a.b 1))"
+  "const run=(a)=>{return a.b=1;};")
+
+(good "builtin: set: hoist"
+  "(set a (if true 1 2))"
+  "let hoist__0;if(true){hoist__0=1}else{hoist__0=2};a=hoist__0;")
+
+(good "builtin: set: double + hoist"
+  "(set b (set a (if true 1 2)))"
+  "let hoist__0;if(true){hoist__0=1}else{hoist__0=2};b=a=hoist__0;")
+
+(good "builtin: set property number"
+  "(set globalThis.answer 42)"
+  "globalThis.answer=42;")
+
+(good "builtin: set property fn"
+  "(set globalThis.prn
+        (fn [a]
+          (console.log a)))"
+  "globalThis.prn=((a)=>{return console.log(a);});")
+
+(good "builtin: set dot access"
+  "(set (. a b c) 42)"
+  "a[b][c]=42;")
+
+(good "builtin: try/catch/finally with return"
+  "(fn run []
+     (try
+       (prn true)
+       42
+       (catch e
+         43)
+       (finally
+         (prn false))))"
+  "const run=()=>{try{prn(true);return 42;}catch(e){return 43;}finally{prn(false);};};")
+
+(good "builtin: try/catch/finally without assign"
+  "(fn run []
+     (try
+       (prn 1)
+       (catch e
+         (prn 2))
+       (finally
+         (prn 3)))
+      true)"
+  "const run=()=>{try{prn(1);}catch(e){prn(2);}finally{prn(3);};return true;};")
+
+(good "builtin: try/catch"
+  "(fn run []
+     (try
+       (prn 1)
+       (catch e
+         (prn 2)))
+      true)"
+  "const run=()=>{try{prn(1);}catch(e){prn(2);};return true;};")
+
+(good "builtin: try/finally"
+  "(fn run []
+     (try
+       (prn 1)
+       (finally
+         (prn 2)))
+      true)"
+  "const run=()=>{try{prn(1);}finally{prn(2);};return true;};")
+
+(good "builtin: try/catch with hoist"
+  "(fn run []
+     (+ 1 (try
+             42
+             (catch e
+               43))))"
+  "const run=()=>{let hoist__0;try{hoist__0=42;}catch(e){hoist__0=43;};return (1+hoist__0);};")
+
+(good "builtin: class: declaration: empty"
+  "(class Foo)"
+  "class Foo{};")
+
+(good "builtin: class: declaration: extends"
+  "(class Foo :extends Bar)"
+  "class Foo extends Bar{};")
+
+(good "builtin: class: declaration: export"
+  "(class ^:export Foo :extends Bar)"
+  "export class Foo extends Bar{};")
+
+(good "builtin: class: declaration: default"
+  "(class ^:export ^:default :extends Bar)"
+  "export default class extends Bar{};")
+
+(good "builtin: class: expr: empty"
+  "(class)"
+  "class{};")
+
+(good "builtin: class: static"
+  "(class
+     (static
+       (console.log 42)))"
+  "class{static{console.log(42);}};")
+
+(good "builtin: class: macros"
+  "(macro log [v]
+     '(static (console.log ,v)))
+
+   (class
+     (log 42))"
+  ";class{static{console.log(42);}};")
+
+(good "builtin: class: let single without value"
+  "(class (let hello))"
+  "class{hello;};")
+
+(good "builtin: class: let single with value"
+  "(class (let hello 42))"
+  "class{hello=42;};")
+
+(good "builtin: class: let multiple"
+  "(class (let [hello #world]))"
+  "class{hello;#world;};")
+
+(good "builtin: class: let static single without value"
+  "(class (let ^:static hello))"
+  "class{static hello;};")
+
+(good "builtin: class: let static single with value"
+  "(class (let ^:static hello 42))"
+  "class{static hello=42;};")
+
+(good "builtin: class: let static multiple"
+  "(class (let ^:static [hello world]))"
+  "class{static hello;static world;};")
+
+(good "builtin: class: let single private"
+  "(class (let #hello 42))"
+  "class{#hello=42;};")
+
+(good "builtin: class: fn"
+  "(class Foo
+     (fn bar [a]
+       (inc a)))"
+  "class Foo{bar(a){return (a+1);}};")
+
+(good "builtin: class: fn@"
+  "(class Foo
+     (fn@ bar [a]
+       @a))"
+  "class Foo{async bar(a){return await a;}};")
+
+(good "builtin: class: fn*"
+  "(class Foo
+     (fn* bar [a]
+       (yield a)))"
+  "class Foo{*bar(a){return yield a;}};")
+
+(good "builtin: class: fn@*"
+  "(class Foo
+     (fn@* #bar [a]
+       (yield @a)))"
+  "class Foo{async *#bar(a){return yield (await a);}};")
+
+(good "builtin: class: ignore comments"
+  "(class Foo
+     ; hello
+   )"
+  "class Foo{};")
+
+(good "macro: ->"
+  `(-> :hello (.toUpperCase) (str " world"))`
+  `("hello".toUpperCase()+" world");`)
+
+(good "macro: -> with symbol"
+  `(-> :hello .toUpperCase (str " world"))`
+  `("hello".toUpperCase()+" world");`)
+
+(good "macro: when"
+  "(when true (prn 1) (prn 2))"
+  "if(true){prn(1);prn(2);};")
+
+(good "macro: array?"
+  "(array? v)"
+  "Array.isArray(v);")
+
+(good "macro: hoist unquote"
+  "(macro doto* [v form]
+     '(do
+        ,(if (array? form)
+           (do
+             (.splice form 1 0 v)
+             form)
+          '(,form ,v))
+         ,v))
+   (return (doto* v (.push 1)))"
+  ";v.push(1);return v;;")
+
+(good "macro: if-let"
+  "(fn []
+     (if-let [[a b] [1 2]]
+       (+ a b)
+       0))"
+  "(()=>{{let macro__0=[1,2,];if(macro__0){{let [a,b,]=macro__0;return (a+b);}}else{return 0};};});")
+
+(good "macro: when-let"
+  "(fn []
+     (when-let [[a b] [1 2]]
+       (+ a b)
+       42))"
+  "(()=>{{let macro__1=[1,2,];if(macro__1){{let [a,b,]=macro__1;(a+b);return 42;}};};});")
+
+(good "macro: doto"
+  "(fn []
+     (doto []
+       (.push 1)
+       (.push 2)
+       .pop))"
+  "(()=>{{let macro__2=[];macro__2.push(1);macro__2.push(2);macro__2.pop();return macro__2;};});")
+
+(good "macro: with fn"
+  "(macro good [name ...body]
+     '(test ,name (fn [] ,...body)))
+   (good :foo :bar)"
+  `;test("foo",(()=>{return "bar";}));`)
+
+(bad "lone paren"
+  "("
+  "<anonymous>:1:1: unterminated form")
+
+(bad "unterminated string"
+  "(foo \""
+  "<anonymous>:1:6: unterminated string")
+
+(bad "unterminated keyword"
+  "(foo :"
+  "<anonymous>:1:6: unterminated form")
+
+(bad "unterminated regex"
+  "(#/foo"
+  "<anonymous>:1:6: unterminated regex")
+
+(bad "unterminated map"
+  "{"
+  "<anonymous>:1:1: unterminated form")
+
+(bad "unterminated array"
+  "["
+  "<anonymous>:1:1: unterminated form")
+
+(bad "unterminated list"
+  "(do "
+  "<anonymous>:1:2: unterminated form")
+
+(bad "destructure unexpected"
+  "(let [:foo :bar] :bar)"
+  `<anonymous>:1:7: unexpected destructure "string"`)
+
+(bad "destructure unexpected op"
+  "(let [{:foo [bar]} :bar] :bar)"
+  `<anonymous>:1:8: unexpected destructuring map op "foo"`)
+
+(bad "invalid keyword"
+  "::a"
+  "<anonymous>:1:1: invalid keyword")
+
+(bad "unexpected import with method call"
+  "(import [:a (a)])"
+  "<anonymous>:1:13: unexpected import")
+
+(bad "unexpected import with keyword"
+  "(import [:a :foo])"
+  `<anonymous>:1:13: unexpected import string "foo"`)
+
+(bad "unexpected hash"
+  `#"foo"`
+  `<anonymous>:1:2: unexpected hash "string"`)
+
+(bad "try without catch or finally"
+  "(try :foo)"
+  "<anonymous>:1:1: at least one of catch or finally is required")
+
+(test.run)

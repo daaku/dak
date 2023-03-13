@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "prepare": "mkdir -p dist && node ../bootstrap/bootstrap.mjs < src/transpiler.dak > dist/transpiler.mjs",
-    "test": "uvu",
+    "test": "dak tests/transpiler.dak",
     "cover": "c8 -r html -r text uvu"
   },
   "dependencies": {
