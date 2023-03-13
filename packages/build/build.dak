@@ -31,8 +31,8 @@
 (fn@ workspace-package-json [{:keys [readFile]} ws]
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
 
-(fn run-log-cmd [{:keys [stdout]} prefix ws cmd sh start]
-  (cwrite stdout prefix (str " [" cmd "] ") (ws.padEnd ws-pad-target " ")
+(fn run-log-cmd [writer prefix ws cmd sh start]
+  (cwrite writer prefix (str " [" cmd "] ") (ws.padEnd ws-pad-target " ")
     (.padStart (since start) 6 " ") " " sh "\n"))
 
 (fn@ run-ws [env ws cmd]
@@ -41,12 +41,12 @@
     (let [start (Date.now)]
       (try
         (let [r @(exec sh {:cwd ws})]
-          (run-log-cmd env PASS ws cmd sh start)
+          (run-log-cmd stdout PASS ws cmd sh start)
           (when (not= cmd :test)
             (when r.stdout (cwrite stdout r.stdout))
             (when r.stderr (cwrite stderr r.stderr))))
         (catch e
-          (run-log-cmd env FAIL ws cmd sh start)
+          (run-log-cmd stderr FAIL ws cmd sh start)
           (when e.stdout (cwrite stderr e.stdout))
           (when e.stderr (cwrite stderr e.stderr))
           (throw e))))))
@@ -55,8 +55,7 @@
   (let [workspaces @(all-workspaces env)]
     (if (.some @(Promise.allSettled (workspaces.map #(run-ws env $ cmd)))
                #(= $.status :rejected))
-      (process.exit 1))))
-      ; TODO: dont use process.exit
+      (throw (Error `failed ${cmd}`)))))
 
 (fn array-remove [vs v]
   (let [index (vs.indexOf v)]

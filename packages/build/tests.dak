@@ -6,8 +6,9 @@
         [:node:child_process {exec execCB}]
         [:node:stream [Writable]]
         [:uvu [test]]
-        [:uvu/assert [equal match]]
-        [:./build.dak [help r-dep]])
+        [:chai [assert]]
+        [:uvu/assert [equal match unreachable]]
+        [:./build.dak [run help r-dep]])
 
 (macro deftest [name data str]
   '(test ,name
@@ -15,10 +16,16 @@
       (equal (html ,data) ,str))))
 
 (const fake-pkgs
-  [{:path "packages/dak" :name "@daklang/dak" :version "0.0.1"
-    :dependencies {"@daklang/transpiler" "^0.0.1"}}
-   {:path "packages/website" :name "@daklang/website" :version "0.1.1"
-    :dependencies {"@daklang/dak" "^0.1.1"}}
+  [{:path "packages/dak"
+    :name "@daklang/dak"
+    :version "0.0.1"
+    :dependencies {"@daklang/transpiler" "^0.0.1"
+    :scripts {:prepare "prepare dak"}}}
+   {:path "packages/website"
+    :name "@daklang/website"
+    :version "0.1.1"
+    :dependencies {"@daklang/dak" "^0.1.1"}
+    :scripts {:prepare "prepare website"}}
    {:path "not-in-subdir" :name "@daklang/transpiler" :version "0.1.0"}
    {:path "not-scoped" :name "daklang" :version "1.1.1"
     :dependencies {"@daklang/dak" "^0.0.1"
@@ -52,6 +59,19 @@
   '(let [,(... (bindings.filter #(not= (% $2 3) 2)))]
      ,(... body)
      ,(... (bindings.filter #(= (% $2 3) 2)))))
+
+(test :run-error
+  (fn@ []
+    (let-assert [stderr (WriteCollector.)
+                 (assert.include @(stderr.content) "fail whale")]
+      (try
+        @(run {:readFile fake-readFile
+               :exec #(throw {:stderr "fail whale"})
+               :stderr stderr}
+              :prepare)
+        (unreachable "expected to throw")
+        (catch e
+          (assert.include e.message "failed prepare"))))))
 
 (test :help
   (fn@ []
