@@ -71,7 +71,7 @@
               :prepare)
         (unreachable "expected to throw")
         (catch e
-          (assert.include e.message "failed prepare"))))))
+          (assert.include e.message `error running "prepare"`))))))
 
 (test :help
   (fn@ []

@@ -55,7 +55,7 @@
   (let [workspaces @(all-workspaces env)]
     (if (.some @(Promise.allSettled (workspaces.map #(run-ws env $ cmd)))
                #(= $.status :rejected))
-      (throw (Error `failed ${cmd}`)))))
+      (throw (Error `error running "${cmd}" script in some packages`)))))
 
 (fn array-remove [vs v]
   (let [index (vs.indexOf v)]
