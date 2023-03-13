@@ -1,6 +1,6 @@
 import { transpile, transpileStr } from '../dist/transpiler.mjs'
 import { test } from 'uvu'
-import * as assert from 'uvu/assert'
+import { equal, ok } from 'uvu/assert'
 
 const tostr = (code, log) => {
   const pieces = []
@@ -18,7 +18,7 @@ const tostr = (code, log) => {
 }
 
 test('shebang is dropped', () => {
-  assert.equal(
+  equal(
     tostr(`#!foo
     :bar
     `),
@@ -26,140 +26,137 @@ test('shebang is dropped', () => {
   )
 })
 test('transpileStr', () => {
-  assert.equal(transpileStr(':hello').code, '"hello";')
+  equal(transpileStr(':hello').code, '"hello";')
 })
 test('transpileStr sourcemap: inline', () => {
-  assert.ok(
+  ok(
     transpileStr('hello', { sourcemap: 'inline' }).code.includes(
       'sourceMappingURL=data:application/json;base64',
     ),
   )
 })
 test('string escape', () => {
-  assert.equal(tostr('"\\t"'), '"\\t";')
+  equal(tostr('"\\t"'), '"\\t";')
 })
 test('string with escaped newline', () => {
-  assert.equal(tostr('"\\n"'), '"\\n";')
+  equal(tostr('"\\n"'), '"\\n";')
 })
 test('string with unescaped newline', () => {
-  assert.equal(tostr('"hello\nworld"'), '"hello\\nworld";')
+  equal(tostr('"hello\nworld"'), '"hello\\nworld";')
 })
 test('symbol: replaces all', () => {
-  assert.equal(tostr('>>'), '_GT__GT_;')
+  equal(tostr('>>'), '_GT__GT_;')
 })
 test('symbol: bang', () => {
-  assert.equal(tostr('foo!'), 'foo_BANG_;')
+  equal(tostr('foo!'), 'foo_BANG_;')
 })
 test('symbol: qmark', () => {
-  assert.equal(tostr('foo?'), 'foo_QMARK_;')
+  equal(tostr('foo?'), 'foo_QMARK_;')
 })
 test('symbol: qmark option chaining', () => {
-  assert.equal(tostr('foo?.bar'), 'foo?.bar;')
+  equal(tostr('foo?.bar'), 'foo?.bar;')
 })
 test('symbol: star', () => {
-  assert.equal(tostr('foo*'), 'foo_STAR_;')
+  equal(tostr('foo*'), 'foo_STAR_;')
 })
 test('symbol: plus', () => {
-  assert.equal(tostr('foo+'), 'foo_PLUS_;')
+  equal(tostr('foo+'), 'foo_PLUS_;')
 })
 test('symbol: gt', () => {
-  assert.equal(tostr('>'), '_GT_;')
+  equal(tostr('>'), '_GT_;')
 })
 test('symbol: lt', () => {
-  assert.equal(tostr('<'), '_LT_;')
+  equal(tostr('<'), '_LT_;')
 })
 test('symbol: eq', () => {
-  assert.equal(tostr('='), '_EQ_;')
+  equal(tostr('='), '_EQ_;')
 })
 test('symbol: floats', () => {
-  assert.equal(tostr('3.1415926'), '3.1415926;')
-  assert.equal(tostr('.123456789'), '.123456789;')
-  assert.equal(tostr('3.1E+12'), '3.1E+12;')
-  assert.equal(tostr('.1e-23'), '.1e-23;')
+  equal(tostr('3.1415926'), '3.1415926;')
+  equal(tostr('.123456789'), '.123456789;')
+  equal(tostr('3.1E+12'), '3.1E+12;')
+  equal(tostr('.1e-23'), '.1e-23;')
 })
 test('symbol: negative number', () => {
-  assert.equal(tostr('-42'), '-42;')
+  equal(tostr('-42'), '-42;')
 })
 test('symbol: dot prop', () => {
-  assert.equal(tostr('.a-b'), '.a_DASH_b;')
+  equal(tostr('.a-b'), '.a_DASH_b;')
 })
 test('symbol: class private', () => {
-  assert.equal(tostr('#foo'), 'this.#foo;')
+  equal(tostr('#foo'), 'this.#foo;')
 })
 test('symbol: class private spread', () => {
-  assert.equal(tostr('...#foo'), '...this.#foo;')
+  equal(tostr('...#foo'), '...this.#foo;')
 })
 test('template: simple', () => {
-  assert.equal(tostr('`foo`'), '`foo`;')
+  equal(tostr('`foo`'), '`foo`;')
 })
 test('template: with symbol', () => {
-  assert.equal(tostr('`foo ${#bar} baz`'), '`foo ${this.#bar} baz`;')
+  equal(tostr('`foo ${#bar} baz`'), '`foo ${this.#bar} baz`;')
 })
 test('template: with add', () => {
-  assert.equal(
-    tostr('`foo ${(+ bar #baz)} boom`'),
-    '`foo ${(bar+this.#baz)} boom`;',
-  )
+  equal(tostr('`foo ${(+ bar #baz)} boom`'), '`foo ${(bar+this.#baz)} boom`;')
 })
 test('template: with dot', () => {
-  assert.equal(tostr('`foo ${(. foo 1)} boom`'), '`foo ${foo[1]} boom`;')
+  equal(tostr('`foo ${(. foo 1)} boom`'), '`foo ${foo[1]} boom`;')
 })
 test('plain keyword', () => {
-  assert.equal(tostr(':foo'), '"foo";')
+  equal(tostr(':foo'), '"foo";')
 })
 test('nested arrays', () => {
-  assert.equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],];')
+  equal(tostr('[[1 2 3] [4 5 6]]'), '[[1,2,3,],[4,5,6,],];')
 })
 test('data structures', () => {
-  assert.equal(
+  equal(
     tostr('{:a 1 :b [1 2] :c [3 4] "d e" 5}'),
     '{a:1,b:[1,2,],c:[3,4,],["d e"]:5,};',
   )
 })
 test('object with symbol rest', () => {
-  assert.equal(tostr('{:a 1 ...b :c 2 ...d}'), '{a:1,...b,c:2,...d,};')
+  equal(tostr('{:a 1 ...b :c 2 ...d}'), '{a:1,...b,c:2,...d,};')
 })
 test('object with method rest', () => {
-  assert.equal(
+  equal(
     tostr('{:a 1 (... (b 2)) :c 3 (... (d 4))}'),
     '{a:1,...b(2),c:3,...d(4),};',
   )
 })
 test('regexp', () => {
-  assert.equal(
+  equal(
     tostr('(.match #/fo[o]\\/|"bar"/ig :foo)'),
     '/fo[o]\\/|"bar"/ig.match("foo");',
   )
 })
 test('function call', () => {
-  assert.equal(tostr('(a {:b c})'), 'a({b:c,});')
+  equal(tostr('(a {:b c})'), 'a({b:c,});')
 })
 test('method call', () => {
-  assert.equal(tostr('(.a b {:c d})'), 'b.a({c:d,});')
+  equal(tostr('(.a b {:c d})'), 'b.a({c:d,});')
 })
 test('constructor call', () => {
-  assert.equal(tostr('(String. 42)'), 'new String(42);')
+  equal(tostr('(String. 42)'), 'new String(42);')
 })
 test('multiple: list', () => {
-  assert.equal(tostr('(add 1)(add 2)'), 'add(1);add(2);')
+  equal(tostr('(add 1)(add 2)'), 'add(1);add(2);')
 })
 test('value call', () => {
-  assert.equal(
+  equal(
     tostr('(fn run [a] ((. Array :isArray) a))'),
     `const run=(a)=>{return Array.isArray(a);};`,
   )
 })
 test('anonymous fn call', () => {
-  assert.equal(tostr('((fn [a] a) 1)'), `((a)=>{return a;})(1);`)
+  equal(tostr('((fn [a] a) 1)'), `((a)=>{return a;})(1);`)
 })
 test('call nested hoisted', () => {
-  assert.equal(
+  equal(
     tostr('(do (String. (Number. (if true 42 43))))'),
     'let hoist__0;if(true){hoist__0=42}else{hoist__0=43};new String(new Number(hoist__0));;',
   )
 })
 test('comments', () => {
-  assert.equal(
+  equal(
     tostr(`
     ; this is the truth
     "use strict" ; really sure
@@ -168,13 +165,13 @@ test('comments', () => {
   )
 })
 test('comment at EOF', () => {
-  assert.equal(tostr('a\n;'), 'a;')
+  equal(tostr('a\n;'), 'a;')
 })
 test('comment middle line', () => {
-  assert.equal(tostr('a;b'), 'a;')
+  equal(tostr('a;b'), 'a;')
 })
 test('builtin: import', () => {
-  assert.equal(
+  equal(
     tostr(`
     (import ["./named.js" [A B cD]]
             ["./default.js" TheDefault {A MyA D MyD} [E F]]
@@ -185,25 +182,22 @@ test('builtin: import', () => {
   )
 })
 test('builtin: import dynamic symbol', () => {
-  assert.equal(tostr('(import foo)'), 'import(foo);')
+  equal(tostr('(import foo)'), 'import(foo);')
 })
 test('builtin: import dynamic string', () => {
-  assert.equal(tostr('(import "foo")'), 'import("foo");')
+  equal(tostr('(import "foo")'), 'import("foo");')
 })
 test('builtin: const', () => {
-  assert.equal(tostr('(const a 42)'), 'const a=42;;')
+  equal(tostr('(const a 42)'), 'const a=42;;')
 })
 test('builtin: export const', () => {
-  assert.equal(tostr('(const ^:export a 42)'), 'export const a=42;;')
+  equal(tostr('(const ^:export a 42)'), 'export const a=42;;')
 })
 test('builtin: export default const', () => {
-  assert.equal(
-    tostr('(const ^:export ^:default a 42)'),
-    'export default const a=42;;',
-  )
+  equal(tostr('(const ^:export ^:default a 42)'), 'export default const a=42;;')
 })
 test('builtin: const with hoist', () => {
-  assert.equal(
+  equal(
     tostr(`
     (const a (case v
                 42 :answer
@@ -213,28 +207,25 @@ test('builtin: const with hoist', () => {
   )
 })
 test('builtin: var', () => {
-  assert.equal(tostr('(var a 42)'), 'var a=42;')
+  equal(tostr('(var a 42)'), 'var a=42;')
 })
 test('builtin: let', () => {
-  assert.equal(tostr('(let a 42)'), 'let a=42;')
+  equal(tostr('(let a 42)'), 'let a=42;')
 })
 test('builtin: let destructure', () => {
-  assert.equal(tostr('(let {:keys [a b]} c)'), 'let {a,b}=c;')
+  equal(tostr('(let {:keys [a b]} c)'), 'let {a,b}=c;')
 })
 test('builtin: const destructure', () => {
-  assert.equal(tostr('(const [a b] c)'), 'const [a,b,]=c;;')
+  equal(tostr('(const [a b] c)'), 'const [a,b,]=c;;')
 })
 test('builtin: export let', () => {
-  assert.equal(tostr('(let ^:export a 42)'), 'export let a=42;')
+  equal(tostr('(let ^:export a 42)'), 'export let a=42;')
 })
 test('builtin: export default let', () => {
-  assert.equal(
-    tostr('(let ^:export ^:default a 42)'),
-    'export default let a=42;',
-  )
+  equal(tostr('(let ^:export ^:default a 42)'), 'export default let a=42;')
 })
 test('builtin: let with direct assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (let a (case v
              42 :answer
@@ -244,7 +235,7 @@ test('builtin: let with direct assign', () => {
   )
 })
 test('builtin: let with simple assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (let a (do :answer))
   `),
@@ -252,7 +243,7 @@ test('builtin: let with simple assign', () => {
   )
 })
 test('builtin: let with hoist and simple assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (let a (do
              (prn "hello")
@@ -262,7 +253,7 @@ test('builtin: let with hoist and simple assign', () => {
   )
 })
 test('builtin: fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn err [expected offset]
       (str "expected " expected " at position " offset))
@@ -271,7 +262,7 @@ test('builtin: fn', () => {
   )
 })
 test('builtin: fn ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:decl err [expected offset]
       (str "expected " expected " at position " offset))
@@ -280,7 +271,7 @@ test('builtin: fn ^:decl', () => {
   )
 })
 test('builtin: export fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:export i [a] a)
     `),
@@ -288,7 +279,7 @@ test('builtin: export fn', () => {
   )
 })
 test('builtin: export fn ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:export ^:decl i [a] a)
     `),
@@ -296,7 +287,7 @@ test('builtin: export fn ^:decl', () => {
   )
 })
 test('builtin: export default fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:export ^:default i [a] a)
     `),
@@ -304,7 +295,7 @@ test('builtin: export default fn', () => {
   )
 })
 test('builtin: export default fn ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:export ^:default ^:decl i [a] a)
     `),
@@ -312,7 +303,7 @@ test('builtin: export default fn ^:decl', () => {
   )
 })
 test('builtin: export default anonymous fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:export ^:default [a] a)
     `),
@@ -320,7 +311,7 @@ test('builtin: export default anonymous fn', () => {
   )
 })
 test('fn with array destructuring', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn first [[first second] other]
       first)
@@ -329,7 +320,7 @@ test('fn with array destructuring', () => {
   )
 })
 test('fn with object destructuring', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run [{y x :keys [b c] :or {a 1 b 2 d 3}}]
       a)
@@ -338,7 +329,7 @@ test('fn with object destructuring', () => {
   )
 })
 test('fn with rest', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run [a ...rest]
        (a ...rest))
@@ -347,7 +338,7 @@ test('fn with rest', () => {
   )
 })
 test('builtin: fn@', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@ run [v]
       @(v 42))
@@ -356,7 +347,7 @@ test('builtin: fn@', () => {
   )
 })
 test('builtin: fn@ ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@ ^:decl run [v]
       @(v 42))
@@ -365,7 +356,7 @@ test('builtin: fn@ ^:decl', () => {
   )
 })
 test('builtin: fn*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn* run [v]
       (yield v))
@@ -374,7 +365,7 @@ test('builtin: fn*', () => {
   )
 })
 test('builtin: fn@*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@* run [v]
       (yield v))
@@ -383,7 +374,7 @@ test('builtin: fn@*', () => {
   )
 })
 test('builtin: anonymous fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn [v]
       (v 42))
@@ -392,7 +383,7 @@ test('builtin: anonymous fn', () => {
   )
 })
 test('builtin: anonymous fn ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:decl [v]
       (v 42))
@@ -401,7 +392,7 @@ test('builtin: anonymous fn ^:decl', () => {
   )
 })
 test('builtin: anonymous fn@', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@ [v]
       @(v 42))
@@ -410,7 +401,7 @@ test('builtin: anonymous fn@', () => {
   )
 })
 test('builtin: anonymous fn@ ^:decl', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@ ^:decl [v]
       @(v 42))
@@ -419,7 +410,7 @@ test('builtin: anonymous fn@ ^:decl', () => {
   )
 })
 test('builtin: anonymous fn*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn* [v]
       (yield v))
@@ -428,7 +419,7 @@ test('builtin: anonymous fn*', () => {
   )
 })
 test('builtin: anonymous fn@*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn@* [v]
       (yield v))
@@ -437,7 +428,7 @@ test('builtin: anonymous fn@*', () => {
   )
 })
 test('builtin: anonymous fn to const', () => {
-  assert.equal(
+  equal(
     tostr(`
     (const a (fn [b] (inc b)))
     `),
@@ -445,7 +436,7 @@ test('builtin: anonymous fn to const', () => {
   )
 })
 test('builtin: fn ^:decl to const', () => {
-  assert.equal(
+  equal(
     tostr(`
     (const a (fn ^:decl foo [b] (inc b)))
     `),
@@ -453,7 +444,7 @@ test('builtin: fn ^:decl to const', () => {
   )
 })
 test('builtin: fn with this', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn ^:decl TheClass [a] (set this.a a))
     `),
@@ -461,7 +452,7 @@ test('builtin: fn with this', () => {
   )
 })
 test('builtin: let', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (let [a 0
@@ -473,7 +464,7 @@ test('builtin: let', () => {
   )
 })
 test('builtin: let without assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (let [a 0
@@ -486,7 +477,7 @@ test('builtin: let without assign', () => {
   )
 })
 test('builtin: let as arg', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run [a] a)
     (do (run (let [a 0
@@ -497,7 +488,7 @@ test('builtin: let as arg', () => {
   )
 })
 test('builtin: let with destructuring', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (let [{:keys [a b]} (foo)]
@@ -507,7 +498,7 @@ test('builtin: let with destructuring', () => {
   )
 })
 test('builtin: let with gensym + destructuring', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (let [{:keys [a b]} (do (println :hello) (foo))]
@@ -517,16 +508,16 @@ test('builtin: let with gensym + destructuring', () => {
   )
 })
 test('builtin: throw', () => {
-  assert.equal(tostr('(throw (error "foo"))'), 'throw error("foo");')
+  equal(tostr('(throw (error "foo"))'), 'throw error("foo");')
 })
 test('builtin: return with value', () => {
-  assert.equal(tostr('(return 42)'), 'return 42;')
+  equal(tostr('(return 42)'), 'return 42;')
 })
 test('builtin: return bare', () => {
-  assert.equal(tostr('(return)'), 'return;')
+  equal(tostr('(return)'), 'return;')
 })
 test('builtin: return hoist', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (return (if true 42)))
@@ -535,19 +526,19 @@ test('builtin: return hoist', () => {
   )
 })
 test('builtin: yield', () => {
-  assert.equal(tostr('(yield)'), 'yield;')
+  equal(tostr('(yield)'), 'yield;')
 })
 test('builtin: yield*', () => {
-  assert.equal(tostr('(yield* [1 2])'), 'yield* [1,2,];')
+  equal(tostr('(yield* [1 2])'), 'yield* [1,2,];')
 })
 test('builtin: break', () => {
-  assert.equal(tostr('(break)'), 'break;')
+  equal(tostr('(break)'), 'break;')
 })
 test('builtin: continue', () => {
-  assert.equal(tostr('(continue)'), 'continue;')
+  equal(tostr('(continue)'), 'continue;')
 })
 test('builtin: for with step', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for [i 0 len step]
       (console.log i))
@@ -556,7 +547,7 @@ test('builtin: for with step', () => {
   )
 })
 test('builtin: for without step', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for [i 0 len]
       (console.log i))
@@ -565,7 +556,7 @@ test('builtin: for without step', () => {
   )
 })
 test('builtin: for-of', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for-of [v vs]
       (console.log v))
@@ -574,7 +565,7 @@ test('builtin: for-of', () => {
   )
 })
 test('builtin: for-of with destructure', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for-of [[a b] vs]
       (console.log a b))
@@ -583,7 +574,7 @@ test('builtin: for-of with destructure', () => {
   )
 })
 test('builtin: for-in', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for-in [v vs]
       (console.log v))
@@ -592,7 +583,7 @@ test('builtin: for-in', () => {
   )
 })
 test('builtin: for@', () => {
-  assert.equal(
+  equal(
     tostr(`
     (for@ [v vs]
       (console.log v))
@@ -601,7 +592,7 @@ test('builtin: for@', () => {
   )
 })
 test('builtin: case return position', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (case (inc 1)
@@ -613,7 +604,7 @@ test('builtin: case return position', () => {
   )
 })
 test('builtin: case assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (let [v (case (inc 1)
@@ -626,7 +617,7 @@ test('builtin: case assign', () => {
   )
 })
 test('builtin: case array matches', () => {
-  assert.equal(
+  equal(
     tostr(`
     (const v (case (inc 1)
                 ["foo" "bar"] 42
@@ -636,7 +627,7 @@ test('builtin: case array matches', () => {
   )
 })
 test('builtin: do', () => {
-  assert.equal(
+  equal(
     tostr(`
     (do
       (add 1 1)
@@ -646,7 +637,7 @@ test('builtin: do', () => {
   )
 })
 test('builtin: while', () => {
-  assert.equal(
+  equal(
     tostr(`
     (while (= a 1)
       (println a)
@@ -656,7 +647,7 @@ test('builtin: while', () => {
   )
 })
 test('builtin: while hoisted', () => {
-  assert.equal(
+  equal(
     tostr(`
     (yield (while (= a 1)
              (println a)
@@ -666,7 +657,7 @@ test('builtin: while hoisted', () => {
   )
 })
 test('builtin: if hoisted', () => {
-  assert.equal(
+  equal(
     tostr(`
     (const a (if true 42 43))
     `),
@@ -674,7 +665,7 @@ test('builtin: if hoisted', () => {
   )
 })
 test('builtin: if without else', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (if true 42))
@@ -683,7 +674,7 @@ test('builtin: if without else', () => {
   )
 })
 test('builtin: if and else if', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run [a b]
       (if a 42 b 43))
@@ -692,7 +683,7 @@ test('builtin: if and else if', () => {
   )
 })
 test('builtin: if return', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (if true 42 43))
@@ -701,7 +692,7 @@ test('builtin: if return', () => {
   )
 })
 test('builtin: if let', () => {
-  assert.equal(
+  equal(
     tostr(`
     (.foo (let [a (if true 42 43)]
              a)
@@ -711,7 +702,7 @@ test('builtin: if let', () => {
   )
 })
 test('builtin: double if hoisting', () => {
-  assert.equal(
+  equal(
     tostr(`
     (.foo (if (if true 40 41) 42 43)
           :bar)
@@ -720,13 +711,13 @@ test('builtin: double if hoisting', () => {
   )
 })
 test('builtin: dot', () => {
-  assert.equal(tostr('(. foo bar)'), 'foo[bar];')
+  equal(tostr('(. foo bar)'), 'foo[bar];')
 })
 test('builtin: dot double', () => {
-  assert.equal(tostr('(. foo bar baz)'), 'foo[bar][baz];')
+  equal(tostr('(. foo bar baz)'), 'foo[bar][baz];')
 })
 test('builtin: dot hoist', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (. foo (if true 42)))
@@ -735,166 +726,163 @@ test('builtin: dot hoist', () => {
   )
 })
 test('builtin: ?.', () => {
-  assert.equal(tostr('(?. foo bar baz)'), 'foo?.[bar]?.[baz];')
+  equal(tostr('(?. foo bar baz)'), 'foo?.[bar]?.[baz];')
 })
 test('builtin: ?. with strings', () => {
-  assert.equal(tostr('(?. foo :bar "baz boo")'), 'foo?.bar?.["baz boo"];')
+  equal(tostr('(?. foo :bar "baz boo")'), 'foo?.bar?.["baz boo"];')
 })
 test('builtin: await', () => {
-  assert.equal(tostr(`@42`), `await 42;`)
+  equal(tostr(`@42`), `await 42;`)
 })
 test('builtin: await method call', () => {
-  assert.equal(tostr(`@(make :promise)`), `await make("promise");`)
+  equal(tostr(`@(make :promise)`), `await make("promise");`)
 })
 test('builtin: await expr', () => {
-  assert.equal(tostr(`(a @(make :promise))`), `a((await make("promise")));`)
+  equal(tostr(`(a @(make :promise))`), `a((await make("promise")));`)
 })
 test('builtin: op str', () => {
-  assert.equal(tostr('(str :a :b :c)'), '("a"+"b"+"c");')
+  equal(tostr('(str :a :b :c)'), '("a"+"b"+"c");')
 })
 test('builtin: op +', () => {
-  assert.equal(tostr('(+ 1 2 3)'), '(1+2+3);')
+  equal(tostr('(+ 1 2 3)'), '(1+2+3);')
 })
 test('builtin: op + unary', () => {
-  assert.equal(tostr('(+ 1)'), '(+1);')
+  equal(tostr('(+ 1)'), '(+1);')
 })
 test('builtin: op -', () => {
-  assert.equal(tostr('(- 1 2 3)'), '(1-2-3);')
+  equal(tostr('(- 1 2 3)'), '(1-2-3);')
 })
 test('builtin: op - unary', () => {
-  assert.equal(tostr('(- 1)'), '(-1);')
+  equal(tostr('(- 1)'), '(-1);')
 })
 test('builtin: op *', () => {
-  assert.equal(tostr('(* 1 2 3)'), '(1*2*3);')
+  equal(tostr('(* 1 2 3)'), '(1*2*3);')
 })
 test('builtin: op /', () => {
-  assert.equal(tostr('(/ 1 2 3)'), '(1/2/3);')
+  equal(tostr('(/ 1 2 3)'), '(1/2/3);')
 })
 test('builtin: op **', () => {
-  assert.equal(tostr('(** 1 2 3)'), '(1**2**3);')
+  equal(tostr('(** 1 2 3)'), '(1**2**3);')
 })
 test('builtin: op %', () => {
-  assert.equal(tostr('(% 1 2 3)'), '(1%2%3);')
+  equal(tostr('(% 1 2 3)'), '(1%2%3);')
 })
 test('builtin: op <<', () => {
-  assert.equal(tostr('(<< 1 2 3)'), '(1<<2<<3);')
+  equal(tostr('(<< 1 2 3)'), '(1<<2<<3);')
 })
 test('builtin: op >>', () => {
-  assert.equal(tostr('(>> 1 2 3)'), '(1>>2>>3);')
+  equal(tostr('(>> 1 2 3)'), '(1>>2>>3);')
 })
 test('builtin: op bit-and', () => {
-  assert.equal(tostr('(bit-and 1 2 3)'), '(1&2&3);')
+  equal(tostr('(bit-and 1 2 3)'), '(1&2&3);')
 })
 test('builtin: op bit-or', () => {
-  assert.equal(tostr('(bit-or 1 2 3)'), '(1|2|3);')
+  equal(tostr('(bit-or 1 2 3)'), '(1|2|3);')
 })
 test('builtin: op bit-xor', () => {
-  assert.equal(tostr('(bit-xor 1 2 3)'), '(1^2^3);')
+  equal(tostr('(bit-xor 1 2 3)'), '(1^2^3);')
 })
 test('builtin: op ||', () => {
-  assert.equal(tostr('(|| 1 2 3)'), '(1||2||3);')
+  equal(tostr('(|| 1 2 3)'), '(1||2||3);')
 })
 test('builtin: op or', () => {
-  assert.equal(tostr('(or 1 2 3)'), '(1||2||3);')
+  equal(tostr('(or 1 2 3)'), '(1||2||3);')
 })
 test('builtin: op &&', () => {
-  assert.equal(tostr('(&& 1 2 3)'), '(1&&2&&3);')
+  equal(tostr('(&& 1 2 3)'), '(1&&2&&3);')
 })
 test('builtin: op and', () => {
-  assert.equal(tostr('(and 1 2 3)'), '(1&&2&&3);')
+  equal(tostr('(and 1 2 3)'), '(1&&2&&3);')
 })
 test('builtin: op in', () => {
-  assert.equal(tostr('(in a b)'), '(a in b);')
+  equal(tostr('(in a b)'), '(a in b);')
 })
 test('builtin: prefix bit-not', () => {
-  assert.equal(tostr('(bit-not 1)'), '(~1);')
+  equal(tostr('(bit-not 1)'), '(~1);')
 })
 test('builtin: prefix not', () => {
-  assert.equal(tostr('(not 1)'), '(!1);')
+  equal(tostr('(not 1)'), '(!1);')
 })
 test('builtin: suffix ++', () => {
-  assert.equal(tostr('(++ a)'), '(a++);')
+  equal(tostr('(++ a)'), '(a++);')
 })
 test('builtin: cmp =', () => {
-  assert.equal(tostr('(= a b)'), 'a===b;')
+  equal(tostr('(= a b)'), 'a===b;')
 })
 test('builtin: cmp not=', () => {
-  assert.equal(tostr('(not= a b)'), 'a!==b;')
+  equal(tostr('(not= a b)'), 'a!==b;')
 })
 test('builtin: cmp ==', () => {
-  assert.equal(tostr('(== a b)'), 'a==b;')
+  equal(tostr('(== a b)'), 'a==b;')
 })
 test('builtin: cmp !=', () => {
-  assert.equal(tostr('(!= a b)'), 'a!=b;')
+  equal(tostr('(!= a b)'), 'a!=b;')
 })
 test('builtin: cmp <', () => {
-  assert.equal(tostr('(< a b)'), 'a<b;')
+  equal(tostr('(< a b)'), 'a<b;')
 })
 test('builtin: cmp >', () => {
-  assert.equal(tostr('(> a b)'), 'a>b;')
+  equal(tostr('(> a b)'), 'a>b;')
 })
 test('builtin: cmp >=', () => {
-  assert.equal(tostr('(>= a b)'), 'a>=b;')
+  equal(tostr('(>= a b)'), 'a>=b;')
 })
 test('builtin: cmp <=', () => {
-  assert.equal(tostr('(<= a b)'), 'a<=b;')
+  equal(tostr('(<= a b)'), 'a<=b;')
 })
 test('lambda', () => {
-  assert.equal(
+  equal(
     tostr(`#(do [(if $ true false) $2 :$3])`),
     `((lambda__0,lambda__1)=>{let hoist__2;if(lambda__0){hoist__2=true}else{hoist__2=false};return [hoist__2,lambda__1,"$3",];});`,
   )
 })
 test('lambda with $ dot', () => {
-  assert.equal(
+  equal(
     tostr(`#($.a $2.b)`),
     `((lambda__0,lambda__1)=>{return lambda__0.a(lambda__1.b)});`,
   )
 })
 test('lambda with rest ...$', () => {
-  assert.equal(
+  equal(
     tostr(`#(...$.map console.log)`),
     `((...lambda_rest__0)=>{return lambda_rest__0.map(console.log)});`,
   )
 })
 test('lambda with assign', () => {
-  assert.equal(
-    tostr(`(#(do [$]) 42)`),
-    `((lambda__0)=>{return [lambda__0,];})(42);`,
-  )
+  equal(tostr(`(#(do [$]) 42)`), `((lambda__0)=>{return [lambda__0,];})(42);`)
 })
 test('lambda with skipped arg', () => {
-  assert.equal(
+  equal(
     tostr(`#(. assets $2)`),
     `((lambda__0,lambda__1)=>{return assets[lambda__1]});`,
   )
 })
 test('lambda in lambda', () => {
-  assert.equal(
+  equal(
     tostr(`#($ #($))`),
     `((lambda__0)=>{return lambda__0(((lambda__1)=>{return lambda__1()}))});`,
   )
 })
 test('lambda with empty list', () => {
-  assert.equal(tostr(`#($ [])`), `((lambda__0)=>{return lambda__0([])});`)
+  equal(tostr(`#($ [])`), `((lambda__0)=>{return lambda__0([])});`)
 })
 test('builtin: typeof', () => {
-  assert.equal(tostr('(typeof 1)'), 'typeof 1;')
+  equal(tostr('(typeof 1)'), 'typeof 1;')
 })
 test('builtin: instanceof', () => {
-  assert.equal(tostr('(instanceof a 1)'), 'a instanceof 1;')
+  equal(tostr('(instanceof a 1)'), 'a instanceof 1;')
 })
 test('builtin: isa? shorthand', () => {
-  assert.equal(tostr('(isa? a 1)'), 'a instanceof 1;')
+  equal(tostr('(isa? a 1)'), 'a instanceof 1;')
 })
 test('builtin: set', () => {
-  assert.equal(tostr('(set a 1)'), 'a=1;')
+  equal(tostr('(set a 1)'), 'a=1;')
 })
 test('builtin: delete', () => {
-  assert.equal(tostr('(delete a.b)'), 'delete a.b;')
+  equal(tostr('(delete a.b)'), 'delete a.b;')
 })
 test('builtin: set returns', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run [a]
       (set a.b 1))
@@ -903,22 +891,22 @@ test('builtin: set returns', () => {
   )
 })
 test('builtin: set: hoist', () => {
-  assert.equal(
+  equal(
     tostr('(set a (if true 1 2))'),
     'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};a=hoist__0;',
   )
 })
 test('builtin: set: double + hoist', () => {
-  assert.equal(
+  equal(
     tostr('(set b (set a (if true 1 2)))'),
     'let hoist__0;if(true){hoist__0=1}else{hoist__0=2};b=a=hoist__0;',
   )
 })
 test('builtin: set property number', () => {
-  assert.equal(tostr(`(set globalThis.answer 42)`), `globalThis.answer=42;`)
+  equal(tostr(`(set globalThis.answer 42)`), `globalThis.answer=42;`)
 })
 test('builtin: set property fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (set globalThis.prn
          (fn [a]
@@ -928,10 +916,10 @@ test('builtin: set property fn', () => {
   )
 })
 test('builtin: set dot access', () => {
-  assert.equal(tostr(`(set (. a b c) 42)`), `a[b][c]=42;`)
+  equal(tostr(`(set (. a b c) 42)`), `a[b][c]=42;`)
 })
 test('builtin: try/catch/finally with return', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (try
@@ -946,7 +934,7 @@ test('builtin: try/catch/finally with return', () => {
   )
 })
 test('builtin: try/catch/finally without assign', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (try
@@ -961,7 +949,7 @@ test('builtin: try/catch/finally without assign', () => {
   )
 })
 test('builtin: try/catch', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (try
@@ -974,7 +962,7 @@ test('builtin: try/catch', () => {
   )
 })
 test('builtin: try/finally', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (try
@@ -987,7 +975,7 @@ test('builtin: try/finally', () => {
   )
 })
 test('builtin: try/catch with hoist', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn run []
       (+ 1 (try
@@ -999,28 +987,28 @@ test('builtin: try/catch with hoist', () => {
   )
 })
 test('builtin: class: declaration: empty', () => {
-  assert.equal(tostr(`(class Foo)`), `class Foo{};`)
+  equal(tostr(`(class Foo)`), `class Foo{};`)
 })
 test('builtin: class: declaration: extends', () => {
-  assert.equal(tostr(`(class Foo :extends Bar)`), `class Foo extends Bar{};`)
+  equal(tostr(`(class Foo :extends Bar)`), `class Foo extends Bar{};`)
 })
 test('builtin: class: declaration: export', () => {
-  assert.equal(
+  equal(
     tostr(`(class ^:export Foo :extends Bar)`),
     `export class Foo extends Bar{};`,
   )
 })
 test('builtin: class: declaration: default', () => {
-  assert.equal(
+  equal(
     tostr(`(class ^:export ^:default :extends Bar)`),
     `export default class extends Bar{};`,
   )
 })
 test('builtin: class: expr: empty', () => {
-  assert.equal(tostr(`(class)`), `class{};`)
+  equal(tostr(`(class)`), `class{};`)
 })
 test('builtin: class: static', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class
       (static
@@ -1030,7 +1018,7 @@ test('builtin: class: static', () => {
   )
 })
 test('builtin: class: macros', () => {
-  assert.equal(
+  equal(
     tostr(`
     (macro log [v]
       '(static (console.log ,v)))
@@ -1042,34 +1030,31 @@ test('builtin: class: macros', () => {
   )
 })
 test('builtin: class: let single without value', () => {
-  assert.equal(tostr(`(class (let hello))`), `class{hello;};`)
+  equal(tostr(`(class (let hello))`), `class{hello;};`)
 })
 test('builtin: class: let single with value', () => {
-  assert.equal(tostr(`(class (let hello 42))`), `class{hello=42;};`)
+  equal(tostr(`(class (let hello 42))`), `class{hello=42;};`)
 })
 test('builtin: class: let multiple', () => {
-  assert.equal(tostr(`(class (let [hello #world]))`), `class{hello;#world;};`)
+  equal(tostr(`(class (let [hello #world]))`), `class{hello;#world;};`)
 })
 test('builtin: class: let static single without value', () => {
-  assert.equal(tostr(`(class (let ^:static hello))`), `class{static hello;};`)
+  equal(tostr(`(class (let ^:static hello))`), `class{static hello;};`)
 })
 test('builtin: class: let static single with value', () => {
-  assert.equal(
-    tostr(`(class (let ^:static hello 42))`),
-    `class{static hello=42;};`,
-  )
+  equal(tostr(`(class (let ^:static hello 42))`), `class{static hello=42;};`)
 })
 test('builtin: class: let static multiple', () => {
-  assert.equal(
+  equal(
     tostr(`(class (let ^:static [hello world]))`),
     `class{static hello;static world;};`,
   )
 })
 test('builtin: class: let single private', () => {
-  assert.equal(tostr(`(class (let #hello 42))`), `class{#hello=42;};`)
+  equal(tostr(`(class (let #hello 42))`), `class{#hello=42;};`)
 })
 test('builtin: class: fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class Foo
       (fn bar [a]
@@ -1079,7 +1064,7 @@ test('builtin: class: fn', () => {
   )
 })
 test('builtin: class: fn@', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class Foo
       (fn@ bar [a]
@@ -1089,7 +1074,7 @@ test('builtin: class: fn@', () => {
   )
 })
 test('builtin: class: fn*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class Foo
       (fn* bar [a]
@@ -1099,7 +1084,7 @@ test('builtin: class: fn*', () => {
   )
 })
 test('builtin: class: fn@*', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class Foo
       (fn@* #bar [a]
@@ -1109,7 +1094,7 @@ test('builtin: class: fn@*', () => {
   )
 })
 test('builtin: class: ignore comments', () => {
-  assert.equal(
+  equal(
     tostr(`
     (class Foo
       ; hello
@@ -1118,28 +1103,28 @@ test('builtin: class: ignore comments', () => {
   )
 })
 test('macro: ->', () => {
-  assert.equal(
+  equal(
     tostr('(-> :hello (.toUpperCase) (str " world"))'),
     '("hello".toUpperCase()+" world");',
   )
 })
 test('macro: -> with symbol', () => {
-  assert.equal(
+  equal(
     tostr('(-> :hello .toUpperCase (str " world"))'),
     '("hello".toUpperCase()+" world");',
   )
 })
 test('macro: when', () => {
-  assert.equal(
+  equal(
     tostr('(when true (prn :hello) (prn :world))'),
     'if(true){prn("hello");prn("world");};',
   )
 })
 test('macro: array?', () => {
-  assert.equal(tostr('(array? v)'), 'Array.isArray(v);')
+  equal(tostr('(array? v)'), 'Array.isArray(v);')
 })
 test('macro: hoist unquote', () => {
-  assert.equal(
+  equal(
     tostr(`
     (macro doto* [v form]
       '(do
@@ -1155,7 +1140,7 @@ test('macro: hoist unquote', () => {
   )
 })
 test('macro: if-let', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn []
       (if-let [[a b] [1 2]]
@@ -1166,7 +1151,7 @@ test('macro: if-let', () => {
   )
 })
 test('macro: when-let', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn []
       (when-let [[a b] [1 2]]
@@ -1177,7 +1162,7 @@ test('macro: when-let', () => {
   )
 })
 test('macro: doto', () => {
-  assert.equal(
+  equal(
     tostr(`
     (fn []
       (doto []
@@ -1189,7 +1174,7 @@ test('macro: doto', () => {
   )
 })
 test('macro: with fn', () => {
-  assert.equal(
+  equal(
     tostr(`
     (macro deftest [name ...body]
       '(test ,name (fn [] ,...body)))
@@ -1204,7 +1189,7 @@ const testErr = (input, msg) => () => {
   try {
     output = tostr(input, false)
   } catch (err) {
-    assert.equal(err.message, msg, err)
+    equal(err.message, msg, err)
     return
   }
   throw Error(
