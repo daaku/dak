@@ -8,6 +8,7 @@
     { "include": "#sexp" },
     { "include": "#keyfn" },
     { "include": "#string" },
+    { "include": "#template-string" },
     { "include": "#vector" },
     { "include": "#map" },
     { "include": "#regexp" },
@@ -262,6 +263,27 @@
         }
       },
       "end": "(\")",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.dak"
+        }
+      },
+      "name": "string.quoted.double.dak",
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.dak"
+        }
+      ]
+    },
+    "template-string": {
+      "begin": "(?<!\\\\)(`)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.begin.dak"
+        }
+      },
+      "end": "(`)",
       "endCaptures": {
         "1": {
           "name": "punctuation.definition.string.end.dak"
