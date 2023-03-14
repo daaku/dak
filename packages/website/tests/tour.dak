@@ -13,12 +13,12 @@
 (const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
 
 (fn@ tour-test [name]
-  (let [contents @(readFile (join root tour-dir name) "utf8")
+  (let [contents @(readFile (join root tour-dir name) :utf8)
         actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
         snapshot-file (join root snapshots-dir (.replace name #/\.dak$/ ".js"))]
     (if update-snapshots
       @(writeFile snapshot-file actual)
-      (equal actual @(readFile snapshot-file "utf8")))))
+      (equal actual @(readFile snapshot-file :utf8)))))
 
 (test :tour
   (fn@ []
