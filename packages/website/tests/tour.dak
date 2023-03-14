@@ -15,7 +15,7 @@
 (fn@ tour-test [name]
   (let [contents @(readFile (join root tour-dir name) "utf8")
         actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
-        snapshot-file (join root snapshots-dir (.replace name /\.dak$/ ".js"))]
+        snapshot-file (join root snapshots-dir (.replace name #/\.dak$/ ".js"))]
     (if update-snapshots
       @(writeFile snapshot-file actual)
       (equal actual @(readFile snapshot-file "utf8")))))
