@@ -16,7 +16,7 @@
     (w.write v)))
 
 (fn since [start]
-  (str (- (Date.now) start) "ms"))
+  (str (Math.round (- (performance.now) start)) "ms"))
 
 (fn@ out [{:keys [exec]} ...args]
   (.trim (. @(exec ...args) :stdout)))
@@ -38,7 +38,7 @@
 (fn@ run-ws [env ws cmd]
   (let {:keys [exec stdout stderr]} env)
   (when-let [sh (-> @(workspace-package-json env ws) (?. :scripts cmd))]
-    (let [start (Date.now)]
+    (let [start (performance.now)]
       (try
         (let [r @(exec sh {:cwd ws})]
           (run-log-cmd stdout PASS ws cmd sh start)

@@ -221,9 +221,11 @@
       {:title "Dak Playground"
        :description "A Playground to experiment with the Dak Language."})))
 
-(const timer-label "Build completed")
+(fn since [start]
+  (str (Math.round (- (performance.now) start)) "ms"))
+
 (fn@ main-prod [config]
-  (console.time timer-label)
+  (const start (performance.now))
   @(Promise.all
     [(mkdir "dist/tour" {:recursive true})
      (mkdir "dist/play" {:recursive true})])
@@ -234,7 +236,7 @@
        (tour-index-html config assets)
        (play-index-html config assets)
        (... (tour.map #(play-build config assets $)))]))
-  (console.timeEnd timer-label))
+  (console.log "Build completed in" (since start)))
 
 (fn set-headers [res path]
   (when (path.includes "/assets/")
