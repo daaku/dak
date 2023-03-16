@@ -1,4 +1,6 @@
 (import [:node:path [join]]
+        [:chokidar [watch]]
+        [:picomatch picomatch]
         [:mri mri]
         [:semver/functions/inc.js semver-inc])
 
@@ -161,6 +163,26 @@
         @(exec "git push")
         @(exec (str "npm publish -w " (ws-to-publish.join " -w ")))))))
 
+(fn pkg-from-path [path]
+  (path.slice 0 (path.indexOf "/" 9)))
+
+(fn ignore-ex [p]
+  (p.catch (fn [])))
+
+(fn@ ^:export dev [env]
+  (let [match-pkg (picomatch "packages/**/*.dak")
+        match-transpiler (picomatch "packages/transpiler/dist/*")]
+    (-> ["packages"]
+        (watch {:ignoreInitial true})
+        (.on :all
+             (fn@ [event path]
+               (when (match-pkg path)
+                 (let [pkg (pkg-from-path path)]
+                   @(ignore-ex (run-ws env pkg :prepare))
+                   @(ignore-ex (run-ws env pkg :test))))
+               (when (match-transpiler path)
+                 (console.log :restart-webserver)))))))
+
 (const help-text
 `usage: ./make.dak [command] [options]
 
@@ -170,6 +192,7 @@ prepare  prepare packages
 release  build and publish releases
   [-n|--dry-run]
 r-dep    show internal reverse dependencies
+dev      dev mode
 run      run package scripts in parallel
   [command] script command
 `)
@@ -183,4 +206,5 @@ run      run package scripts in parallel
                           :prepare prepare
                           :r-dep r-dep
                           :release release
+                          :dev dev
                           :help help})
