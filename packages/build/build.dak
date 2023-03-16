@@ -1,4 +1,5 @@
 (import [:node:path [join]]
+        [:node:child_process [spawn]]
         [:chokidar [watch]]
         [:picomatch picomatch]
         [:mri mri]
@@ -171,9 +172,31 @@
 (fn ignore-ex [p]
   (p.catch (fn [])))
 
+(fn spawn-website-dev [env]
+  (let [alive false
+        start (fn []
+                (doto
+                  (spawn "dak" ["build.dak"]
+                         {:cwd "packages/website"
+                          :stdio ["ignore" "inherit" "inherit"]})
+                  (.on :spawn #(set alive true))
+                  (.on :error #(set alive false))
+                  (.on :exit #(set alive false))))
+        child (start)]
+    (fn []
+      (if alive (do
+                  (child.on :exit #(set child (start)))
+                  (child.kill "SIGKILL"))
+          (set child (start))))))
+
 (fn@ ^:export dev [env]
   (let [match-pkg (picomatch "packages/**/*.dak")
-        match-transpiler (picomatch "packages/transpiler/dist/*")]
+        match-website (picomatch ["packages/transpiler/dist/*"
+                                  "packages/html/dist/*"
+                                  "packages/website/**/*.dak"
+                                  "packages/website/assets"
+                                  "packages/website/readme.md"])
+        website-dev (spawn-website-dev env)]
     (-> (watch "packages" {:ignoreInitial true})
         (.on :all
              (fn@ [event path]
@@ -181,8 +204,8 @@
                  (let [pkg (pkg-from-path path)]
                    @(ignore-ex (run-ws env pkg :prepare))
                    @(ignore-ex (run-ws env pkg :test))))
-               (when (match-transpiler path)
-                 (console.log :restart-webserver)))))))
+               (when (or (match-pkg path) (match-website path))
+                 (website-dev)))))))
 
 (const help-text
 `usage: ./make.dak [command] [options]
