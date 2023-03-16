@@ -972,9 +972,14 @@
   `;test("foo",(()=>{return "bar";}));`)
 
 (good "macro: gensym"
-  "(macro add [a b] '(let [a# a b# b] (+ a# b#)))
+  "(macro add [a b] '(let [a# ,a b# ,b] (+ a# b#)))
    (add 1 2)"
-  ";{let macro__0=a;let macro__1=b;(macro__0+macro__1);};")
+  ";{let macro__0=1;let macro__1=2;(macro__0+macro__1);};")
+
+(good "macro: gensym property"
+  "(macro name [a] '(let [a# ,a] a#.name))
+   (name {:name :yoda})"
+  `;{let macro__0={name:"yoda",};macro__0.name;};`)
 
 (bad "lone paren"
   "("
