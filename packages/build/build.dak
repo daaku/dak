@@ -174,8 +174,7 @@
 (fn@ ^:export dev [env]
   (let [match-pkg (picomatch "packages/**/*.dak")
         match-transpiler (picomatch "packages/transpiler/dist/*")]
-    (-> ["packages"]
-        (watch {:ignoreInitial true})
+    (-> (watch "packages" {:ignoreInitial true})
         (.on :all
              (fn@ [event path]
                (when (match-pkg path)
