@@ -5,6 +5,7 @@
         [:semver/functions/inc.js semver-inc])
 
 (const ws-pad-target 19)
+(const cmd-pad-target 11)
 (const PASS "\x1b[32m\u2713\x1b[0m")
 (const FAIL "\x1b[31m\x1b[1mx\x1b[0m")
 
@@ -34,8 +35,9 @@
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
 
 (fn run-log-cmd [writer prefix ws cmd sh start]
-  (cwrite writer prefix (str " [" cmd "] ") (ws.padEnd ws-pad-target " ")
-    (.padStart (since start) 6 " ") " " sh "\n"))
+  (cwrite writer prefix (.padEnd (str " [" cmd "] ") cmd-pad-target)
+          (ws.padEnd ws-pad-target " ")
+          (.padStart (since start) 6 " ") " " sh "\n"))
 
 (fn@ run-ws [env ws cmd]
   (let {:keys [exec stdout stderr]} env)
