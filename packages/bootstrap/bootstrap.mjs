@@ -2508,20 +2508,24 @@ var applyGensym = (ctx, existing, node) => {
     return node.forEach((lambda__10) => {
       return applyGensym(ctx, existing, lambda__10);
     });
-  } else if (node.kind === "symbol" && node.value.endsWith("#")) {
+  } else if (node.kind === "symbol" && node.value.includes("#")) {
     {
-      let macro__0 = existing[node.value];
-      if (macro__0) {
-        {
-          let found = macro__0;
-          return node.value = found;
+      let [gen_DASH_name, suffix] = node.value.split("#");
+      {
+        let macro__0 = existing[gen_DASH_name];
+        if (macro__0) {
+          {
+            let found = macro__0;
+            return node.value = found + suffix;
+          }
+        } else {
+          {
+            let gen = ctx.gensym("macro").value;
+            existing[gen_DASH_name] = gen;
+            return node.value = gen + suffix;
+          }
         }
-      } else {
-        {
-          let gen = ctx.gensym("macro").value;
-          existing[node.value] = gen;
-          return node.value = gen;
-        }
+        ;
       }
       ;
     }
@@ -2535,8 +2539,8 @@ var transpileBuiltinQuote = function* (ctx, node, assign, hoist, _evKind) {
 };
 var transpileSpecialMacro = function* (ctx, node) {
   {
-    let args = node[2].map((lambda__11) => {
-      return partsStr(transpileSpecialDestructure(ctx, lambda__11));
+    let args = node[2].map((lambda__12) => {
+      return partsStr(transpileSpecialDestructure(ctx, lambda__12));
     });
     let body = partsStr(transpileSpecialBody(ctx, node.slice(3), "return "));
     return ctx.macros.add(node[1].value, new Function("_macroName", ...args, body));
