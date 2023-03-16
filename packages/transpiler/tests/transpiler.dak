@@ -40,7 +40,7 @@
          (try
            (set output# (tostr input#))
            (catch e#
-             (equal (. e# :message) msg#) ; BUG: issue #18
+             (equal e#.message msg#)
              (return)))
          (throw (Error (str "was expecting error: " msg#
                             "\nINPUT:\n" input# "\nOUTPUT:\n" output#)))))))
