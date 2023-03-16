@@ -2,6 +2,7 @@
         [:node:child_process [spawn]]
         [:chokidar [watch]]
         [:picomatch picomatch]
+        [:p-debounce debounce]
         [:mri mri]
         [:semver/functions/inc.js semver-inc])
 
@@ -183,11 +184,13 @@
                   (.on :error #(set alive false))
                   (.on :exit #(set alive false))))
         child (start)]
-    (fn []
-      (if alive (do
-                  (child.on :exit #(set child (start)))
-                  (child.kill "SIGKILL"))
-          (set child (start))))))
+    (debounce
+      (fn []
+        (if alive (do
+                    (child.on :exit #(set child (start)))
+                    (child.kill "SIGKILL"))
+          (set child (start))))
+      50)))
 
 (fn@ ^:export dev [env]
   (let [match-pkg (picomatch "packages/**/*.dak")
