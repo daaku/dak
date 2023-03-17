@@ -426,6 +426,8 @@
   (yield token.value))
 
 (const mangleChars {"!" "_BANG_"
+                    "/" "_FSLASH_"
+                    "\\" "_RSLASH_"
                     "?" "_QMARK_"
                     "*" "_STAR_"
                     "+" "_PLUS_"

@@ -70,6 +70,14 @@
   "foo!"
   "foo_BANG_;")
 
+(good "symbol: fslash"
+  "foo/bar"
+  "foo_FSLASH_bar;")
+
+(good "symbol: rslash"
+  "foo\\bar"
+  "foo_RSLASH_bar;")
+
 (good "symbol: qmark"
   "foo?"
   "foo_QMARK_;")
