@@ -1,6 +1,6 @@
 {
   "name": "@daklang/rollup",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Rollup & Vite Plugin for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
@@ -30,6 +30,6 @@
     "email": "bugs@daklang.com"
   },
   "dependencies": {
-    "@daklang/transpiler": "^0.8.1"
+    "@daklang/transpiler": "^0.8.2"
   }
 }

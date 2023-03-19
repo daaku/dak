@@ -1,6 +1,6 @@
 {
   "name": "@daklang/transpiler",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Transpiler package for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
