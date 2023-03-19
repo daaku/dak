@@ -1,6 +1,6 @@
 {
   "name": "@daklang/cli",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "CLI for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
@@ -21,8 +21,8 @@
     "fennel"
   ],
   "dependencies": {
-    "@daklang/loader": "^0.9.0",
-    "@daklang/transpiler": "^0.8.0"
+    "@daklang/loader": "^0.9.1",
+    "@daklang/transpiler": "^0.8.1"
   },
   "bin": {
     "cli": "./dak",
