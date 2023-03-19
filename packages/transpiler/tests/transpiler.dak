@@ -903,6 +903,16 @@
        (inc a)))"
   "class Foo{bar(a){return (a+1);}};")
 
+(good "builtin: class: getter"
+  "(class Foo
+     (fn ^:get bar [] 42))"
+  "class Foo{get bar(){return 42;}};")
+
+(good "builtin: class: setter"
+  "(class Foo
+     (fn ^:set bar [v] (set this.v v)))"
+  "class Foo{set bar(v){return this.v=v;}};")
+
 (good "builtin: class: fn@"
   "(class Foo
      (fn@ bar [a]

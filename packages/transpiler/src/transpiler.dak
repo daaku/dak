@@ -1013,12 +1013,19 @@
 
 (fn makeClassFnTranspiler [pre]
   (fn* [ctx node]
-    (yield [pre node])
-    (yield* (transpileClassPrivateSymbol ctx (. node 1)))
-    (yield* (transpileSpecialFnArgs ctx (. node 2)))
-    (yield "{")
-    (yield* (transpileSpecialBody ctx (node.slice 3) "return " null evStat))
-    (yield "}")))
+    (let [index 1]
+      (if (= (. node index :value) "^:get")
+          (yield ["get " (. node (++ index))])
+          (= (. node index :value) "^:set")
+          (yield ["set " (. node (++ index))])
+          (yield [pre node]))
+      (console.log node)
+      (yield* (transpileClassPrivateSymbol ctx (. node (++ index))))
+      (yield* (transpileSpecialFnArgs ctx (. node (++ index))))
+      (yield "{")
+      (yield* (transpileSpecialBody ctx (node.slice (++ index))
+                                    "return " null evStat))
+      (yield "}"))))
 
 (const transpileClassFnArrow (makeClassFnTranspiler ""))
 (const transpileClassFnArrowAsync (makeClassFnTranspiler "async "))
