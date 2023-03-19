@@ -1019,7 +1019,6 @@
           (= (. node index :value) "^:set")
           (yield ["set " (. node (++ index))])
           (yield [pre node]))
-      (console.log node)
       (yield* (transpileClassPrivateSymbol ctx (. node (++ index))))
       (yield* (transpileSpecialFnArgs ctx (. node (++ index))))
       (yield "{")
