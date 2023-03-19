@@ -1495,7 +1495,7 @@ var transpileNodeTemplate = function* (ctx, token, hoist) {
 var transpileNodeRegExp = function* (ctx, token) {
   return yield token.value;
 };
-var mangleChars = { ["!"]: "_BANG_", ["?"]: "_QMARK_", ["*"]: "_STAR_", ["+"]: "_PLUS_", [">"]: "_GT_", ["<"]: "_LT_", ["="]: "_EQ_", ["-"]: "_DASH_" };
+var mangleChars = { ["!"]: "_BANG_", ["/"]: "_FSLASH_", ["\\"]: "_RSLASH_", ["?"]: "_QMARK_", ["*"]: "_STAR_", ["+"]: "_PLUS_", [">"]: "_GT_", ["<"]: "_LT_", ["="]: "_EQ_", ["-"]: "_DASH_" };
 var mangleSym = (sym, autoThis) => {
   autoThis ??= true;
   {
@@ -1832,6 +1832,11 @@ var transpileSpecialDestructure = function* (ctx, node) {
         ;
         return yield "}";
       }
+      ;
+    case "list":
+      yield* transpileNodeUnknown(ctx, node[0]);
+      yield "=";
+      return yield* transpileNodeUnknown(ctx, node[1]);
       ;
     default:
       throw err(ctx, node, `unexpected destructure "${node.kind}"`);
@@ -2323,12 +2328,24 @@ var transpileClassLet = function* (ctx, node, _assign, _hoist) {
 };
 var makeClassFnTranspiler = (pre) => {
   return function* (ctx, node) {
-    yield [pre, node];
-    yield* transpileClassPrivateSymbol(ctx, node[1]);
-    yield* transpileSpecialFnArgs(ctx, node[2]);
-    yield "{";
-    yield* transpileSpecialBody(ctx, node.slice(3), "return ", null, evStat);
-    return yield "}";
+    {
+      let index = 1;
+      if (node[index].value === "^:get") {
+        yield ["get ", node[index++]];
+      } else if (node[index].value === "^:set") {
+        yield ["set ", node[index++]];
+      } else {
+        yield [pre, node];
+      }
+      ;
+      console.log(node);
+      yield* transpileClassPrivateSymbol(ctx, node[index++]);
+      yield* transpileSpecialFnArgs(ctx, node[index++]);
+      yield "{";
+      yield* transpileSpecialBody(ctx, node.slice(index++), "return ", null, evStat);
+      return yield "}";
+    }
+    ;
   };
 };
 var transpileClassFnArrow = makeClassFnTranspiler("");
