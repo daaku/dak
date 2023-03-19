@@ -1089,14 +1089,21 @@
   (let [sym n.value
         dot (sym.indexOf ".")
         target (if (neg? dot) sym (sym.slice 0 dot))
+        question (target.endsWith "?")
+        middle ""
         arg 0]
+    (when question
+      (set target (target.slice 0 -1))
+      (set middle "?"))
     (when (not= target "$")
       (set arg (dec (parseInt (target.slice 1) 10))))
     (for [i 0 (inc arg)]
       (when (not (. args i))
         (set (. args i) (ctx.gensym :lambda))))
     (let [replace (. args arg :value)]
-      (set n.value (if (neg? dot) replace `${replace}${(sym.slice dot)}`)))))
+      (set n.value (if (neg? dot)
+                     replace
+                     `${replace}${middle}${(sym.slice dot)}`)))))
 
 (fn* transpileHashLambda [ctx node assign hoist evKind]
   (yield* (transpileSpecialAssign ctx assign))
