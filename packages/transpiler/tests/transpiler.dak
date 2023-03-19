@@ -917,6 +917,11 @@
      (fn ^:set bar [v] (set this.v v)))"
   "class Foo{set bar(v){return this.v=v;}};")
 
+(good "builtin: class: static"
+  "(class Foo
+     (fn ^:static bar [] 42))"
+  "class Foo{static bar(){return 42;}};")
+
 (good "builtin: class: fn@"
   "(class Foo
      (fn@ bar [a]

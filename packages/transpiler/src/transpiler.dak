@@ -1014,6 +1014,8 @@
 (fn makeClassFnTranspiler [pre]
   (fn* [ctx node]
     (let [index 1]
+      (when (= (. node index :value) "^:static")
+        (yield ["static " (. node (++ index))]))
       (if (= (. node index :value) "^:get")
           (yield ["get " (. node (++ index))])
           (= (. node index :value) "^:set")
