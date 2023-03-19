@@ -646,6 +646,11 @@
           (yield "=")
           (yield* (. or key))))
       (yield "}"))
+    :list
+    (do
+      (yield* (transpileNodeUnknown ctx (. node 0)))
+      (yield "=")
+      (yield* (transpileNodeUnknown ctx (. node 1))))
     (throw (err ctx node `unexpected destructure "${node.kind}"`))))
 
 (fn* transpileSpecialFnArgs [ctx node]

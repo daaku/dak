@@ -332,6 +332,10 @@
   "(fn run [{y x :keys [b c] :or {a 1 b 2 d 3}}] a)"
   "const run=({y:x,b=2,c,a=1,d=3})=>{return a;};")
 
+(good "fn with default argument value"
+  "(fn run [(w 42)] w)"
+  "const run=(w=42)=>{return w;};")
+
 (good "fn with rest"
   "(fn run [a ...rest] (a ...rest))"
   "const run=(a,...rest)=>{return a(...rest);};")
