@@ -2,29 +2,16 @@
 
 (import [:esbuild :as esbuild]
         [:node:fs/promises [readFile writeFile mkdir rm]]
-        [:node:path [relative dirname]]
+        [:node:path [dirname]]
         [:node:http [createServer]]
         [:finalhandler finalhandler]
         [:serve-static serveStatic]
         [:ws [WebSocketServer]]
         [:marked [marked]]
-        ["@daklang/transpiler" [transpileStr]]
+        ["@daklang/esbuild" [dakPlugin]]
         ["@daklang/html" [doc html unsafe]])
 
 (const prodURL "https://www.daklang.com/")
-
-(const dakPlugin
-  {:name :dak
-   :setup
-   (fn [build]
-     (build.onLoad
-       {:filter #/\.dak$/}
-       (fn@ [{:keys [path]}]
-         {:contents (. (transpileStr
-                         @(readFile path :utf8)
-                         {:filename (relative (process.cwd) path)
-                          :sourcemap :inline})
-                       :code)})))})
 
 (fn markdown [config assets content]
   (-> content
@@ -47,7 +34,7 @@
                      :entryNames "assets/[name]-[hash]"
                      :loader {:.svg :file :.png :file}
                      :sourcemap true
-                     :plugins [dakPlugin]}))
+                     :plugins [(dakPlugin)]}))
 
 (fn asset-original-name [p]
   (-> p

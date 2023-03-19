@@ -4,6 +4,7 @@
     "packages/cli",
     "packages/loader",
     "packages/rollup",
+    "packages/esbuild",
     "packages/html",
     "packages/bootstrap",
     "packages/build",
