@@ -436,8 +436,7 @@
                     "=" "_EQ_"
                     "-" "_DASH_"})
 
-(fn mangleSym [sym autoThis]
-  (??= autoThis true)
+(fn mangleSym [sym (autoThis true)]
   ; dont mangle numbers
   (let [first (. sym 0)]
     (when (= first "-")
@@ -1326,9 +1325,8 @@
           [(... (transpileNodeStatement ctx node null null evStat))]
           (return (. ctx.macros.scopes 0))))))))
 
-(fn* transpileCtx [code ctx semi]
+(fn* transpileCtx [code ctx (semi true)]
   (let [input (uninterrupt (tokens ctx code))]
-    (set semi (?? semi true))
     (while true
       (if-let [node (astOne ctx input)]
         (do
@@ -1340,8 +1338,7 @@
 (fn* ^:export transpile [code config]
   (yield* (transpileCtx code (newCtx (or config {}) macros))))
 
-(fn ^:export transpileStr [code config]
-  (set config (?? config {}))
+(fn ^:export transpileStr [code (config {})]
   (let [source (?? config.filename "<anonymous>")
         parts []
         map (SourceMapGenerator.)
