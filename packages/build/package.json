@@ -7,5 +7,12 @@
   "scripts": {
     "test": "dak tests.dak",
     "cover": "c8 -e .dak -r html -r text dak tests.dak"
+  },
+  "devDependencies": {
+    "chokidar": "^3.5.3",
+    "mri": "^1.2.0",
+    "p-debounce": "^4.0.0",
+    "picomatch": "^2.3.1",
+    "semver": "^7.3.8"
   }
 }
