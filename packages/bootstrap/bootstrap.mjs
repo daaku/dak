@@ -2330,6 +2330,10 @@ var makeClassFnTranspiler = (pre) => {
   return function* (ctx, node) {
     {
       let index = 1;
+      if (node[index].value === "^:static") {
+        yield ["static ", node[index++]];
+      }
+      ;
       if (node[index].value === "^:get") {
         yield ["get ", node[index++]];
       } else if (node[index].value === "^:set") {
@@ -2338,7 +2342,6 @@ var makeClassFnTranspiler = (pre) => {
         yield [pre, node];
       }
       ;
-      console.log(node);
       yield* transpileClassPrivateSymbol(ctx, node[index++]);
       yield* transpileSpecialFnArgs(ctx, node[index++]);
       yield "{";
@@ -2441,7 +2444,14 @@ var hashLambdaArgMap = (ctx, args, n) => {
       target = sym.slice(0, dot);
     }
     ;
+    let question = target.endsWith("?");
+    let middle = "";
     let arg = 0;
+    if (question) {
+      target = target.slice(0, -1);
+      middle = "?";
+    }
+    ;
     if (target !== "$") {
       arg = parseInt(target.slice(1), 10) - 1;
     }
@@ -2459,7 +2469,7 @@ var hashLambdaArgMap = (ctx, args, n) => {
       if (dot < 0) {
         hoist__9 = replace;
       } else {
-        hoist__9 = `${replace}${sym.slice(dot)}`;
+        hoist__9 = `${replace}${middle}${sym.slice(dot)}`;
       }
       ;
       return n.value = hoist__9;
