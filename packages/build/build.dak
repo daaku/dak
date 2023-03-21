@@ -115,10 +115,9 @@
 
 (fn@ ^:export prepare [env]
   (let [[workspaces deps] @(p-graph-deps env)
-        work (Map. (workspaces.map
-                     (fn [name]
-                       [(str :prepare- name)
-                        {:run #(run-ws env name :prepare)}])))]
+        work (Map.)]
+    (for-of [name workspaces]
+      (work.set (str :prepare- name) {:run #(run-ws env name :prepare)}))
     @(.run (p-graph work deps))))
 
 (fn@ ^:export test [env]
