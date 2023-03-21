@@ -24,6 +24,10 @@
     "test": "dak tests/tour.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/tour.dak"
   },
+  "dependencies": {
+    "@daklang/esbuild": "^0.1.2",
+    "@daklang/html": "^0.3.0"
+  },
   "devDependencies": {
     "finalhandler": "^1.2.0",
     "marked": "^4.2.12",
