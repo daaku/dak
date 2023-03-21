@@ -1,5 +1,6 @@
 (import ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs" prettier]
         ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
+        [:backo Backoff]
         ["@daklang/transpiler" [transpileStr]])
 
 ; conditionally load since we share this script on non playground pages
@@ -79,12 +80,14 @@
 
 (when (not globalThis.IS_PRODUCTION)
   (let token null)
+  (let backoff (Backoff. {:min 100 :max 5000 :factor 0.05}))
   (fn@ monitor []
     (doto (WebSocket. (str "ws://" location.host "/ws"))
-      (.addEventListener :error #(setTimeout monitor 100))
-      (.addEventListener :close #(setTimeout monitor 100))
+      (.addEventListener :error #(setTimeout monitor (backoff.duration)))
+      (.addEventListener :close #(setTimeout monitor (backoff.duration)))
       (.addEventListener :message
         (fn [event]
+          (backoff.reset)
           (if (null? token) (set token event.data)
               (not= token event.data) (location.reload))))))
   (monitor))
