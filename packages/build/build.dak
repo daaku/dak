@@ -3,9 +3,11 @@
         [:chokidar [watch]]
         [:picomatch picomatch]
         [:p-debounce debounce]
+        [:p-graph p-graph-w]
         [:mri mri]
         [:semver/functions/inc.js semver-inc])
 
+(const p-graph p-graph-w.default)
 (const ws-pad-target 19)
 (const cmd-pad-target 11)
 (const PASS "\x1b[32m\u2713\x1b[0m")
@@ -35,6 +37,12 @@
 
 (fn@ workspace-package-json [{:keys [readFile]} ws]
   (-> (join ws "package.json") (readFile :utf8) await JSON.parse))
+
+(fn ws-to-name [workspaces pkgs]
+  (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
+
+(fn name-to-index [pkgs]
+  (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
 
 (fn run-log-cmd [writer prefix ws cmd sh start]
   (cwrite writer prefix (.padEnd (str " [" cmd "] ") cmd-pad-target)
@@ -69,21 +77,6 @@
       (vs.splice index 1)))
   vs)
 
-(fn@ ^:export prepare [env]
-  (let [[_ workspaces]
-        @(Promise.all
-          [((fn@ []
-              @(run-ws env :packages/transpiler :prepare)
-              @(run-ws env :packages/loader :prepare)))
-            (all-workspaces env)])
-         pending (-> workspaces (array-remove :packages/transpiler)
-                                (array-remove :packages/loader))]
-    @(Promise.all @(workspaces.map #(run-ws env $ :prepare)))))
-
-(fn@ ^:export test [env]
-  @(prepare env)
-  @(run env :test))
-
 (fn r-dep-graph [pkgs]
   (let [graph {}]
     (pkgs.map #(set (. graph $.name) []))
@@ -103,6 +96,39 @@
       (cwrite stdout name ": "
         (if (zero? r-deps.length) "<none>" (r-deps.join ", ")) "\n"))))
 
+(fn@ p-graph-deps [env (test? false)]
+  (let [workspaces @(all-workspaces env)
+        pkgs @(Promise.all (workspaces.map #(workspace-package-json env $)))
+        name-index (name-to-index pkgs)
+        deps [[:prepare-packages/transpiler :prepare-packages/loader]]]
+    (for-of [[name r-deps] (-> pkgs r-dep-graph Object.entries)]
+      (let [pkg-name (. workspaces (. name-index name))]
+        (when test?
+          (for-of [r-dep r-deps]
+            (let [dep-name (. workspaces (. name-index r-dep))]
+              (deps.push [(str :prepare- pkg-name) (str :test- dep-name)])))
+          (deps.push [:prepare-packages/loader (str :test- pkg-name)]))
+        (when (and (not= pkg-name :packages/loader)
+                   (not= pkg-name :packages/transpiler))
+          (deps.push [:prepare-packages/loader (str :prepare- pkg-name)]))))
+    [workspaces deps]))
+
+(fn@ ^:export prepare [env]
+  (let [[workspaces deps] @(p-graph-deps env)
+        work (Map. (workspaces.map
+                     (fn [name]
+                       [(str :prepare- name)
+                        {:run #(run-ws env name :prepare)}])))]
+    @(.run (p-graph work deps))))
+
+(fn@ ^:export test [env]
+  (let [[workspaces deps] @(p-graph-deps env true)
+        work (Map.)]
+    (for-of [name workspaces]
+      (work.set (str :prepare- name) {:run #(run-ws env name :prepare)})
+      (work.set (str :test- name) {:run #(run-ws env name :test)}))
+    @(.run (p-graph work deps))))
+
 (fn@ pkg-needs-bump [env ws]
   (if-let [version-line
            @(out env "grep -n '\"version\"' package.json|cut -d : -f 1"
@@ -113,12 +139,6 @@
       (not= "" @(out env (str "git log -1 --format=%H "
                                 last-version-rev "..main " ws))))
     false))
-
-(fn ws-to-name [workspaces pkgs]
-  (Object.fromEntries (workspaces.map #(do [$1 (. pkgs $2 :name)]))))
-
-(fn name-to-index [pkgs]
-  (Object.fromEntries (pkgs.map #(do [$1.name $2]))))
 
 (fn@ ^:export release [env ...argv]
   (let [{:keys [exec writeFile stdout]} env
