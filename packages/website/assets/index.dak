@@ -85,9 +85,9 @@
     (doto (WebSocket. (str "ws://" location.host "/ws"))
       (.addEventListener :error #(setTimeout monitor (backoff.duration)))
       (.addEventListener :close #(setTimeout monitor (backoff.duration)))
+      (.addEventListener :open #(backoff.reset))
       (.addEventListener :message
         (fn [event]
-          (backoff.reset)
           (if (null? token) (set token event.data)
               (not= token event.data) (location.reload))))))
   (monitor))
