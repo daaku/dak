@@ -222,7 +222,8 @@
             (https.get url
               (fn [res]
                 (if (not= res.statusCode 200)
-                  (reject (Error `error fetching ${url} status=${res.statusCode}`))
+                  (reject
+                    (Error `error fetching ${url} status=${res.statusCode}`))
                   (let [dest (createWriteStream cache-file)]
                     (res.on :error reject)
                     (dest.on :error reject)
