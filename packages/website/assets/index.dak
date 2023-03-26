@@ -1,5 +1,5 @@
-(import ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs" prettier]
-        ["https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs" parserBabel]
+(import ["/assets/external/prettier-2.7.1.js" prettier]
+        ["/assets/external/prettier-parser-babel-2.7.1.js" parserBabel]
         [:backo Backoff]
         ["@daklang/transpiler" [transpileStr]])
 

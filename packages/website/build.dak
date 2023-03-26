@@ -1,9 +1,11 @@
 #!/usr/bin/env dak
 
 (import [:esbuild :as esbuild]
-        [:node:fs/promises [readFile writeFile mkdir rm]]
-        [:node:path [dirname]]
+        [:node:fs [createWriteStream]]
+        [:node:fs/promises [readFile writeFile mkdir rm cp stat]]
+        [:node:path [dirname join]]
         [:node:http [createServer]]
+        [:node:https :as https]
         [:finalhandler finalhandler]
         [:serve-static serveStatic]
         [:ws [WebSocketServer]]
@@ -33,6 +35,7 @@
                      :assetNames "assets/[name]-[hash]"
                      :entryNames "assets/[name]-[hash]"
                      :loader {:.svg :file :.png :file}
+                     :external ["/assets/external/*"]
                      :sourcemap true
                      :plugins [(dakPlugin)]}))
 
@@ -125,8 +128,8 @@
                  :spellcheck false}]]
     [:div#output]
     foot-ui
-    [:script {:src "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"}]
-    [:script {:src "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"}]
+    [:script {:src "/assets/external/source-map-0.7.3.js"}]
+    [:script {:src "/assets/external/terser-5.16.3.js"}]
     [:script {:type :module :src (. assets "index.js")}]]))
 
 (fn@ play-build [config assets name]
@@ -208,17 +211,52 @@
       {:title "Dak Playground"
        :description "A Playground to experiment with the Dak Language."})))
 
+(fn@ external-one [config file url]
+  (let [cache-file (join "external" file)
+        dist-file (join "dist/assets/external" file)]
+    (try
+      @(cp cache-file dist-file)
+      (catch e
+        (Promise.
+          (fn [resolve reject]
+            (https.get url
+              (fn [res]
+                (if (not= res.statusCode 200)
+                  (reject (Error `error fetching ${url} status=${res.statusCode}`))
+                  (let [dest (createWriteStream cache-file)]
+                    (res.on :error reject)
+                    (dest.on :error reject)
+                    (dest.on :finish #(resolve))
+                    (res.pipe dest)))))))))))
+
+(fn@ externals [config]
+  (const sources
+    [["source-map-0.7.3.js"
+      "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"]
+     ["terser-5.16.3.js"
+      "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"]
+     ["prettier-2.7.1.js"
+      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs"]
+     ["prettier-parser-babel-2.7.1.js"
+      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs"]])
+  @(Promise.all (sources.map
+                  (fn [[file url]]
+                    (external-one config file url)))))
+
 (fn since [start]
   (str (Math.round (- (performance.now) start)) "ms"))
 
 (fn@ main-prod [config]
   (const start (performance.now))
   @(Promise.all
-    [(mkdir "dist/tour" {:recursive true})
+    [(mkdir "external" {:recursive true})
+     (mkdir "dist/assets/external" {:recursive true})
+     (mkdir "dist/tour" {:recursive true})
      (mkdir "dist/play" {:recursive true})])
   (let [assets @(esbuild-prod config)]
     @(Promise.all
-      [(index-html config assets)
+      [(externals config)
+       (index-html config assets)
        (error-html config assets)
        (tour-index-html config assets)
        (play-index-html config assets)
