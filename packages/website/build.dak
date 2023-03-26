@@ -2,7 +2,7 @@
 
 (import [:esbuild :as esbuild]
         [:node:fs [createWriteStream]]
-        [:node:fs/promises [readFile writeFile mkdir rm cp stat]]
+        [:node:fs/promises [readFile writeFile mkdir rm cp]]
         [:node:path [dirname join]]
         [:node:http [createServer]]
         [:node:https :as https]
