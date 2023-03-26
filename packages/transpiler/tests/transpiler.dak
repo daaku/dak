@@ -1014,7 +1014,7 @@
 
 (bad "lone paren"
   "("
-  "<anonymous>:1:1: unterminated form")
+  "<anonymous>:1:1: unterminated list")
 
 (bad "unterminated string"
   "(foo \""
@@ -1022,23 +1022,27 @@
 
 (bad "unterminated keyword"
   "(foo :"
-  "<anonymous>:1:6: unterminated form")
+  "<anonymous>:1:6: unterminated keyword")
+
+(bad "unterminated await"
+  "(do @"
+  "<anonymous>:1:5: unterminated await")
 
 (bad "unterminated regex"
   "(#/foo"
   "<anonymous>:1:6: unterminated regex")
 
-(bad "unterminated map"
+(bad "unterminated object"
   "{"
-  "<anonymous>:1:1: unterminated form")
+  "<anonymous>:1:1: unterminated object")
 
 (bad "unterminated array"
   "["
-  "<anonymous>:1:1: unterminated form")
+  "<anonymous>:1:1: unterminated array")
 
 (bad "unterminated list"
   "(do "
-  "<anonymous>:1:2: unterminated form")
+  "<anonymous>:1:2: unterminated list")
 
 (bad "destructure unexpected"
   "(let [:foo :bar] :bar)"

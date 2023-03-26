@@ -265,23 +265,24 @@
     (Object.defineProperty :kind {:value kind :enumerable false})
     (Object.defineProperty :pos {:value pos :enumerable false})))
 
-(fn* astUntil [ctx input kind]
+(fn* astUntil [ctx input kind name]
   (for-of [token input]
     (when (whitespaceOrComment token)
       (continue))
     (when (= token.kind kind)
       (return))
     (yield (astOne ctx (prepend token input))))
-  (throw (err ctx ctx "unterminated form")))
+  (throw (err ctx ctx `unterminated ${name}`)))
 
-(fn astNeedOne [ctx input]
+(fn astNeedOne [ctx input special]
   (if-let [node (astOne ctx input)]
     node
-    (throw (err ctx ctx "unterminated form"))))
+    (throw (err ctx ctx `unterminated ${special}`))))
 
 (fn astShorthand [ctx token special input]
   (setKind
-    [{:kind :symbol :pos token.pos :value special} (astNeedOne ctx input)]
+    [{:kind :symbol :pos token.pos :value special}
+     (astNeedOne ctx input special)]
     :list token))
 
 (fn astHash [ctx token input]
@@ -299,14 +300,14 @@
         (case value.kind
           [:newline :comment] (continue)
           [:string :template :regexp :symbol] value
-          "(" (setKind [(... (astUntil ctx input ")"))] :list value)
-          "[" (setKind [(... (astUntil ctx input "]"))] :array value)
-          "{" (setKind [(... (astUntil ctx input "}"))] :object value)
+          "(" (setKind [(... (astUntil ctx input ")" :list))] :list value)
+          "[" (setKind [(... (astUntil ctx input "]" :array))] :array value)
+          "{" (setKind [(... (astUntil ctx input "}" :object))] :object value)
           "'" (astShorthand ctx value :quote input)
           "," (astShorthand ctx value :unquote input)
           "@" (astShorthand ctx value :await input)
           "#" (astHash ctx value input)
-          ":" (let [sym (astNeedOne ctx input)]
+          ":" (let [sym (astNeedOne ctx input :keyword)]
                 (when (not= sym.kind :symbol)
                   (throw (err ctx value "invalid keyword")))
                 (set sym.kind :string)
