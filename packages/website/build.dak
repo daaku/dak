@@ -226,7 +226,12 @@
                   (let [dest (createWriteStream cache-file)]
                     (res.on :error reject)
                     (dest.on :error reject)
-                    (dest.on :finish #(resolve))
+                    (dest.on :finish
+                             (fn []
+                               (dest.close
+                                 (fn@ []
+                                   @(cp cache-file dist-file)
+                                   (resolve)))))
                     (res.pipe dest)))))))))))
 
 (fn@ externals [config]
