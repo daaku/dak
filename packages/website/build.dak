@@ -113,13 +113,20 @@
                    [:option {:value :raw} "Raw"]
                    [:option {:value :minify} "Minify"]]]]
     [:div#code
-     [:textarea {:id :dak-code
-                 :placeholder "Write some Dak..."
-                 :autocorrect :off
-                 :autocomplete :off
-                 :autocapitalize :none
-                 :spellcheck false
-                 :autofocus true} code]
+     [:div.code-edit
+      [:textarea {:id :dak-code
+                  :placeholder "Write some Dak..."
+                  :autocorrect :off
+                  :autocomplete :off
+                  :autocapitalize :none
+                  :spellcheck false
+                  :autofocus true} code]
+      [:div.overlay
+       "; NOTE: Since these modules are not available,
+; they will result in errors.
+
+"
+       [:mark "; Imports an be the simple named kind:"]]]
      [:textarea {:id :js-code
                  :placeholder "Output will show here."
                  :autocorrect :off

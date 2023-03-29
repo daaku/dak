@@ -10,6 +10,7 @@
   (const fmt (document.getElementById :fmt))
   (const js-code (document.getElementById :js-code))
   (const output (document.getElementById :output))
+  (const overlay (document.querySelector ".code-edit .overlay"))
 
   (fn simple? [v]
     (or (number? v)
@@ -35,19 +36,46 @@
                 (JSON.stringify thing)))))
         (output.appendChild child))))
 
+  (fn line-start-end [txt line]
+    (let [start 0]
+      (for [i 0 line]
+        (let [new-start (txt.indexOf "\n" (inc start))]
+          (if (= new-start -1)
+            (break)
+            (set start new-start))))
+      (let [end (txt.indexOf "\n" (inc start))]
+        [start (if (= end -1) (dec txt.length) (dec end))])))
+
   (fn log-err [prefix err throw?]
     (let [child (document.createElement :pre)]
       (set child.innerText (str prefix ": " (?? err.message err)))
       (output.appendChild child))
+    (when (number? err?.pos?.line)
+      (let [txt (str dak-code.value "\n")
+            [start end] (line-start-end txt err.pos.line)
+            mark (document.createElement :mark)]
+        (console.log :start start :end end)
+        (set mark.innerText (|| (txt.slice start end) " "))
+        (overlay.append
+          (txt.slice 0 start)
+          mark
+          (txt.slice end))))
     (if throw?
       (throw err)
       (console.error err)))
+
+  (fn sync-overlay []
+    (set overlay.scrollTop (?? dak-code.scrollTop 0))
+    (let [sl dak-code.scrollLeft]
+      (set overlay.style.transform
+           (if (pos? sl) `translateX(${-sl}px)` ""))))
 
   (let main-index 0)
   (fn@ refresh []
     (if globalThis.IS_PRODUCTION
       (console.clear))
     (output.replaceChildren)
+    (overlay.replaceChildren)
     (try
       (let [js (. (transpileStr dak-code.value
                                 {:filename (str "main-" (++ main-index) ".dak")
@@ -71,8 +99,10 @@
               (log-err fmt.value e)
               js))))
       (catch e
-        (log-err fmt.value e))))
+        (log-err fmt.value e)))
+    (sync-overlay))
 
+  (set dak-code.onscroll sync-overlay)
   (set auto-eval.onchange refresh)
   (set dak-code.oninput refresh)
   (set fmt.onchange refresh)
