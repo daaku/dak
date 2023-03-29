@@ -213,10 +213,10 @@
 
 (fn@ ^:export dev [env]
   (let [match-pkg (picomatch "packages/**/*.dak")
-        match-website (picomatch ["packages/transpiler/dist/*"
-                                  "packages/html/dist/*"
+        match-website (picomatch ["packages/transpiler/dist/**"
+                                  "packages/html/dist/**"
                                   "packages/website/**/*.dak"
-                                  "packages/website/assets"
+                                  "packages/website/assets/**"
                                   "packages/website/readme.md"])
         website-dev (spawn-website-dev env)]
     (-> (watch "packages" {:ignoreInitial true})
