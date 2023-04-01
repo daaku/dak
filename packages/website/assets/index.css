@@ -151,6 +151,7 @@ body.tour {
   margin: 0;
   height: 50vh;
   font-size: 16px;
+  line-height: 1.4;
   width: 100%;
 }
 .code-edit {
@@ -158,18 +159,20 @@ body.tour {
 }
 .code-edit .overlay {
   position: absolute;
-  top: -3px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   white-space: pre-wrap;
   pointer-events: none;
-  padding: 8px;
+  padding: 8px 0;
   margin: 0;
   font-family: monospace;
   font-size: 16px;
+  line-height: 1.4;
   border: 2px inset transparent;
   color: transparent;
+  overflow: hidden;
 }
 .code-edit .overlay mark {
   color: transparent;
