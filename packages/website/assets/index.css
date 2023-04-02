@@ -174,10 +174,15 @@ body.tour {
   color: transparent;
   overflow: hidden;
 }
+.code-edit .overlay pre {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
 .code-edit .overlay mark {
   color: transparent;
   background: #ffdae2aa;
-  display: inline-block;
+  display: block;
   width: 100%;
 }
 #output {
