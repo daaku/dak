@@ -1017,7 +1017,7 @@
   "<anonymous>:1:1: unterminated list")
 
 (bad "unterminated string"
-  "(foo \""
+  "(foo \"abc"
   "<anonymous>:1:6: unterminated string")
 
 (bad "unterminated keyword"
@@ -1030,7 +1030,7 @@
 
 (bad "unterminated regex"
   "(#/foo"
-  "<anonymous>:1:6: unterminated regex")
+  "<anonymous>:1:1: unterminated regex")
 
 (bad "unterminated object"
   "{"
@@ -1042,7 +1042,7 @@
 
 (bad "unterminated list"
   "(do "
-  "<anonymous>:1:2: unterminated list")
+  "<anonymous>:1:1: unterminated list")
 
 (bad "destructure unexpected"
   "(let [:foo :bar] :bar)"

@@ -115,6 +115,7 @@
 
 (fn readString [ctx quote input len pos]
   (let [buf []
+        orig {...pos}
         start (inc pos.offset)]
     (for [end start len]
       (++ pos.offset)
@@ -143,8 +144,8 @@
             (do
               (++ pos.line)
               (set pos.column 0))
-            (+= pos.column 2)))))) ; TODO: why is this +2?
-  (throw (err ctx {:pos pos} "unterminated string")))
+            (+= pos.column 2))))) ; TODO: why is this +2?
+    (throw (err ctx {:pos orig} "unterminated string"))))
 
 (fn isLetter [c] (or (and (>= c "A") (<= c "Z")) (and (>= c "a") (<= c "z"))))
 
@@ -169,7 +170,7 @@
           (++ end)
           (++ pos.offset)
           (++ pos.column)))))
-  (throw (err ctx {:pos pos} "unterminated regex")))
+  (throw (err ctx ctx "unterminated regex")))
 
 (fn readSymbol [ctx input len pos]
   (let [start pos.offset]
@@ -199,6 +200,7 @@
         len input.length
         value null
         start null]
+    (set ctx.pos {...pos})
     (while (< pos.offset len)
       (let [c (. input pos.offset)]
         (when (= c "\n")
@@ -266,18 +268,20 @@
     (Object.defineProperty :pos {:value pos :enumerable false})))
 
 (fn* astUntil [ctx input kind name]
-  (for-of [token input]
-    (when (whitespaceOrComment token)
-      (continue))
-    (when (= token.kind kind)
-      (return))
-    (yield (astOne ctx (prepend token input))))
-  (throw (err ctx ctx `unterminated ${name}`)))
+  (let [start {...ctx.pos}]
+    (for-of [token input]
+      (when (whitespaceOrComment token)
+        (continue))
+      (when (= token.kind kind)
+        (return))
+      (yield (astOne ctx (prepend token input))))
+    (throw (err ctx {:pos start} `unterminated ${name}`))))
 
 (fn astNeedOne [ctx input special]
-  (if-let [node (astOne ctx input)]
-    node
-    (throw (err ctx ctx `unterminated ${special}`))))
+  (let [start {...ctx.pos}]
+    (if-let [node (astOne ctx input)]
+      node
+      (throw (err ctx {:pos start} `unterminated ${special}`)))))
 
 (fn astShorthand [ctx token special input]
   (setKind
