@@ -129,12 +129,7 @@
                   :autocapitalize :none
                   :spellcheck false
                   :autofocus true} code]
-      [:div.overlay
-       "; NOTE: Since these modules are not available,
-; they will result in errors.
-
-"
-       [:mark "; Imports an be the simple named kind:"]]]
+      [:div.overlay]]
      [:textarea {:id :js-code
                  :placeholder "Output will show here."
                  :autocorrect :off
