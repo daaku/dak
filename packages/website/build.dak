@@ -10,14 +10,22 @@
         [:serve-static serveStatic]
         [:ws [WebSocketServer]]
         [:marked [marked]]
+        [:marked-base-url [baseUrl]]
+        [:marked-gfm-heading-id [gfmHeadingId]]
         ["@daklang/esbuild" [dakPlugin]]
         ["@daklang/html" [doc html unsafe]])
 
 (const prodURL "https://www.daklang.com/")
+(marked.use
+  {:mangle false
+   :headerIds false
+   :langPrefix undefined}
+  (gfmHeadingId)
+  (baseUrl "https://github.com/daaku/dak/blob/main/"))
 
 (fn markdown [config assets content]
   (-> content
-      (marked.parse {:baseUrl "https://github.com/daaku/dak/blob/main/"})
+      marked.parse
       (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
       (.replaceAll prodURL "/")))
 

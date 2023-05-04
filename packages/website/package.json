@@ -31,7 +31,9 @@
   },
   "devDependencies": {
     "finalhandler": "^1.2.0",
-    "marked": "^4.2.12",
+    "marked": "^5.0.0",
+    "marked-base-url": "^1.0.1",
+    "marked-gfm-heading-id": "^3.0.1",
     "serve-static": "^1.15.0",
     "ws": "^8.12.0"
   }
