@@ -1,9 +1,6 @@
 #!/usr/bin/env dak
 
-(import [:node:fs/promises [readFile writeFile]]
-        [:node:path [join dirname]]
-        [:node:util [promisify]]
-        [:node:child_process {exec execCB}]
+(import [:node:path [dirname]]
         [:node:stream [Writable]]
         [:uvu [test]]
         [:uvu/assert [equal match unreachable]]
