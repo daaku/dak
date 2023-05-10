@@ -264,6 +264,7 @@
 
 (fn@ main-prod [config]
   (const start (performance.now))
+  @(rm "dist" {:recursive true :force true})
   @(Promise.all
     [(mkdir "external" {:recursive true})
      (mkdir "dist/assets/external" {:recursive true})
@@ -284,7 +285,6 @@
     (res.setHeader :cache-control "public, immutable, max-age: 31557600")))
 
 (fn@ main-dev [config]
-  @(rm "dist" {:recursive true :force true})
   (main-prod config)
   (let [token (crypto.randomUUID)
         ss (serveStatic "dist" {:setHeaders set-headers})
