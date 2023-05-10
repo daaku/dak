@@ -1326,7 +1326,7 @@
 
 (set macros
   ((fn []
-    (let [ctx (newCtx {} {})
+    (let [ctx (newCtx {:source "transpiler.dak"} {})
           input (uninterrupt (tokens ctx builtinMacros))]
       (while true
         (if-let [node (astOne ctx input)]
