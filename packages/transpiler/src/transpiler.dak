@@ -91,11 +91,11 @@
      gx#))
 `)
 
-(fn ctx-source [ctx]
+(fn get-source [ctx]
   (?? ctx.source "<anonymous>"))
 
 (fn err [ctx {:or {pos {}}} msg]
-  (let [e (Error `${(ctx-source ctx)}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
+  (let [e (Error `${pos.source}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
     (set e.pos pos)
     e))
 
@@ -199,7 +199,7 @@
     (input.substring start len)))
 
 (fn* tokens [ctx input]
-  (let [pos {:offset 0 :line 0 :column 0}
+  (let [pos {:offset 0 :line 0 :column 0 :source (get-source ctx)}
         len input.length
         value null
         start null]
@@ -1347,15 +1347,14 @@
   (yield* (transpileCtx code (newCtx (or config {}) macros))))
 
 (fn ^:export transpileStr [code (config {})]
-  (let [source (ctx-source config)
-        parts []
+  (let [parts []
         map (SourceMapGenerator.)
         column 0]
     (for-of [out (transpile code config)]
       (let [[part partToken] (if (string? out) [out] out)]
         (when (number? partToken?.pos?.line)
           (map.addMapping
-            {:source source
+            {:source partToken.pos.source
              :original {:line (inc partToken.pos.line)
                         :column partToken.pos.column}
              :generated {:line 1 :column column}
@@ -1365,7 +1364,7 @@
                       null)}))
         (+= column part.length)
         (parts.push part)))
-    (map.setSourceContent source code)
+    (map.setSourceContent (get-source config) code)
     (let [mapJSON (map.toJSON)]
       (when (= config.sourcemap :inline)
         (parts.push "\n//# sourceMappingURL=data:application/json;base64,"
