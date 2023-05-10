@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "prepare": "mkdir -p dist && node ../bootstrap/bootstrap.mjs < src/transpiler.dak > dist/transpiler.mjs",
-    "test": "dak tests/transpiler.dak",
+    "test": "dak tests/all.dak",
     "cover": "c8 -e .dak -r html -r text dak tests/transpiler.dak"
   },
   "dependencies": {

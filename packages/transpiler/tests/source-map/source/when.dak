@@ -1,0 +1,2 @@
+(when dak-code
+  (console.log :hello))
