@@ -91,8 +91,11 @@
      gx#))
 `)
 
+(fn ctx-source [ctx]
+  (?? ctx.source "<anonymous>"))
+
 (fn err [ctx {:or {pos {}}} msg]
-  (let [e (Error `${(?? ctx.source "<anonymous>")}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
+  (let [e (Error `${(ctx-source ctx)}:${(inc pos.line)}:${(inc pos.column)}: ${msg}`)]
     (set e.pos pos)
     e))
 
@@ -1344,7 +1347,7 @@
   (yield* (transpileCtx code (newCtx (or config {}) macros))))
 
 (fn ^:export transpileStr [code (config {})]
-  (let [source (?? config.source "<anonymous>")
+  (let [source (ctx-source config)
         parts []
         map (SourceMapGenerator.)
         column 0]
