@@ -14,7 +14,7 @@
 
 (fn@ source-map-test [name]
   (let [contents @(readFile (join root source-dir name) :utf8)
-        gen (transpileStr contents {:filename name})
+        gen (transpileStr contents {:source name})
         map-json (JSON.stringify gen.map)
         code-file (join root generated-dir (.replace name #/\.dak$/ ".js"))
         map-file (str code-file ".map")]

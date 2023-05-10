@@ -978,7 +978,7 @@ var builtinMacros = `
 `;
 var err = (ctx, { pos = {} }, msg) => {
   {
-    let e = Error(`${ctx.filename ?? "<anonymous>"}:${pos.line + 1}:${pos.column + 1}: ${msg}`);
+    let e = Error(`${ctx.source ?? "<anonymous>"}:${pos.line + 1}:${pos.column + 1}: ${msg}`);
     e.pos = pos;
     return e;
   }

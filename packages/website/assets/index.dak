@@ -63,7 +63,7 @@
     (overlay.replaceChildren)
     (try
       (let [js (. (transpileStr dak-code.value
-                                {:filename (str "main-" (++ main-index) ".dak")
+                                {:source (str "main-" (++ main-index) ".dak")
                                  :sourcemap :inline})
                   :code)]
         (when auto-eval.checked

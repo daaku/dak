@@ -7,4 +7,4 @@
    :transform
    (fn [src id]
      (when (id.endsWith ext)
-       (transpileStr src {:filename id})))})
+       (transpileStr src {:source id})))})

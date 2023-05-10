@@ -7,7 +7,7 @@ plugin({
     const { readFileSync } = await import('fs')
     builder.onLoad({ filter: /\.dak$/ }, ({ path }) => ({
       contents: transpileStr(readFileSync(path, 'utf8'), {
-        filename: path,
+        source: path,
         sourcemap: 'inline',
       }).code,
       loader: 'js',

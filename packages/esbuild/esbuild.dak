@@ -11,6 +11,6 @@
        (fn@ [{:keys [path]}]
          {:contents (. (transpileStr
                          @(readFile path :utf8)
-                         {:filename (relative (process.cwd) path)
+                         {:source (relative (process.cwd) path)
                           :sourcemap :inline})
                        :code)})))})

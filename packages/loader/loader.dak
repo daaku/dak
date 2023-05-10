@@ -17,7 +17,7 @@
     {:shortCircuit true
      :format :module
      :source (. (transpileStr (-> url fileURLToPath readFile await .toString)
-                              {:filename url
+                              {:source url
                                :sourcemap :inline})
                 :code)}
     (next url)))
