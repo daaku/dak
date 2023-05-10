@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Type of version bump'
+        description: Type of version bump
         required: true
-        default: 'minor'
+        default: minor
 jobs:
   publish:
     name: Publish
@@ -13,8 +13,8 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: '19'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: 20
+          registry-url: https://registry.npmjs.org
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
