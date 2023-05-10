@@ -17,9 +17,7 @@
 
 (const prodURL "https://www.daklang.com/")
 (marked.use
-  {:mangle false
-   :headerIds false
-   :langPrefix undefined}
+  {:mangle false :headerIds false}
   (gfmHeadingId)
   (baseUrl "https://github.com/daaku/dak/blob/main/"))
 
