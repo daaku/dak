@@ -1,0 +1,9 @@
+(fn simple? [v]
+  (or (number? v)
+      (boolean? v)
+      (string? v)
+      (undefined? v)
+      (null? v)
+      (bigint? v)
+      (isa? v Date)
+      (isa? v RegExp)))

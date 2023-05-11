@@ -1214,16 +1214,16 @@
   (yield* (transpileSpecialCall ctx node assign hoist evKind)))
 
 (fn* transpileBuiltinTypeof [ctx node assign hoist _evKind]
-  (yield "typeof ")
+  (yield ["typeof " (. node 0)])
   (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr)))
 
 (fn* transpileBuiltinInstanceof [ctx node assign hoist _evKind]
   (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr))
-  (yield " instanceof ")
+  (yield [" instanceof " (. node 0)])
   (yield* (transpileNodeExpr ctx (. node 2) assign hoist evExpr)))
 
 (fn* transpileBuiltinDelete [ctx node assign hoist _evKind]
-  (yield "delete ")
+  (yield ["delete " (. node 0)])
   (yield* (transpileNodeExpr ctx (. node 1) assign hoist evExpr)))
 
 (fn* transpileBuiltinSet [ctx node assign hoist _evKind]
