@@ -721,8 +721,8 @@
     (yield* (transpileSpecialAssign ctx assign))
     (yield "(")
     (when (and unary (= node.length 2))
-      (yield op))
-    (let [sp (splitter op)]
+      (yield [op (. node 0)]))
+    (let [sp (splitter [op (. node 0)])]
       (for [i 1 node.length]
         (yield (sp))
         (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))))
