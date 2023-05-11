@@ -741,7 +741,7 @@
     (yield* (transpileSpecialAssign ctx assign))
     (yield "(")
     (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
-    (yield op)
+    (yield [op (. node 0)])
     (yield ")")))
 
 (const cmpRemap {"=" "==="
