@@ -880,7 +880,7 @@
         (yield "}")
         (return))
       (yield (elif))
-      (yield "if(")
+      (yield ["if(" (. node 0)])
       (yield* (transpileNodeExpr ctx (. node i) null hoist evExpr))
       (yield "){")
       (yield* (transpileNodeStatement ctx (. node (inc i)) assign hoist evStat))
