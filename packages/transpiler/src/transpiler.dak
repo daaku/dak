@@ -1326,7 +1326,7 @@
 
 (set macros
   ((fn []
-    (let [ctx (newCtx {:source "transpiler.dak"} {})
+    (let [ctx (newCtx {:source "builtin-macros.dak"} {})
           input (uninterrupt (tokens ctx builtinMacros))]
       (while true
         (if-let [node (astOne ctx input)]
@@ -1364,6 +1364,7 @@
                       null)}))
         (+= column part.length)
         (parts.push part)))
+    (map.setSourceContent "builtin-macros.dak" builtinMacros)
     (map.setSourceContent (get-source config) code)
     (let [mapJSON (map.toJSON)]
       (when (= config.sourcemap :inline)
