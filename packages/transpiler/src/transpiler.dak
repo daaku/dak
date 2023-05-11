@@ -732,7 +732,7 @@
   (fn* [ctx node assign hoist _evKind]
     (yield* (transpileSpecialAssign ctx assign))
     (yield "(")
-    (yield op)
+    (yield [op (. node 0)])
     (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
     (yield ")")))
 
