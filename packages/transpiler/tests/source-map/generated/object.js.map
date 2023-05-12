@@ -1,0 +1,1 @@
+{"version":3,"sources":["object.dak"],"names":["one","2"],"mappings":"AAAA,YAAa,CAAC,IAAKA,IAAI,IAAKC","sourcesContent":["(console.log {:one one :two 2})\n"]}
