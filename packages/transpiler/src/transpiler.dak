@@ -569,7 +569,8 @@
         (yield " ")
         (yield* (transpileSpecialDestructure ctx (. node symIndex)))
         (yield "=")
-        (yield* (transpileNodeExpr ctx (. node (inc symIndex)) null hoist evExpr))
+        (yield* (transpileNodeExpr ctx (. node (inc symIndex)) null hoist
+                                   evExpr))
         (yield ";")))))
 
 (fn* transpileBuiltinDef [ctx node _assign _hoist]
@@ -1068,7 +1069,8 @@
       (yield* (transpileNodeSymbol ctx (. node index)))
       (ctx.bindings.add (. node index :value))
       (++ index))
-    (when (and (= (?. node index :kind) :string) (= (?. node index :value) :extends))
+    (when (and (= (?. node index :kind) :string)
+               (= (?. node index :value) :extends))
       (yield [" extends " (. node index)])
       (yield* (transpileNodeExpr ctx (. node (inc index)) null hoist evExpr))
       (+= index 2))
@@ -1169,7 +1171,8 @@
   (yield* (serializeNode ctx (. node 1) hoist)))
 
 (fn* transpileSpecialMacro [ctx node]
-  (let [args (-> node (. 2) (.map #(partsStr (transpileSpecialDestructure ctx $))))
+  (let [args (-> node (. 2)
+                 (.map #(partsStr (transpileSpecialDestructure ctx $))))
         body (partsStr (transpileSpecialBody ctx (node.slice 3) "return "))]
     ; (when (= (?. node 1 :value) :deftest)
     ;   (console.log body))
@@ -1184,7 +1187,8 @@
         (if (call.endsWith ".")
             (do
               (yield ["new " (. node 0)])
-              (yield [(mangleSym (call.slice 0 -1)) (. node 0)])) ; drop the trailing .
+              (yield [(mangleSym (call.slice 0 -1)) ; drop the trailing .
+                      (. node 0)]))
             (call.startsWith ".")
             (do
               (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
