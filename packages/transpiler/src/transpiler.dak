@@ -379,7 +379,7 @@
              (= (. node i 0 :kind) :symbol)
              (= (. node i 0 :value) "..."))
         (do ; (... (foo :bar))
-          (yield "...")
+          (yield ["..." (. node i)])
           (yield* (transpileNodeExpr ctx (. node i 1) null hoist evExpr)))
         (do
           (if (canLiteralIdentifier (. node i))
@@ -431,7 +431,7 @@
     (yield "`")))
 
 (fn* transpileNodeRegExp [ctx token]
-  (yield token.value))
+  (yield [token.value token]))
 
 (const mangleChars {"!" "_BANG_"
                     "/" "_FSLASH_"
@@ -816,7 +816,7 @@
   (yield* (transpileSpecialAssign ctx assign))
   (when (= evKind evExpr)
     (yield "("))
-  (yield (. node 0 :value))
+  (yield [(. node 0 :value) node])
   (when (not= node.length 1)
     (yield " ")
     (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr)))
@@ -825,7 +825,7 @@
 
 (fn* transpileBuiltinKeywordStatement [ctx node _assign hoist _evKind]
   (if (= node.length 1)
-    (yield (. node 0 :value))
+    (yield [(. node 0 :value) node])
     (yield* (transpileNodeStatement
               ctx (. node 1) [(. node 0 :value) " "] hoist evStat))))
 
@@ -891,7 +891,7 @@
   (when (= evKind evExpr)
     (yield* (hoist transpileBuiltinWhile node assign))
     (return))
-  (yield "while(")
+  (yield ["while(" node])
   (yield* (transpileNodeExpr ctx (. node 1) null evExpr))
   (yield "){")
   (yield* (transpileSpecialBody ctx (node.slice 2) null hoist evStat))
@@ -902,7 +902,7 @@
     (yield* (hoist transpileBuiltinCase node assign))
     (return))
   (let [finalDefault (pos? (% node.length 2))]
-    (yield "switch (")
+    (yield ["switch (" node])
     (yield* (transpileNodeExpr ctx (. node 1) null hoist evExpr))
     (yield "){")
     (for [i 2 node.length 2]
@@ -955,7 +955,7 @@
         (yield "]")))))
 
 (fn* transpileBuiltinRest [ctx node assign hoist evKind]
-  (yield "...")
+  (yield ["..." node])
   (yield* (transpileNodeStatement ctx (. node 1) assign hoist evKind)))
 
 (fn* transpileBuiltinTry [ctx node assign hoist evKind]
@@ -973,22 +973,22 @@
       (-- end))
     (when (and (not final) (not ctch))
       (throw (err ctx node "at least one of catch or finally is required")))
-    (yield "try{")
+    (yield ["try{" node])
     (yield* (transpileSpecialBody ctx (node.slice 1 end) assign hoist evStat))
     (yield "}")
     (when ctch
-      (yield "catch(")
+      (yield ["catch(" ctch])
       (yield* (transpileNodeExpr ctx (. ctch 1) null null evExpr))
       (yield "){")
       (yield* (transpileSpecialBody ctx (ctch.slice 2) assign null evStat))
       (yield "}"))
     (when final
-      (yield "finally{")
+      (yield ["finally{" final])
       (yield* (transpileSpecialBody ctx (final.slice 1) null null evStat))
       (yield "}"))))
 
 (fn* transpileClassStatic [ctx node]
-  (yield "static{")
+  (yield ["static{" node])
   (yield* (transpileSpecialBody ctx (node.slice 1) null null evStat))
   (yield "}"))
 
@@ -1000,7 +1000,7 @@
         stic false]
     (when (= (. node index :value) "^:static")
       (set stic true)
-      (yield "static ")
+      (yield ["static " (. node index)])
       (++ index))
     ; (let [#one #two three]) style
     (when (= (. node index :kind) :array)
