@@ -28,7 +28,7 @@
   "scripts": {
     "prepare": "mkdir -p dist && node ../bootstrap/bootstrap.mjs < src/transpiler.dak > dist/transpiler.mjs",
     "test": "dak tests/all.dak",
-    "cover": "c8 -e .dak -r html -r text dak tests/transpiler.dak"
+    "cover": "c8 -e .dak -r html -r text dak tests/all.dak"
   },
   "dependencies": {
     "source-map-js": "^1.0.2"
