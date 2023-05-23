@@ -1,6 +1,6 @@
 {
   "name": "@daklang/esbuild",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "esbuild plugin for Dak",
   "homepage": "https://www.daklang.com/",
   "license": "MIT",
@@ -29,6 +29,6 @@
     "email": "bugs@daklang.com"
   },
   "dependencies": {
-    "@daklang/transpiler": "^0.8.2"
+    "@daklang/transpiler": "^0.9.0"
   }
 }

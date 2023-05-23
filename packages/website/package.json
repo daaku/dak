@@ -25,7 +25,7 @@
     "cover": "c8 -e .dak -r html -r text dak tests/tour.dak"
   },
   "dependencies": {
-    "@daklang/esbuild": "^0.1.2",
+    "@daklang/esbuild": "^0.2.0",
     "@daklang/html": "^0.3.0",
     "backo": "^1.1.0"
   },
