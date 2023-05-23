@@ -164,6 +164,8 @@
       (let [index (. name-index name)
             pkg (. pkgs index)
             new-version (semver-inc pkg.version release)]
+        (when pkg.private
+          (continue))
         (cwrite stdout name " " pkg.version " => " new-version "\n")
         (when (not args.n)
           (set pkg.version new-version)
