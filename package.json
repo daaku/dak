@@ -12,7 +12,7 @@
   ],
   "devDependencies": {
     "c8": "^8.0.0",
-    "esbuild": "^0.18.1",
+    "esbuild": "^0.19.0",
     "uvu": "^0.5.6"
   }
 }
