@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: npm install -w packages/transpiler
