@@ -13,7 +13,7 @@
     "mri": "^1.2.0",
     "p-debounce": "^4.0.0",
     "p-graph": "^1.1.2",
-    "picomatch": "^3.0.1",
+    "picomatch": "^4.0.1",
     "semver": "^7.3.8"
   }
 }
