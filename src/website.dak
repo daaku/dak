@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 
-(import [:esbuild :as esbuild]
-        [:node:fs [createWriteStream]]
+(import [:node:fs [createWriteStream]]
         [:node:fs/promises [readFile writeFile mkdir rm cp]]
         [:node:path [dirname join]]
         [:node:http [createServer]]
@@ -12,8 +11,7 @@
         [:marked [marked]]
         [:marked-base-url [baseUrl]]
         [:marked-gfm-heading-id [gfmHeadingId]]
-        ["@daklang/esbuild" [dakPlugin]]
-        ["@daklang/html" [doc html unsafe]])
+        [:./html.dak [doc html unsafe]])
 
 (const prodURL "https://www.daklang.com/")
 (marked.use
@@ -27,23 +25,29 @@
       (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
       (.replaceAll prodURL "/")))
 
-(fn@ esbuild-context [config]
-  @(esbuild.context {:entryPoints ["assets/logo.svg"
-                                   "assets/logo.png"
-                                   "assets/index.css"
-                                   "assets/index.dak"]
-                     :define {"globalThis.IS_PRODUCTION"
-                              (if (= config.env :production) "true" "false")}
-                     :bundle true
-                     :format :esm
-                     :outdir "dist"
-                     :metafile true
-                     :assetNames "assets/[name]-[hash]"
-                     :entryNames "assets/[name]-[hash]"
-                     :loader {:.svg :file :.png :file}
-                     :external ["/assets/external/*"]
-                     :sourcemap true
-                     :plugins [(dakPlugin)]}))
+
+(fn@ bun-plugin [builder]
+  (let [{:keys [transpileStr]} @(import "./transpiler.dak")]
+    (builder.onLoad {:filter #/\.dak$/}
+    (fn@ [{:keys [path]}]
+      {:contents (-> path Bun.file .text await
+                     (transpileStr {:source path :sourcemap :inline})
+                     (. :code))
+       :loader :js}))))
+
+(fn@ bun-build [config]
+  @(Bun.build {:entrypoints ["www/assets/logo.svg"
+                             "www/assets/logo.png"
+                             "www/assets/index.css"
+                             "www/assets/index.dak"]
+               :define {"globalThis.IS_PRODUCTION"
+                        (if (= config.env :production) "true" "false")}
+               :format :esm
+               :outdir "dist"
+               :minify true
+               :loader {:.svg :file :.png :file}
+               :sourcemap :external
+               :plugins [{:name :dak :setup bun-plugin}]}))
 
 (fn asset-original-name [p]
   (-> p
@@ -58,8 +62,9 @@
         (.forEach #(set (. assets (asset-original-name $)) $)))
     assets))
 
-(fn@ esbuild-prod [config]
-  (let [ctx @(esbuild-context config)
+(fn@ bun-build-prod [config]
+  (let [ctx @(bun-build config)
+  _ (console.log ctx)
         assets (assets-map (. @(ctx.rebuild) :metafile :outputs))]
     @(ctx.dispose)
     assets))
@@ -268,7 +273,7 @@
      (mkdir "dist/assets/external" {:recursive true})
      (mkdir "dist/tour" {:recursive true})
      (mkdir "dist/play" {:recursive true})])
-  (let [assets @(esbuild-prod config)]
+  (let [assets @(bun-build-prod config)]
     @(Promise.all
       [(externals config)
        (index-html config assets)
@@ -298,7 +303,7 @@
       (.listen config.port))))
 
 (fn@ main []
-  (let [config {:env (or process.env.NODE_ENV "development")
+  (let [config {:env (or process.env.DEV "1")
                 :port 8080}]
     ((if (= config.env :development) main-dev main-prod) config)))
 
