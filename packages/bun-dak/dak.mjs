@@ -1,16 +1,19 @@
 import { plugin } from 'bun'
-import { transpileStr } from '@daklang/transpiler'
 
 plugin({
   name: 'dak',
   async setup(builder) {
-    const { readFileSync } = await import('fs')
-    builder.onLoad({ filter: /\.dak$/ }, ({ path }) => ({
-      contents: transpileStr(readFileSync(path, 'utf8'), {
+    const { transpileStr } = await import('@daklang/transpiler')
+    builder.onLoad({ filter: /\.dak$/ }, async ({ path }) => {
+      const text = await Bun.file(path).text()
+      const result = transpileStr(text, {
         source: path,
         sourcemap: 'inline',
-      }).code,
-      loader: 'js',
-    }))
+      })
+      return {
+        contents: result.code,
+        loader: 'js',
+      }
+    })
   },
 })
