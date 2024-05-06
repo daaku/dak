@@ -1,0 +1,4 @@
+preload = ["./src/bootstrap.mjs"]
+
+[test]
+preload = ["./src/bootstrap.mjs"]

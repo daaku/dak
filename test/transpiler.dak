@@ -1,8 +1,5 @@
-#!/usr/bin/env dak
-
-(import [:uvu [test]]
-        [:uvu/assert [equal ok]]
-        ["../src/transpiler.dak" [transpile transpileStr]])
+(import [:bun:test [test expect]]
+        [:../src/transpiler.dak [transpile transpileStr]])
 
 (fn tostr [code log]
   (let [pieces []]
@@ -17,19 +14,20 @@
 
 (test "transpileStr"
   (fn []
-    (equal (. (transpileStr ":hello") :code) `"hello";`)))
+    (-> (. (transpileStr ":hello") :code) expect (.toEqual `"hello";`))))
 
 (test "transpileStr sourcemap: inline"
   (fn []
-    (ok
+    (->
       (.includes
         (. (transpileStr "hello" {:sourcemap :inline}) :code)
-        "sourceMappingURL=data:application/json;base64"))))
+        "sourceMappingURL=data:application/json;base64")
+      (.toBeTruthy))))
 
 (macro good [name input output]
   '(test ,name
      (fn []
-       (equal (tostr ,input) ,output))))
+       (-> (tostr ,input) expect (.toEqual ,output)))))
 
 (macro bad [name input msg]
   '(test ,name
@@ -40,7 +38,7 @@
          (try
            (set output# (tostr input#))
            (catch e#
-             (equal e#.message msg#)
+             (-> e#.message expect (.toEqual msg#))
              (return)))
          (throw (Error (str "was expecting error: " msg#
                             "\nINPUT:\n" input# "\nOUTPUT:\n" output#)))))))
@@ -1071,5 +1069,3 @@
 (bad "try without catch or finally"
   "(try :foo)"
   "<anonymous>:1:1: at least one of catch or finally is required")
-
-(test.run)

@@ -1,11 +1,8 @@
-#!/usr/bin/env dak
-
 (import [:node:fs/promises [opendir readFile writeFile]]
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
-        [:uvu [test]]
-        [:uvu/assert [equal]]
-        ["@daklang/transpiler" [transpileStr]])
+        [:bun:test [test expect]]
+        [:../src/transpiler [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath dirname dirname))
 (const tour-dir "./tour")
@@ -18,7 +15,7 @@
         snapshot-file (join root snapshots-dir (.replace name #/\.dak$/ ".js"))]
     (if update-snapshots
       @(writeFile snapshot-file actual)
-      (equal actual @(readFile snapshot-file :utf8)))))
+      (-> @(readFile snapshot-file :utf8) expect (.toEqual actual)))))
 
 (test :tour
   (fn@ []
@@ -26,5 +23,3 @@
       (for@ [ent @(opendir (join root tour-dir))]
         (ps.push (tour-test ent.name)))
       @(Promise.all ps))))
-
-(test.run)

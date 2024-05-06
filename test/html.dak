@@ -1,13 +1,10 @@
-#!/usr/bin/env dak
-
-(import [:uvu [test]]
-        [:uvu/assert [equal]]
-        [:../html.dak [html unsafe doc]])
+(import [:bun:test [test expect]]
+        [:../src/html.dak [html unsafe doc]])
 
 (macro deftest [name data str]
   '(test ,name
      (fn []
-      (equal (html ,data) ,str))))
+      (-> (html ,data) expect (.toEqual ,str)))))
 
 (deftest :plain-string
   "hello & world"
@@ -39,7 +36,6 @@
 
 (test :doc
   (fn []
-    (equal (doc {:lang :en} [:strong "hello & world"])
-           "<!doctype html><html lang=\"en\"><strong>hello &amp; world</strong></html>\n")))
-
-(test.run)
+    (-> (doc {:lang :en} [:strong "hello & world"])
+        expect
+        (.toEqual "<!doctype html><html lang=\"en\"><strong>hello &amp; world</strong></html>\n"))))

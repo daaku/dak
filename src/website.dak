@@ -1,4 +1,4 @@
-#!/usr/bin/env dak
+#!/usr/bin/env bun
 
 (import [:esbuild :as esbuild]
         [:node:fs [createWriteStream]]

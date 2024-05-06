@@ -1,4 +1,0 @@
-#!/usr/bin/env dak
-
-(import ["./transpiler.dak"]
-        ["./source-map.dak"])

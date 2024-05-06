@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-loader=@daklang/loader
-if [[ "$npm_lifecycle_event" = "npx" ]]; then
-  loader=$(dirname $(dirname $(whereis -q dak)))/@daklang/loader/dist/loader.mjs
-fi
-
-exec node --no-warnings --enable-source-maps --loader $loader $@

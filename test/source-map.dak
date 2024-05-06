@@ -1,11 +1,8 @@
-#!/usr/bin/env dak
-
 (import [:node:fs/promises [opendir readFile writeFile]]
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
-        [:uvu [test]]
-        [:uvu/assert [equal]]
-        ["@daklang/transpiler" [transpileStr]])
+        [:bun:test [test expect]]
+        [:../src/transpiler [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath dirname))
 (const source-dir "./source-map/source")
@@ -22,8 +19,8 @@
       @(Promise.all [(writeFile code-file gen.code)
                      (writeFile map-file map-json)])
       (do
-        (equal gen.code @(readFile code-file :utf8))
-        (equal map-json @(readFile map-file :utf8))))))
+        (-> @(readFile code-file :utf8) expect (.toEqual gen.code))
+        (-> @(readFile map-file :utf8) expect (.toEqual map-json))))))
 
 (test :source-map
   (fn@ []
@@ -31,5 +28,3 @@
       (for@ [ent @(opendir (join root source-dir))]
         (ps.push (source-map-test ent.name)))
       @(Promise.all ps))))
-
-(test.run)
