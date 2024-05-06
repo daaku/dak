@@ -2,11 +2,11 @@
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
         [:bun:test [test expect]]
-        [:../src/transpiler [transpileStr]])
+        [:../src/transpiler.dak [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath dirname dirname))
-(const tour-dir "./tour")
-(const snapshots-dir "./tests/tour-snapshots")
+(const tour-dir "./www/tour")
+(const snapshots-dir "./test/tour-snapshots")
 (const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
 
 (fn@ tour-test [name]

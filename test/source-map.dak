@@ -2,7 +2,7 @@
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
         [:bun:test [test expect]]
-        [:../src/transpiler [transpileStr]])
+        [:../src/transpiler.dak [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath dirname))
 (const source-dir "./source-map/source")
