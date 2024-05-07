@@ -23,7 +23,7 @@
 (fn markdown [config assets content]
   (-> content
       marked.parse
-      (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
+      (.replace #/\.\/www\/assets\/(\w+\.\w+)/g #(. assets $2))
       (.replaceAll prodURL "/")))
 
 (fn@ bun-build [config]
@@ -175,19 +175,19 @@
   [:div.exits
    (exit {:sym "\u{1f310}"
          :title "Browser"
-         :href "https://github.com/daaku/dak/blob/main/packages/rollup"
+         :href "https://github.com/daaku/dak/blob/main/src/website.dak"
          :action "Build for Browsers"}
-     "Make browser apps using a Vite/Rollup plugin that hooks into your existing bundler pipeline.")
+     "See how this static website is made.")
    (exit {:sym "\u{1f3ae}"
          :title "Play"
          :href "/tour/functions/"
          :action "Playground"}
-     "Take a tour and write as well as run code using an interactive playground right here in your browser.")
+     "Take a tour with an interactive playground.")
    (exit {:sym "\u2328\ufe0f"
          :title "CLI"
-         :href "https://github.com/daaku/dak/blob/main/packages/loader"
+         :href "https://github.com/daaku/dak/blob/main/src/bootstrap.mjs"
          :action "Build CLIs"}
-     "Write one off scripts or server side applications in Node and use anything from NPM.")])
+     "Preload " [:code "bootstrap.mjs"] " in Bun for Dak support.")])
 
 (fn@ index-html [config assets]
   @(writeFile "dist/index.html"
