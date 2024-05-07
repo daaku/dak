@@ -224,43 +224,42 @@
       {:title "Dak Playground"
        :description "A Playground to experiment with the Dak Language."})))
 
-(fn@ external-one [config file url]
+(fn@ hex-sha256-file [path]
+  (let [hasher (Bun.CryptoHasher. :sha256)]
+    (for@ [chunk (-> path Bun.file .stream)]
+      (hasher.update chunk))
+    (-> hasher .digest Buffer.from (.toString :hex))))
+
+(fn@ external-one [config file url expected-sha256]
   (let [cache-file (join "external" file)
         dist-file (join "dist/assets/external" file)]
     (try
+      (when (not= @(hex-sha256-file cache-file) expected-sha256)
+        (throw (Error. "invalid sha256")))
       @(cp cache-file dist-file)
       (catch e
-        (Promise.
-          (fn [resolve reject]
-            (https.get url
-              (fn [res]
-                (if (not= res.statusCode 200)
-                  (reject
-                    (Error `error fetching ${url} status=${res.statusCode}`))
-                  (let [dest (createWriteStream cache-file)]
-                    (res.on :error reject)
-                    (dest.on :error reject)
-                    (dest.on :finish
-                             (fn []
-                               (dest.close
-                                 (fn@ []
-                                   @(cp cache-file dist-file)
-                                   (resolve)))))
-                    (res.pipe dest)))))))))))
+        @(Bun.write cache-file @(fetch url))
+        (when (not= @(hex-sha256-file cache-file) expected-sha256)
+          (throw (Error. "invalid sha256 of fresh download")))
+        @(cp cache-file dist-file)))))
 
 (fn@ externals [config]
   (const sources
     [["source-map-0.7.3.js"
-      "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"]
+      "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"
+      "84a912cfa28183b00fc9e6e3e017d28cbad0697133e6964e94f15be8129c95f0"]
      ["terser-5.16.3.js"
-      "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"]
+      "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"
+      "5a6fe65367b7293b5e45c916f60b8b32821e96fc79b8a14d951fc41499e79593"]
      ["prettier-2.7.1.js"
-      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs"]
+      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs"
+      "9c3863ce84521f14356df245ead2dcc7f1778cd75935f2b59d8491e052ca2a47"]
      ["prettier-parser-babel-2.7.1.js"
-      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs"]])
+      "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/parser-babel.mjs"
+      "23f3b3439f32f5759cb06b85f868d04eaeddc9d81cbfe071e897df95e4cb3c8b"]])
   @(Promise.all (sources.map
-                  (fn [[file url]]
-                    (external-one config file url)))))
+                  (fn [[file url expected-sha256]]
+                    (external-one config file url expected-sha256)))))
 
 (fn since [start]
   (str (Math.round (- (performance.now) start)) "ms"))
