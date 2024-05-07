@@ -5,6 +5,7 @@
         [:marked [marked]]
         [:marked-base-url [baseUrl]]
         [:marked-gfm-heading-id [gfmHeadingId]]
+        ["@daaku/livereload" [lrPath lrJS lrHandler]]
         [:./transpiler.dak [bunPlugin]]
         [:./html.dak [doc html unsafe]])
 
@@ -85,22 +86,25 @@
    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
    [:link {:rel :icon :type "image/svg+xml" :href (. assets "logo.svg")}]])
 
-(const foot-ui
-  (unsafe (html
-    [:footer
-      [:ul
-       [:li [:a {:href "/"} "Dak Language"]]
-       [:li [:a {:href "/tour/"} "Tour"]]
-       [:li [:a {:href "/play/"} "Playground"]]
-       [:li [:a {:href "https://github.com/daaku/dak"} "GitHub"]]
-       [:li [:a {:href "mailto:n@daaku.org?subject=Dak" :target :_blank}
-              "\u00a9 Naitik Shah"]]]])))
+(fn foot-ui [{:or {env :production}}]
+  [:footer
+    (when (= env :development) [:script (unsafe lrJS)])
+    [:ul
+     [:li [:a {:href "/"} "Dak Language"]]
+     [:li [:a {:href "/tour/"} "Tour"]]
+     [:li [:a {:href "/play/"} "Playground"]]
+     [:li [:a {:href "https://github.com/daaku/dak"} "GitHub"]]
+     [:li [:a {:href "mailto:n@daaku.org?subject=Dak" :target :_blank}
+            "\u00a9 Naitik Shah"]]]])
 
 (fn logo-ui [assets]
   [:a {:href "/"} [:img {:width 24 :height 24 :src (. assets "logo.svg")
                          :alt "Home" :title "Home"}]])
 
-(fn play-ui [assets {:or {title "Dak Playground" code "" description ""}}]
+(fn play-ui [assets {:or {title "Dak Playground"
+                          code ""
+                          description ""
+                          env :production}}]
   (doc {:lang :en}
    (head-ui assets
      {:title title
@@ -134,7 +138,7 @@
                  :autocapitalize :none
                  :spellcheck false}]]
     [:div#output]
-    foot-ui
+    (foot-ui {:env env})
     [:script {:src "/assets/external/source-map-0.7.4.js"}]
     [:script {:src "/assets/external/terser-5.31.0.js"}]
     [:script {:type :module :src (. assets "index.js")}]]))
@@ -145,7 +149,7 @@
         title (str (tour-title name) ": Dak Tour")
         code @(readFile source-file "utf-8")]
     @(mkdir (dirname out-file) {:recursive true})
-    @(writeFile out-file (play-ui assets {:title title :code code}))))
+    @(writeFile out-file (play-ui assets {:title title :code code :env config.env}))))
 
 (fn@ error-html [config assets]
   @(writeFile "dist/error.html"
@@ -194,7 +198,7 @@
          (-> (markdown config assets @(readFile "readme.md" :utf8))
              (.replace "<!--exits-->" (html (exits-ui)))
              unsafe)]
-       foot-ui
+       (foot-ui config)
        [:script {:type :module :src (. assets "index.js")}]])))
 
 (fn@ tour-index-html [config assets]
@@ -209,14 +213,15 @@
         [:ul (... (tour.map
          (fn [v]
            [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]]]
-       foot-ui
+       (foot-ui config)
        [:script {:type :module :src (. assets "index.js")}])))
 
 (fn@ play-index-html [config assets]
   @(writeFile "dist/play/index.html"
     (play-ui assets
       {:title "Dak Playground"
-       :description "A Playground to experiment with the Dak Language."})))
+       :description "A Playground to experiment with the Dak Language."
+       :env config.env})))
 
 (fn@ hex-sha256-file [path]
   (let [hasher (Bun.CryptoHasher. :sha256)]
@@ -286,11 +291,14 @@
   (let [token (crypto.randomUUID)]
     (Bun.serve {:fetch
       (fn@ [req]
-        (let [pathname (join "./dist" (-> req.url URL. (. :pathname) normalize))
-              file (Bun.file pathname)]
-          (if @(file.exists)
-            (Response. file {:headers (headers-for pathname)})
-            (Response. "not found" {:status 404}))))})))
+        (let [req-pathname (-> req.url URL. (. :pathname) normalize)]
+          (if (= req-pathname lrPath)
+            (lrHandler req)
+            (let [pathname (join "./dist" req-pathname)
+                  file (Bun.file pathname)]
+              (if @(file.exists)
+                (Response. file {:headers (headers-for pathname)})
+                (Response. "not found" {:status 404}))))))})))
 
 (fn@ main []
   (let [config {:env (if (= process.env.DEV "1") :development :production)}]
