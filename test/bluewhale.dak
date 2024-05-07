@@ -1,0 +1,26 @@
+(import [:node:fs/promises [opendir readFile writeFile]]
+        [:node:path [join dirname]]
+        [:node:url [fileURLToPath]]
+        [:bun:test [test expect]]
+        [:../src/transpiler.dak [transpileStr]])
+
+(const root (-> import.meta.url fileURLToPath dirname))
+(const source-dir "./bluewhale/src")
+(const generated-dir "./bluewhale/gen")
+(const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
+
+(fn@ bluewhale-test [name]
+  (let [gen (try
+               @(import (join root source-dir name))
+               (catch e `${e.message}\n\n--\n\n${e.stack}`))
+        out-file (join root generated-dir (.replace name #/\.dak$/ ".out"))]
+    (if update-snapshots
+      @(writeFile out-file gen)
+      (-> @(readFile out-file :utf8) expect (.toEqual gen)))))
+
+(test :bluewhale
+  (fn@ []
+    (let [ps []]
+      (for@ [ent @(opendir (join root source-dir))]
+        (ps.push (bluewhale-test ent.name)))
+      @(Promise.all ps))))
