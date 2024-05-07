@@ -2,24 +2,17 @@ name: Build
 on: [push, pull_request]
 jobs:
   build:
-    name: node v${{ matrix.node-version }} / ${{ matrix.os }}
+    name: bun / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-          cache-dependency-path: '**/package.json'
-      - run: npm install -w packages/transpiler
-      - run: npm install --foreground-scripts
-      - name: Run Tests
-        run: ./node_modules/.bin/dak make.dak cover
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun test $(ls ./test/*.dak)
 
   deploy:
     name: website
@@ -28,21 +21,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: '**/package.json'
-      - run: npm install -w packages/transpiler
-      - run: npm install --foreground-scripts
-      - run: npm run -w packages/website build
+      - uses: oven-sh/setup-bun@v1
+      - run: ./src/website.dak
       - name: install rclone
         run: |
           cd /tmp
           wget --quiet https://downloads.rclone.org/rclone-current-linux-amd64.deb
           sudo dpkg -i rclone-current-linux-amd64.deb
       - name: deploy
-        run: rclone --config packages/website/.rclone.conf copyto packages/website/dist/ s3:www.daklang.com/
+        run: rclone --config .rclone.conf copyto dist/ s3:www.daklang.com/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
