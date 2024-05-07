@@ -6,7 +6,7 @@
 
 (const root (-> import.meta.url fileURLToPath dirname dirname))
 (const tour-dir "./www/tour")
-(const snapshots-dir "./test/tour-snapshots")
+(const snapshots-dir "./test/tour")
 (const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
 
 (fn@ tour-test [name]
