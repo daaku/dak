@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 (import ["source-map-js/lib/source-map-generator.js" [SourceMapGenerator]])
 
 (const symbolBreaker ["(" ")" "[" "]" "{" "}"])
