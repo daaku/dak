@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
       - run: ./src/website.dak
+      - uses: mxschmitt/action-tmate@v3
       - name: install rclone
         run: |
           cd /tmp
