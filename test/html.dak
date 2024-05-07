@@ -34,6 +34,10 @@
   (unsafe "&boom" "<42>")
   "&boom<42>")
 
+(deftest :when
+  (when false "hello")
+  "")
+
 (test :doc
   (fn []
     (-> (doc {:lang :en} [:strong "hello & world"])

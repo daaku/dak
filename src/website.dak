@@ -88,7 +88,8 @@
 
 (fn foot-ui [{:or {env :production}}]
   [:footer
-    (when (= env :development) [:script (unsafe lrJS)])
+    (when (= env :development)
+      [:script (unsafe lrJS)])
     [:ul
      [:li [:a {:href "/"} "Dak Language"]]
      [:li [:a {:href "/tour/"} "Tour"]]

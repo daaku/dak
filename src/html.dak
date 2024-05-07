@@ -56,6 +56,8 @@
 
 (fn ^:export html [el]
   (if (string? el) (escape el)
+      (null? el) ""
+      (undefined? el) ""
       (= (. el 0) _unsafe) (.join (. el 1) "")
       (let [given-tag (. el 0)
             second (. el 1)
