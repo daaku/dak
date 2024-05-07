@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 
-(import [:node:fs [createWriteStream]]
-        [:node:fs/promises [readFile writeFile mkdir rm cp]]
+(import [:node:fs/promises [readFile writeFile mkdir rm cp]]
         [:node:path [dirname join basename]]
         [:node:http [createServer]]
         [:node:https :as https]
