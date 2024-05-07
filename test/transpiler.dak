@@ -22,6 +22,7 @@
       (.includes
         (. (transpileStr "hello" {:sourcemap :inline}) :code)
         "sourceMappingURL=data:application/json;base64")
+      expect
       (.toBeTruthy))))
 
 (macro good [name input output]
