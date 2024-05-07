@@ -48,19 +48,23 @@
                :loader {:.svg :file :.png :file}
                :sourcemap :external
                :external ["/assets/external/*"]
-               :naming "assets/[dir]/[name].[hash].[ext]"
+               :naming {:entry "assets/[dir]/[name].[hash].[ext]"
+                        :chunk "assets/[name].[hash].[ext]"
+                        :asset "assets/[name].[hash].[ext]"}
                :plugins [{:name :dak :setup bun-plugin}]}))
 
 (fn asset-original-name [p]
   (-> p
     (.replace #/^\/assets\// "")
-    (.replace #/\.\w+(\.\w+)/ "$1")))
+    (.replace #/\.\w+(\.\w+)$/ "$1")))
 
 (fn assets-map [outputs]
   (let [assets {}]
-    (-> outputs Object.keys
-        (.filter #(= $.kind :entrypoint))
-        (.map #(-> "/assets/" $.indexOf $.substring))
+    (-> outputs (. :outputs)
+        (.filter #(or (and (= $.kind :entry-point) (= $.loader :js))
+                      (and (= $.kind :asset) (= $.loader :file))))
+        (.map #(. $ :path))
+        (.map #(-> "/dist/" $.indexOf (+ 5) $.substring))
         (.forEach #(set (. assets (asset-original-name $)) $)))
     assets))
 
