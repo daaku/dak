@@ -2453,9 +2453,7 @@ var bunPlugin = () => {
   } };
 };
 if (import.meta.url.endsWith("bootstrap.mjs")) {
-  Promise.resolve(globalThis.Bun).then((lambda__16) => {
-    return lambda__16.plugin(bunPlugin());
-  });
+  Bun.plugin(bunPlugin());
 }
 if (import.meta.main) {
   {

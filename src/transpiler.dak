@@ -1390,7 +1390,7 @@
 
 ; special loading mode when loaded as bootstrap.mjs
 (if (import.meta.url.endsWith :bootstrap.mjs)
-  (-> :bun import (.then #($.plugin (bunPlugin)))))
+  (Bun.plugin (bunPlugin)))
 
 ; to regenerate, simply run:
 ; bun run ./src/transpiler.dak
