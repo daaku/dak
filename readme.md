@@ -1,4 +1,4 @@
-# <img src="./packages/website/assets/logo.svg" width="24" height="24" alt="Logo"> Dak
+# <img src="./www/assets/logo.svg" width="24" height="24" alt="Logo"> Dak
 
 # WARNING: Refactoring to focusing on Bun + Browser.
 
