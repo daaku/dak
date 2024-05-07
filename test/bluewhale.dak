@@ -9,10 +9,13 @@
 (const generated-dir "./bluewhale/gen")
 (const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
 
+(fn sanitize-stack [stack]
+  (-> stack (.replace (str (dirname root) "/") "")))
+
 (fn@ bluewhale-test [name]
   (let [gen (try
                @(import (join root source-dir name))
-               (catch e `${e.message}\n\n--\n\n${e.stack}`))
+               (catch e `${e.message}\n\n--\n\n${(sanitize-stack e.stack)}`))
         out-file (join root generated-dir (.replace name #/\.dak$/ ".out"))]
     (if update-snapshots
       @(writeFile out-file gen)

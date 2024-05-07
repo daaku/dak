@@ -3,6 +3,6 @@
 --
 
 TypeError: "hello" is not a function. (In '"hello"()', '"hello"' is "hello")
-    at module code (/home/naitik/workspace/dak/test/bluewhale/src/001-js-in-dak.dak:1:8)
+    at module code (test/bluewhale/src/001-js-in-dak.dak:1:8)
     at moduleEvaluation (:1:11)
     at <anonymous> (:2:1)
