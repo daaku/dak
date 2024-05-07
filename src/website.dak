@@ -11,6 +11,7 @@
         [:marked [marked]]
         [:marked-base-url [baseUrl]]
         [:marked-gfm-heading-id [gfmHeadingId]]
+        [:./transpiler.dak [bunPlugin]]
         [:./html.dak [doc html unsafe]])
 
 (const prodURL "https://www.daklang.com/")
@@ -24,16 +25,6 @@
       marked.parse
       (.replace #/\.\/packages\/website\/assets\/(\w+\.\w+)/g #(. assets $2))
       (.replaceAll prodURL "/")))
-
-
-(fn@ bun-plugin [builder]
-  (let [{:keys [transpileStr]} @(import "./transpiler.dak")]
-    (builder.onLoad {:filter #/\.dak$/}
-    (fn@ [{:keys [path]}]
-      {:contents (-> path Bun.file .text await
-                     (transpileStr {:source path :sourcemap :inline})
-                     (. :code))
-       :loader :js}))))
 
 (fn@ bun-build [config]
   @(Bun.build {:entrypoints ["www/assets/logo.svg"
@@ -51,7 +42,7 @@
                :naming {:entry "assets/[dir]/[name].[hash].[ext]"
                         :chunk "assets/[name].[hash].[ext]"
                         :asset "assets/[name].[hash].[ext]"}
-               :plugins [{:name :dak :setup bun-plugin}]}))
+               :plugins [{:name :dak :setup bunPlugin}]}))
 
 (fn asset-original-name [p]
   (-> p
