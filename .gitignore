@@ -1,2 +1,4 @@
+/dist
+/external
 /node_modules
 /package-lock.json

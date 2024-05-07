@@ -1,7 +1,7 @@
 (import ["/assets/external/prettier-2.7.1.js" prettier]
         ["/assets/external/prettier-parser-babel-2.7.1.js" parserBabel]
         [:backo Backoff]
-        ["@daklang/transpiler" [transpileStr]])
+        [:../../src/transpiler.dak [transpileStr]])
 
 ; conditionally load since we share this script on non playground pages
 (const dak-code (document.getElementById :dak-code))
