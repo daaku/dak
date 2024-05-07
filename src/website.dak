@@ -2,7 +2,7 @@
 
 (import [:node:fs [createWriteStream]]
         [:node:fs/promises [readFile writeFile mkdir rm cp]]
-        [:node:path [dirname join]]
+        [:node:path [dirname join basename]]
         [:node:http [createServer]]
         [:node:https :as https]
         [:finalhandler finalhandler]
@@ -49,9 +49,19 @@
     (.replace #/^\/assets\// "")
     (.replace #/\.\w+(\.\w+)$/ "$1")))
 
-(fn assets-map [outputs]
+(fn@ delete-js-shims [build-result]
+  (let [shims (Set. (-> build-result.outputs
+                      (.filter #(and (or (= $.loader :file) (= $.loader :css))
+                                         (= $.kind :entry-point)))
+                      (.map #(do [$.path $.sourcemap?.path]))
+                      .flat
+                      (.filter #(do $))))]
+    @(Promise.all (-> [...shims] (.map #(rm $))))
+    {...build-result :outputs (build-result.outputs?.filter #(not (shims.has $.path)))}))
+
+(fn assets-map [{:keys [outputs]}]
   (let [assets {}]
-    (-> outputs (. :outputs)
+    (-> outputs
         (.filter #(or (and (= $.kind :entry-point) (= $.loader :js))
                       (and (= $.kind :asset) (= $.loader :file))))
         (.map #(. $ :path))
@@ -263,9 +273,10 @@
      (mkdir "dist/assets/external" {:recursive true})
      (mkdir "dist/tour" {:recursive true})
      (mkdir "dist/play" {:recursive true})])
-  (let [assets (-> config bun-build await assets-map)]
+  (let [assets (-> config bun-build await delete-js-shims await assets-map)]
     @(Promise.all
-      [(externals config)
+      [(Bun.write "dist/assets-map.json" (JSON.stringify assets))
+       (externals config)
        (index-html config assets)
        (error-html config assets)
        (tour-index-html config assets)
