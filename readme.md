@@ -1,5 +1,7 @@
 # <img src="./packages/website/assets/logo.svg" width="24" height="24" alt="Logo"> Dak
 
+# WARNING: Refactoring to focusing on Bun + Browser.
+
 Dak is a Lisp like language that transpiles to JavaScript.
 
 <!--exits-->
