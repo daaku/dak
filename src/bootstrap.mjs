@@ -2445,14 +2445,16 @@ var transpileStr = (code, config = {}) => {
     }
   }
 };
-var bunPlugin = async (builder) => {
-  return builder.onLoad({ filter: /\.dak$/ }, async ({ path }) => {
-    return { contents: transpileStr(await Bun.file(path).text(), { source: path, sourcemap: "inline" }).code, loader: "js" };
-  });
+var bunPlugin = () => {
+  return { name: "dak", setup: (lambda__15) => {
+    return lambda__15.onLoad({ filter: /\.dak$/ }, async ({ path }) => {
+      return { contents: transpileStr(await Bun.file(path).text(), { source: path, sourcemap: "inline" }).code, loader: "js" };
+    });
+  } };
 };
 if (import.meta.url.endsWith("bootstrap.mjs")) {
-  Promise.resolve(globalThis.Bun).then((lambda__15) => {
-    return lambda__15.plugin({ name: "dak", setup: bunPlugin });
+  Promise.resolve(globalThis.Bun).then((lambda__16) => {
+    return lambda__16.plugin(bunPlugin());
   });
 }
 if (import.meta.main) {
@@ -2463,7 +2465,7 @@ if (import.meta.main) {
     let bjs = join(dirname(import.meta.path), "bootstrap.mjs");
     let transpiled = transpileStr(await Bun.file(import.meta.path).text(), { source: "<transpiler.dak>", sourcemap: "inline" });
     await Bun.write(btmp, transpiled.code);
-    await Bun.write(bjs, await (await Bun.build({ entrypoints: [btmp], target: "bun", plugins: [{ name: "dak", setup: bunPlugin }] })).outputs[0].arrayBuffer());
+    await Bun.write(bjs, await (await Bun.build({ entrypoints: [btmp], target: "bun", plugins: [bunPlugin()] })).outputs[0].arrayBuffer());
     await unlink(btmp);
   }
 }

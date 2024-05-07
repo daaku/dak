@@ -42,7 +42,7 @@
                :naming {:entry "assets/[dir]/[name].[hash].[ext]"
                         :chunk "assets/[name].[hash].[ext]"
                         :asset "assets/[name].[hash].[ext]"}
-               :plugins [{:name :dak :setup bunPlugin}]}))
+               :plugins [(bunPlugin)]}))
 
 (fn asset-original-name [p]
   (-> p

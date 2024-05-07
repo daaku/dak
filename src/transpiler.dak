@@ -1376,18 +1376,19 @@
                     (btoa (JSON.stringify mapJSON))))
       {:code (parts.join "") :map mapJSON})))
 
-(fn@ ^:export bunPlugin [builder]
-  (builder.onLoad
-    {:filter #/\.dak$/}
-    (fn@ [{:keys [path]}]
-      {:contents (-> path Bun.file .text await
-                     (transpileStr {:source path :sourcemap :inline})
-                     (. :code))
-       :loader :js})))
+(fn ^:export bunPlugin []
+  {:name :dak
+   :setup #($.onLoad
+              {:filter #/\.dak$/}
+              (fn@ [{:keys [path]}]
+                {:contents (-> path Bun.file .text await
+                               (transpileStr {:source path :sourcemap :inline})
+                               (. :code))
+                 :loader :js}))})
 
 ; special loading mode when loaded as bootstrap.mjs
 (if (import.meta.url.endsWith :bootstrap.mjs)
-  (-> :bun import (.then #($.plugin {:name :dak :setup bunPlugin}))))
+  (-> :bun import (.then #($.plugin (bunPlugin)))))
 
 ; to regenerate, simply run:
 ; bun run ./src/transpiler.dak
@@ -1401,6 +1402,6 @@
     @(Bun.write btmp transpiled.code)
     @(Bun.write bjs @(-> {:entrypoints [btmp]
                           :target :bun
-                          :plugins [{:name :dak :setup bunPlugin}]}
+                          :plugins [(bunPlugin)]}
                          Bun.build await (. :outputs 0) .arrayBuffer))
     @(unlink btmp)))
