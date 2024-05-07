@@ -141,8 +141,8 @@
                  :spellcheck false}]]
     [:div#output]
     foot-ui
-    [:script {:src "/assets/external/source-map-0.7.3.js"}]
-    [:script {:src "/assets/external/terser-5.16.3.js"}]
+    [:script {:src "/assets/external/source-map-0.7.4.js"}]
+    [:script {:src "/assets/external/terser-5.31.0.js"}]
     [:script {:type :module :src (. assets "index.js")}]]))
 
 (fn@ play-build [config assets name]
@@ -245,12 +245,12 @@
 
 (fn@ externals [config]
   (const sources
-    [["source-map-0.7.3.js"
+    [["source-map-0.7.4.js"
       "https://cdn.jsdelivr.net/npm/source-map@0.7.3/dist/source-map.js"
       "84a912cfa28183b00fc9e6e3e017d28cbad0697133e6964e94f15be8129c95f0"]
-     ["terser-5.16.3.js"
-      "https://cdn.jsdelivr.net/npm/terser@5.16.3/dist/bundle.min.js"
-      "5a6fe65367b7293b5e45c916f60b8b32821e96fc79b8a14d951fc41499e79593"]
+     ["terser-5.31.0.js"
+      "https://cdn.jsdelivr.net/npm/terser@5.31.0/dist/bundle.min.js"
+      "dff151237b4168b50c7e18dd6c09db7b86e1737182454b8136f5813348c306e6"]
      ["prettier-2.7.1.js"
       "https://cdn.jsdelivr.net/npm/prettier@2.7.1/esm/standalone.mjs"
       "9c3863ce84521f14356df245ead2dcc7f1778cd75935f2b59d8491e052ca2a47"]
