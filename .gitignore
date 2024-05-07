@@ -2,3 +2,4 @@
 /external
 /node_modules
 /package-lock.json
+/src/bootstrap.tmp.mjs
