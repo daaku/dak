@@ -1,0 +1,1 @@
+if(something){console.log("hello")};

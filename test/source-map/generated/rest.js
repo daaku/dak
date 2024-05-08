@@ -1,0 +1,1 @@
+const foo=(...args)=>{return console.log(...args);};

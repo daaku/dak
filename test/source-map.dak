@@ -1,0 +1,30 @@
+(import [:node:fs/promises [opendir readFile writeFile]]
+        [:node:path [join dirname]]
+        [:node:url [fileURLToPath]]
+        [:bun:test [test expect]]
+        [:../src/transpiler.dak [transpileStr]])
+
+(const root (-> import.meta.url fileURLToPath dirname))
+(const source-dir "./source-map/source")
+(const generated-dir "./source-map/generated")
+(const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
+
+(fn@ source-map-test [name]
+  (let [contents @(readFile (join root source-dir name) :utf8)
+        gen (transpileStr contents {:source name})
+        map-json (JSON.stringify gen.map)
+        code-file (join root generated-dir (.replace name #/\.dak$/ ".js"))
+        map-file (str code-file ".map")]
+    (if update-snapshots
+      @(Promise.all [(writeFile code-file gen.code)
+                     (writeFile map-file map-json)])
+      (do
+        (-> @(readFile code-file :utf8) expect (.toEqual gen.code))
+        (-> @(readFile map-file :utf8) expect (.toEqual map-json))))))
+
+(test :source-map
+  (fn@ []
+    (let [ps []]
+      (for@ [ent @(opendir (join root source-dir))]
+        (ps.push (source-map-test ent.name)))
+      @(Promise.all ps))))

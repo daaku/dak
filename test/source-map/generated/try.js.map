@@ -1,0 +1,1 @@
+{"version":3,"sources":["try.dak"],"names":["err"],"mappings":"AAAA,IACE,SACA,MAAOA,KACL,cAAeA,MACjB,QACE,YAAa","sourcesContent":["(try\n  (thing)\n  (catch err\n    (console.error err))\n  (finally\n    (console.log :done)))\n"]}
