@@ -1,5 +1,5 @@
 (import [:node:fs/promises [opendir]]
-        [:node:path [join dirname]]
+        [:node:path [join]]
         [:node:url [fileURLToPath]]
         [:bun:test [test expect]]
         [:../src/transpiler.dak [transpileStr]])
@@ -7,7 +7,7 @@
 (const root (-> import.meta.url fileURLToPath (join "../__data__/bluewhale")))
 
 (fn sanitize-stack [stack]
-  (and stack (-> stack (.replace (str (dirname root) "/") ""))))
+  (and stack (-> stack (.replace (str (join root "../../..") "/") ""))))
 
 (const AsyncFunction (. (fn@ []) :constructor))
 
