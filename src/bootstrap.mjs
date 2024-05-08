@@ -2407,11 +2407,23 @@ var transpileCtx = function* (code, ctx, semi = true) {
 var transpile = function* (code, config) {
   return yield* transpileCtx(code, newCtx(config || {}, macros));
 };
+var count_DASH_newlines = (s) => {
+  {
+    let l = 0;
+    for (let c of s) {
+      if (c === "\n") {
+        l++;
+      }
+    }
+    return l;
+  }
+};
 var transpileStr = (code, config = {}) => {
   {
     let parts = [];
     let map = new $SourceMapGenerator;
     let column = 0;
+    let line = 1;
     for (let out of transpile(code, config)) {
       {
         let let_multi__13;
@@ -2421,19 +2433,20 @@ var transpileStr = (code, config = {}) => {
           let_multi__13 = out;
         }
         let [part, partToken] = let_multi__13;
+        if (config?.debug?.includes("sourcemap")) {
+          console.log(part, partToken);
+        }
         if (typeof partToken?.pos?.line === "number") {
-          if (config?.debug?.includes("source-maps")) {
-            console.log(part, partToken);
-          }
           let hoist__14;
           if (partToken.kind === "symbol" && !partToken.value.includes(".")) {
             hoist__14 = mangleSym(partToken.value);
           } else {
             hoist__14 = null;
           }
-          map.addMapping({ source: partToken.pos.source, original: { line: partToken.pos.line + 1, column: partToken.pos.column }, generated: { line: 1, column }, name: hoist__14 });
+          map.addMapping({ source: partToken.pos.source, original: { line: partToken.pos.line + 1, column: partToken.pos.column }, generated: { line, column }, name: hoist__14 });
         }
         column += part.length;
+        line += count_DASH_newlines(part);
         parts.push(part);
       }
     }
