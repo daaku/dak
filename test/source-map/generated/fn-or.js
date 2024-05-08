@@ -1,1 +1,0 @@
-const simple_QMARK_=(v)=>{return (typeof v==="number"||typeof v==="boolean"||typeof v==="string"||typeof v==="undefined"||v===null||typeof v==="bigint"||v instanceof Date||v instanceof RegExp);};

@@ -1,1 +1,0 @@
-{"version":3,"sources":["rest.dak"],"names":["foo","args"],"mappings":"AAAA,MAAIA,KAAK,kBACP,YAAa,GAAKC","sourcesContent":["(fn foo [...args]\n  (console.log (... args)))\n"]}

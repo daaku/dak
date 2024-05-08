@@ -1,1 +1,0 @@
-{"version":3,"sources":["yield.dak"],"names":["gen","1","2"],"mappings":"AAAA,MAAKA,gBACH,MAAOC,SACP,MAAOC","sourcesContent":["(fn* gen []\n  (yield 1)\n  (yield 2))\n"]}

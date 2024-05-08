@@ -1,1 +1,0 @@
-{"version":3,"sources":["while.dak"],"names":["true"],"mappings":"AAAA,MAAOA,MACL,YAAa","sourcesContent":["(while true\n  (console.log :hello))\n"]}

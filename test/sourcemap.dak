@@ -1,0 +1,14 @@
+(import [:node:fs/promises [opendir readFile writeFile]]
+        [:node:path [join dirname]]
+        [:node:url [fileURLToPath]]
+        [:bun:test [test expect]]
+        [:../src/transpiler.dak [transpileStr]])
+
+(const root (-> import.meta.url fileURLToPath (join "../__data__/sourcemap")))
+
+(for@ [ent @(opendir root)]
+  (test ent.name
+    (fn@ []
+      (let [gen (-> (join root ent.name) Bun.file .text await (transpileStr {:source ent.name}))]
+        (-> gen.code expect .toMatchSnapshot)
+        (-> gen.map expect .toMatchSnapshot)))))

@@ -1,1 +1,0 @@
-try{thing();}catch(err){console.error(err);}finally{console.log("done");};
