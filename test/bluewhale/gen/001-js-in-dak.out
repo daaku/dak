@@ -1,8 +1,0 @@
-"hello" is not a function. (In '"hello"()', '"hello"' is "hello")
-
---
-
-TypeError: "hello" is not a function. (In '"hello"()', '"hello"' is "hello")
-    at <anonymous> (:3:20)
-    at anonymous (:1:26)
-    at <anonymous> (test/bluewhale.dak:0:755)

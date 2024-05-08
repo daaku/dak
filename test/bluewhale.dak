@@ -1,34 +1,23 @@
-(import [:node:fs/promises [opendir readFile writeFile]]
+(import [:node:fs/promises [opendir]]
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
         [:bun:test [test expect]]
         [:../src/transpiler.dak [transpileStr]])
 
-(const root (-> import.meta.url fileURLToPath dirname))
-(const source-dir "./bluewhale/src")
-(const generated-dir "./bluewhale/gen")
-(const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
+(const root (-> import.meta.url fileURLToPath (join "../__data__/bluewhale")))
 
 (fn sanitize-stack [stack]
   (and stack (-> stack (.replace (str (dirname root) "/") ""))))
 
-(fn@ bluewhale-test [name]
-  (let [AsyncFunction (. (fn@ []) :constructor)
-        gen (try
-               @((-> (join root source-dir name) Bun.file .text await
-                     (transpileStr {:source name
-                                    :sourcemap :inline})
-                     (. :code)
-                     AsyncFunction))
-               (catch e `${e.message}\n\n--\n\n${(sanitize-stack e.stack)}`))
-        out-file (join root generated-dir (.replace name #/\.dak$/ ".out"))]
-    (if update-snapshots
-      @(writeFile out-file gen)
-      (-> gen expect (.toEqual @(readFile out-file :utf8))))))
+(const AsyncFunction (. (fn@ []) :constructor))
 
-(test :bluewhale
-  (fn@ []
-    (let [ps []]
-      (for@ [ent @(opendir (join root source-dir))]
-        (ps.push (bluewhale-test ent.name)))
-      @(Promise.all ps))))
+(for@ [ent @(opendir root)]
+  (test ent.name
+    (fn@ []
+      (let [out (try
+                   @((-> (join root ent.name) Bun.file .text await
+                         (transpileStr {:source ent.name :sourcemap :inline})
+                         (. :code)
+                         AsyncFunction))
+                   (catch e `${e.message}\n\n--\n\n${(sanitize-stack e.stack)}`))]
+        (-> out expect .toMatchSnapshot)))))
