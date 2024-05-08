@@ -9,17 +9,12 @@
 (const snapshots-dir "./test/tour")
 (const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
 
-(fn@ tour-test [name]
-  (let [contents @(readFile (join root tour-dir name) :utf8)
-        actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
-        snapshot-file (join root snapshots-dir (.replace name #/\.dak$/ ".js"))]
-    (if update-snapshots
-      @(writeFile snapshot-file actual)
-      (-> @(readFile snapshot-file :utf8) expect (.toEqual actual)))))
-
-(test :tour
-  (fn@ []
-    (let [ps []]
-      (for@ [ent @(opendir (join root tour-dir))]
-        (ps.push (tour-test ent.name)))
-      @(Promise.all ps))))
+(for@ [ent @(opendir (join root tour-dir))]
+  (test ent.name
+    (fn@ []
+      (let [contents @(readFile (join root tour-dir ent.name) :utf8)
+            actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
+            snapshot-file (join root snapshots-dir (.replace ent.name #/\.dak$/ ".js"))]
+        (if update-snapshots
+          @(writeFile snapshot-file actual)
+          (-> @(readFile snapshot-file :utf8) expect (.toEqual actual)))))))
