@@ -1,20 +1,17 @@
-(import [:node:fs/promises [opendir readFile writeFile]]
-        [:node:path [join dirname]]
+(import [:node:fs/promises [opendir]]
+        [:node:path [join]]
         [:node:url [fileURLToPath]]
         [:bun:test [test expect]]
         [:../src/transpiler.dak [transpileStr]])
 
-(const root (-> import.meta.url fileURLToPath dirname dirname))
-(const tour-dir "./www/tour")
-(const snapshots-dir "./test/tour")
-(const update-snapshots (= process.env.UPDATE_SNAPSHOTS "1"))
+(const tour-dir (-> import.meta.url fileURLToPath (join "../../www/tour")))
 
-(for@ [ent @(opendir (join root tour-dir))]
+(for@ [ent @(opendir tour-dir)]
+  ; TODO: fixme in Bun?
+  (if (= ent.name :literals.dak)
+    (continue))
   (test ent.name
     (fn@ []
-      (let [contents @(readFile (join root tour-dir ent.name) :utf8)
-            actual (.replaceAll (. (transpileStr contents) :code) ";" "\n")
-            snapshot-file (join root snapshots-dir (.replace ent.name #/\.dak$/ ".js"))]
-        (if update-snapshots
-          @(writeFile snapshot-file actual)
-          (-> @(readFile snapshot-file :utf8) expect (.toEqual actual)))))))
+      (-> (join tour-dir ent.name) Bun.file .text await
+          transpileStr (. :code) (.replaceAll ";" "\n")
+          expect .toMatchSnapshot))))

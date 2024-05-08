@@ -1,0 +1,343 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`welcome.dak 1`] = `""`;
+
+exports[`operators.dak 1`] = `
+"prn("str:",("hello "+"world"))
+prn("+:",(1+2))
+prn("+ unary:",(+"1"))
+prn("-:",(3-1))
+prn("- unary:",(-4))
+prn("- multiple:",(1-2-3))
+prn("*: ",(1*2))
+prn("/: ",(1/2))
+prn("**: ",(2**2))
+prn("%: ",(5%2))
+prn("<<: ",(1<<2))
+prn(">>: ",(1>>2))
+prn("bit-and",(1&2))
+prn("bit-or",(1|2))
+prn("bit-xor",(1^2))
+prn("||: ",(1||2))
+prn("or",(1||2))
+prn("&&: ",(1&&2))
+prn("and",(1&&2))
+prn("in",("a" in {a:42,}))
+prn("bit-not",(~1))
+prn("not",(!1))
+let a=1
+prn("++:",(a++))
+prn("=: ",1===1)
+prn("not=",1!==1)
+prn("==: ",1==1)
+prn("!=: ",1!=1)
+prn("<: ",1<2)
+prn(">: ",1>2)
+prn(">=: ",1>=2)
+prn("<=: ",1<=2)
+"
+`;
+
+exports[`conditions.dak 1`] = `
+"const answer=42
+
+if(answer===42){prn("simple","boom")}else{prn("simple","no-dice")}
+let hoist__0
+if(answer===42){hoist__0="boom"}
+prn("hoisted",hoist__0)
+let hoist__1
+if(answer<42){hoist__1="too-low"}else if(answer>42){hoist__1="too-high"}else if(answer===42){hoist__1="just-right"}
+prn("multiple",hoist__1)
+if(answer===42){prn("when",answer)
+prn("when has an implicit do")
+}
+{let macro__1=(answer-41)
+if(macro__1){{let one=macro__1
+prn("when-let",one)
+}}
+}
+"
+`;
+
+exports[`destructuring.dak 1`] = `
+"const answers=[1,2,]
+
+const [answer_DASH_one,answer_DASH_two,]=answers
+
+prn("answers:",answer_DASH_one,answer_DASH_two)
+const jedi={name:"yoda",age:900,}
+
+let {name,age}=jedi
+prn("jedi",name,age)
+const sith={darth:"vader",}
+
+let {darth,masked=true}=sith
+prn("sith",darth,masked)
+"
+`;
+
+exports[`macros.dak 1`] = `
+"
+prn("add",(1+2))
+
+if((!false)){prn("unless")
+prn("world")
+}
+
+{let macro__0=(1-1)
+if((!macro__0)){{let v=macro__0
+prn("unless-let-hit",v)
+}}else{prn("unless-let-fail")}
+}
+
+prn(" heLLo ".trim().toLowerCase())
+"
+`;
+
+exports[`literals.dak 1`] = `
+"prn(42)
+prn(4.2)
+prn(0o1234)
+prn(0x1234)
+prn(0b1010)
+prn(1n)
+prn(3.1415926)
+prn(.123456789)
+prn(3.1E+12)
+prn(.1e-23)
+prn("hello world")
+prn("hello\nworld")
+prn("hello\nworld")
+prn("\uD83D\uDE00")
+prn("hello")
+prn("hello_world")
+prn("hello-world")
+prn(/foo/)
+prn(/foo/g)
+prn([1,2,3,])
+prn([1,"a",[2,"b",],])
+prn({hello:"world",})
+prn({answer:42,})
+prn(true,false,null,undefined)
+"
+`;
+
+exports[`async.dak 1`] = `
+"const hello=async(w)=>{return prn("hello",w)
+}
+await hello("world")
+await hello("earth")
+const ps=[Promise.resolve(1),Promise.resolve(2),]
+
+for await(let v of ps){prn("for@",v)
+}
+"
+`;
+
+exports[`try-catch.dak 1`] = `
+"try{prn(neverDefined())
+}catch(e){prn("caught",e.message)
+}finally{prn("finally")
+}
+const check=(answer)=>{let hoist__0
+try{switch (answer){case 42:hoist__0="boom"
+break
+case 41:hoist__0="close"
+break
+default:throw new Error("no-dice")
+break}
+}catch(e){hoist__0="failed"
+}
+return prn("check",hoist__0)
+}
+check(40)
+check(41)
+check(42)
+"
+`;
+
+exports[`functions.dak 1`] = `
+"const add=(a,b)=>{return (a+b)
+}
+prn(add(40,1))
+const add_DASH_promises=async(a,b)=>{return ((await a)+(await b))
+}
+prn((await add_DASH_promises(Promise.resolve(40),Promise.resolve(2))))
+const powers=function*(n,count){{let current=1
+for(let i=0
+i<count
+i++){yield (current*=n)
+}
+}
+}
+for(let v of powers(2,5)){prn(v)
+}
+const foo=async function*(a,b){yield ((await a)+1)
+return yield ((await b)+1)
+}
+for await(let v of foo(Promise.resolve(41),Promise.resolve(-43))){prn(v)
+}
+export const plus=(a,b)=>{return (a+b)
+}
+export default ((a,b)=>{return (a-b)
+})
+function TheClass(a){return this.answer=a
+}
+prn(new TheClass(42))
+const until=(a)=>{while(true){if((a++)===42){return "boom"}
+}
+}
+prn("returned",until(40))
+const it=function*(a){yield (a++)
+return yield* [(a++),(a++),]
+}
+for(let v of it(39)){prn("it:",v)
+}
+"
+`;
+
+exports[`loops.dak 1`] = `
+"{let i=5
+while(i>0){prn("while:",(i--))
+}
+}
+for(let i=0
+i<5
+i++){prn("for step=1",i)
+}
+for(let i=0
+i<10
+i+=2){prn("for step=2",i)
+}
+const vs=["a","b","c",]
+
+for(let v of vs){prn("for-of:",v)
+}
+const os=[{name:"yoda",age:900,},{name:"luke",age:90,},]
+
+for(let {name,age} of os){prn(name,"is",age,"years old")
+}
+const yoda={name:"yoda",age:900,}
+
+for(let p in yoda){prn(p,yoda[p])
+}
+const ps=[Promise.resolve(1),Promise.resolve(2),]
+
+for await(let v of ps){prn("for@",v)
+}
+for(let i=0
+i<5
+i++){prn("breaking",i)
+break
+}
+for(let i=0
+i<5
+i++){if((i%2)===0){prn("even",i)}else{continue}
+}
+"
+`;
+
+exports[`lambda.dak 1`] = `
+"prn([1,2,3,].map(((lambda__0)=>{return (lambda__0**2)})))
+prn(["a","b","c",].map(((lambda__1,lambda__2)=>{return (lambda__1+lambda__2)})))
+((...lambda_rest__3)=>{return prn(lambda_rest__3)})("a","b","c")
+prn((()=>{return 42
+})())
+"
+`;
+
+exports[`import.dak 1`] = `
+"import {writeFile} from "node:fs"
+
+import {readFile} from "node:fs"
+import {dirname} from "node:path"
+
+import Button from "./button.js"
+
+import * as ui from "./ui.js"
+
+import {Button as MainButton,Label as MainLabel} from "./main/ui.js"
+import {Button as AltButton} from "./alt/ui.js"
+
+import TheDefault,{Label,Button as TheButton} from "./main/ui.js"
+import {relative} from "node:path"
+
+"
+`;
+
+exports[`variables.dak 1`] = `
+"var answer=42
+const name="deep thought"
+
+let machine={planet:"earth",}
+prn(answer,name,machine.planet)
+answer=43
+machine.planet="destroyed"
+prn(answer,name,machine.planet)
+let prop_DASH_name="planet"
+prn(machine[prop_DASH_name])
+machine[prop_DASH_name]="destroyed"
+{let author="Adams"
+let programmer="Lunkwill"
+prn(author,programmer)
+}
+{let is_DASH_true_QMARK_=true
+let bad_BANG_=false
+let in_GT_=0
+let out_LT_=1
+prn(is_DASH_true_QMARK_,bad_BANG_,in_GT_,out_LT_)
+}
+"
+`;
+
+exports[`classes.dak 1`] = `
+"class Animal{}
+class Dinosaur extends Animal{}
+const TRex=class extends Dinosaur{}
+
+const pet=new TRex()
+
+prn("instanceof TRex =",pet instanceof TRex)
+prn("isa? Dinosaur =",pet instanceof Dinosaur)
+class Stego extends Animal{#name
+constructor(name){super()
+this.#name=name
+return
+}async greet(){return prn(this.#name,"says hello.")
+}}
+await new Stego("Barney").greet()
+"
+`;
+
+exports[`case.dak 1`] = `
+"for(let i=40
+i<43
+i++){switch (i){case 41:prn(i,"warm")
+break
+case 42:prn(i,"boom")
+break
+default:prn(i,"no dice")
+break}
+}
+const answer=42
+
+let hoist__0
+switch (answer){case 42:hoist__0="boom"
+break
+default:hoist__0="no dice"
+break}
+prn("hoisted",hoist__0)
+const run=(answer)=>{switch (answer){case 41:return "warm"
+case 42:return "boom"
+default:return "no dice"
+}
+}
+prn("run returns",run(42))
+let hoist__1
+switch (answer){case 41:case 42:case 43:hoist__1="close-enough"
+break
+default:hoist__1="no dice"
+break}
+prn("array",hoist__1)
+"
+`;
