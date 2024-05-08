@@ -2422,6 +2422,9 @@ var transpileStr = (code, config = {}) => {
         }
         let [part, partToken] = let_multi__13;
         if (typeof partToken?.pos?.line === "number") {
+          if (config?.debug?.includes("source-maps")) {
+            console.log(part, partToken);
+          }
           let hoist__14;
           if (partToken.kind === "symbol" && !partToken.value.includes(".")) {
             hoist__14 = mangleSym(partToken.value);

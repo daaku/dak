@@ -1358,6 +1358,8 @@
         column 0]
     (for-of [out (transpile code config)]
       (let [[part partToken] (if (string? out) [out] out)]
+        (when (config?.debug?.includes :sourcemap)
+          (console.log part partToken))
         (when (number? partToken?.pos?.line)
           (map.addMapping
             {:source partToken.pos.source
