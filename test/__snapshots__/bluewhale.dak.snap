@@ -8,5 +8,5 @@ exports[`001-js-in-dak.dak 1`] = `
 TypeError: "hello" is not a function. (In '"hello"()', '"hello"' is "hello")
     at <anonymous> (:3:20)
     at anonymous (:1:26)
-    at <anonymous> (test/bluewhale.dak:0:632)"
+    at <anonymous> (test/bluewhale.dak:1:628)"
 `;
