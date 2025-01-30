@@ -3,7 +3,7 @@
     "@daaku/livereload": "^0.5.0",
     "marked": "^12.0.2",
     "marked-base-url": "^1.1.3",
-    "marked-gfm-heading-id": "^3.1.3",
+    "marked-gfm-heading-id": "^4.1.1",
     "source-map-js": "^1.2.0"
   }
 }
