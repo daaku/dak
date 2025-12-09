@@ -1,10 +1,11 @@
-(import [:bun:test [test expect]]
+(import [:node:test [test]]
+        [:node:assert/strict :as assert]
         [:../src/html.dak [html unsafe doc]])
 
 (macro deftest [name data str]
   '(test ,name
      (fn []
-      (-> (html ,data) expect (.toEqual ,str)))))
+      (assert.equal (html ,data) ,str))))
 
 (deftest :plain-string
   "hello & world"
@@ -40,6 +41,6 @@
 
 (test :doc
   (fn []
-    (-> (doc {:lang :en} [:strong "hello & world"])
-        expect
-        (.toEqual "<!doctype html><html lang=\"en\"><strong>hello &amp; world</strong></html>\n"))))
+    (assert.equal
+      (doc {:lang :en} [:strong "hello & world"])
+      "<!doctype html><html lang=\"en\"><strong>hello &amp; world</strong></html>\n")))
