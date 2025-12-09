@@ -1,5 +1,22 @@
 // @bun
+var __create = Object.create;
+var __getProtoOf = Object.getPrototypeOf;
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __toESM = (mod, isNodeMode, target) => {
+  target = mod != null ? __create(__getProtoOf(mod)) : {};
+  const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
+  for (let key of __getOwnPropNames(mod))
+    if (!__hasOwnProp.call(to, key))
+      __defProp(to, key, {
+        get: () => mod[key],
+        enumerable: true
+      });
+  return to;
+};
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __require = import.meta.require;
 
 // node_modules/source-map-js/lib/base64.js
 var require_base64 = __commonJS((exports) => {
@@ -42,19 +59,19 @@ var require_base64 = __commonJS((exports) => {
 
 // node_modules/source-map-js/lib/base64-vlq.js
 var require_base64_vlq = __commonJS((exports) => {
-  var toVLQSigned = function(aValue) {
-    return aValue < 0 ? (-aValue << 1) + 1 : (aValue << 1) + 0;
-  };
-  var fromVLQSigned = function(aValue) {
-    var isNegative = (aValue & 1) === 1;
-    var shifted = aValue >> 1;
-    return isNegative ? -shifted : shifted;
-  };
   var base64 = require_base64();
   var VLQ_BASE_SHIFT = 5;
   var VLQ_BASE = 1 << VLQ_BASE_SHIFT;
   var VLQ_BASE_MASK = VLQ_BASE - 1;
   var VLQ_CONTINUATION_BIT = VLQ_BASE;
+  function toVLQSigned(aValue) {
+    return aValue < 0 ? (-aValue << 1) + 1 : (aValue << 1) + 0;
+  }
+  function fromVLQSigned(aValue) {
+    var isNegative = (aValue & 1) === 1;
+    var shifted = aValue >> 1;
+    return isNegative ? -shifted : shifted;
+  }
   exports.encode = function base64VLQ_encode(aValue) {
     var encoded = "";
     var digit;
@@ -94,7 +111,7 @@ var require_base64_vlq = __commonJS((exports) => {
 
 // node_modules/source-map-js/lib/util.js
 var require_util = __commonJS((exports) => {
-  var getArg = function(aArgs, aName, aDefaultValue) {
+  function getArg(aArgs, aName, aDefaultValue) {
     if (aName in aArgs) {
       return aArgs[aName];
     } else if (arguments.length === 3) {
@@ -102,8 +119,11 @@ var require_util = __commonJS((exports) => {
     } else {
       throw new Error('"' + aName + '" is a required argument.');
     }
-  };
-  var urlParse = function(aUrl) {
+  }
+  exports.getArg = getArg;
+  var urlRegexp = /^(?:([\w+\-.]+):)?\/\/(?:(\w+:\w+)@)?([\w.-]*)(?::(\d+))?(.*)$/;
+  var dataUrlRegexp = /^data:.+\,.+$/;
+  function urlParse(aUrl) {
     var match = aUrl.match(urlRegexp);
     if (!match) {
       return null;
@@ -115,8 +135,9 @@ var require_util = __commonJS((exports) => {
       port: match[4],
       path: match[5]
     };
-  };
-  var urlGenerate = function(aParsedUrl) {
+  }
+  exports.urlParse = urlParse;
+  function urlGenerate(aParsedUrl) {
     var url = "";
     if (aParsedUrl.scheme) {
       url += aParsedUrl.scheme + ":";
@@ -135,8 +156,10 @@ var require_util = __commonJS((exports) => {
       url += aParsedUrl.path;
     }
     return url;
-  };
-  var lruMemoize = function(f) {
+  }
+  exports.urlGenerate = urlGenerate;
+  var MAX_CACHED_INPUTS = 32;
+  function lruMemoize(f) {
     var cache = [];
     return function(input) {
       for (var i = 0;i < cache.length; i++) {
@@ -157,246 +180,7 @@ var require_util = __commonJS((exports) => {
       }
       return result;
     };
-  };
-  var join = function(aRoot, aPath) {
-    if (aRoot === "") {
-      aRoot = ".";
-    }
-    if (aPath === "") {
-      aPath = ".";
-    }
-    var aPathUrl = urlParse(aPath);
-    var aRootUrl = urlParse(aRoot);
-    if (aRootUrl) {
-      aRoot = aRootUrl.path || "/";
-    }
-    if (aPathUrl && !aPathUrl.scheme) {
-      if (aRootUrl) {
-        aPathUrl.scheme = aRootUrl.scheme;
-      }
-      return urlGenerate(aPathUrl);
-    }
-    if (aPathUrl || aPath.match(dataUrlRegexp)) {
-      return aPath;
-    }
-    if (aRootUrl && !aRootUrl.host && !aRootUrl.path) {
-      aRootUrl.host = aPath;
-      return urlGenerate(aRootUrl);
-    }
-    var joined = aPath.charAt(0) === "/" ? aPath : normalize(aRoot.replace(/\/+$/, "") + "/" + aPath);
-    if (aRootUrl) {
-      aRootUrl.path = joined;
-      return urlGenerate(aRootUrl);
-    }
-    return joined;
-  };
-  var relative = function(aRoot, aPath) {
-    if (aRoot === "") {
-      aRoot = ".";
-    }
-    aRoot = aRoot.replace(/\/$/, "");
-    var level = 0;
-    while (aPath.indexOf(aRoot + "/") !== 0) {
-      var index = aRoot.lastIndexOf("/");
-      if (index < 0) {
-        return aPath;
-      }
-      aRoot = aRoot.slice(0, index);
-      if (aRoot.match(/^([^\/]+:\/)?\/*$/)) {
-        return aPath;
-      }
-      ++level;
-    }
-    return Array(level + 1).join("../") + aPath.substr(aRoot.length + 1);
-  };
-  var identity = function(s) {
-    return s;
-  };
-  var toSetString = function(aStr) {
-    if (isProtoString(aStr)) {
-      return "$" + aStr;
-    }
-    return aStr;
-  };
-  var fromSetString = function(aStr) {
-    if (isProtoString(aStr)) {
-      return aStr.slice(1);
-    }
-    return aStr;
-  };
-  var isProtoString = function(s) {
-    if (!s) {
-      return false;
-    }
-    var length = s.length;
-    if (length < 9) {
-      return false;
-    }
-    if (s.charCodeAt(length - 1) !== 95 || s.charCodeAt(length - 2) !== 95 || s.charCodeAt(length - 3) !== 111 || s.charCodeAt(length - 4) !== 116 || s.charCodeAt(length - 5) !== 111 || s.charCodeAt(length - 6) !== 114 || s.charCodeAt(length - 7) !== 112 || s.charCodeAt(length - 8) !== 95 || s.charCodeAt(length - 9) !== 95) {
-      return false;
-    }
-    for (var i = length - 10;i >= 0; i--) {
-      if (s.charCodeAt(i) !== 36) {
-        return false;
-      }
-    }
-    return true;
-  };
-  var compareByOriginalPositions = function(mappingA, mappingB, onlyCompareOriginal) {
-    var cmp = strcmp(mappingA.source, mappingB.source);
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalLine - mappingB.originalLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalColumn - mappingB.originalColumn;
-    if (cmp !== 0 || onlyCompareOriginal) {
-      return cmp;
-    }
-    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.generatedLine - mappingB.generatedLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    return strcmp(mappingA.name, mappingB.name);
-  };
-  var compareByOriginalPositionsNoSource = function(mappingA, mappingB, onlyCompareOriginal) {
-    var cmp;
-    cmp = mappingA.originalLine - mappingB.originalLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalColumn - mappingB.originalColumn;
-    if (cmp !== 0 || onlyCompareOriginal) {
-      return cmp;
-    }
-    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.generatedLine - mappingB.generatedLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    return strcmp(mappingA.name, mappingB.name);
-  };
-  var compareByGeneratedPositionsDeflated = function(mappingA, mappingB, onlyCompareGenerated) {
-    var cmp = mappingA.generatedLine - mappingB.generatedLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
-    if (cmp !== 0 || onlyCompareGenerated) {
-      return cmp;
-    }
-    cmp = strcmp(mappingA.source, mappingB.source);
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalLine - mappingB.originalLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalColumn - mappingB.originalColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    return strcmp(mappingA.name, mappingB.name);
-  };
-  var compareByGeneratedPositionsDeflatedNoLine = function(mappingA, mappingB, onlyCompareGenerated) {
-    var cmp = mappingA.generatedColumn - mappingB.generatedColumn;
-    if (cmp !== 0 || onlyCompareGenerated) {
-      return cmp;
-    }
-    cmp = strcmp(mappingA.source, mappingB.source);
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalLine - mappingB.originalLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalColumn - mappingB.originalColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    return strcmp(mappingA.name, mappingB.name);
-  };
-  var strcmp = function(aStr1, aStr2) {
-    if (aStr1 === aStr2) {
-      return 0;
-    }
-    if (aStr1 === null) {
-      return 1;
-    }
-    if (aStr2 === null) {
-      return -1;
-    }
-    if (aStr1 > aStr2) {
-      return 1;
-    }
-    return -1;
-  };
-  var compareByGeneratedPositionsInflated = function(mappingA, mappingB) {
-    var cmp = mappingA.generatedLine - mappingB.generatedLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = strcmp(mappingA.source, mappingB.source);
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalLine - mappingB.originalLine;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    cmp = mappingA.originalColumn - mappingB.originalColumn;
-    if (cmp !== 0) {
-      return cmp;
-    }
-    return strcmp(mappingA.name, mappingB.name);
-  };
-  var parseSourceMapInput = function(str) {
-    return JSON.parse(str.replace(/^\)]}'[^\n]*\n/, ""));
-  };
-  var computeSourceURL = function(sourceRoot, sourceURL, sourceMapURL) {
-    sourceURL = sourceURL || "";
-    if (sourceRoot) {
-      if (sourceRoot[sourceRoot.length - 1] !== "/" && sourceURL[0] !== "/") {
-        sourceRoot += "/";
-      }
-      sourceURL = sourceRoot + sourceURL;
-    }
-    if (sourceMapURL) {
-      var parsed = urlParse(sourceMapURL);
-      if (!parsed) {
-        throw new Error("sourceMapURL could not be parsed");
-      }
-      if (parsed.path) {
-        var index = parsed.path.lastIndexOf("/");
-        if (index >= 0) {
-          parsed.path = parsed.path.substring(0, index + 1);
-        }
-      }
-      sourceURL = join(urlGenerate(parsed), sourceURL);
-    }
-    return normalize(sourceURL);
-  };
-  exports.getArg = getArg;
-  var urlRegexp = /^(?:([\w+\-.]+):)?\/\/(?:(\w+:\w+)@)?([\w.-]*)(?::(\d+))?(.*)$/;
-  var dataUrlRegexp = /^data:.+\,.+$/;
-  exports.urlParse = urlParse;
-  exports.urlGenerate = urlGenerate;
-  var MAX_CACHED_INPUTS = 32;
+  }
   var normalize = lruMemoize(function normalize(aPath) {
     var path = aPath;
     var url = urlParse(aPath);
@@ -450,35 +234,268 @@ var require_util = __commonJS((exports) => {
     return path;
   });
   exports.normalize = normalize;
+  function join(aRoot, aPath) {
+    if (aRoot === "") {
+      aRoot = ".";
+    }
+    if (aPath === "") {
+      aPath = ".";
+    }
+    var aPathUrl = urlParse(aPath);
+    var aRootUrl = urlParse(aRoot);
+    if (aRootUrl) {
+      aRoot = aRootUrl.path || "/";
+    }
+    if (aPathUrl && !aPathUrl.scheme) {
+      if (aRootUrl) {
+        aPathUrl.scheme = aRootUrl.scheme;
+      }
+      return urlGenerate(aPathUrl);
+    }
+    if (aPathUrl || aPath.match(dataUrlRegexp)) {
+      return aPath;
+    }
+    if (aRootUrl && !aRootUrl.host && !aRootUrl.path) {
+      aRootUrl.host = aPath;
+      return urlGenerate(aRootUrl);
+    }
+    var joined = aPath.charAt(0) === "/" ? aPath : normalize(aRoot.replace(/\/+$/, "") + "/" + aPath);
+    if (aRootUrl) {
+      aRootUrl.path = joined;
+      return urlGenerate(aRootUrl);
+    }
+    return joined;
+  }
   exports.join = join;
   exports.isAbsolute = function(aPath) {
     return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
   };
+  function relative(aRoot, aPath) {
+    if (aRoot === "") {
+      aRoot = ".";
+    }
+    aRoot = aRoot.replace(/\/$/, "");
+    var level = 0;
+    while (aPath.indexOf(aRoot + "/") !== 0) {
+      var index = aRoot.lastIndexOf("/");
+      if (index < 0) {
+        return aPath;
+      }
+      aRoot = aRoot.slice(0, index);
+      if (aRoot.match(/^([^\/]+:\/)?\/*$/)) {
+        return aPath;
+      }
+      ++level;
+    }
+    return Array(level + 1).join("../") + aPath.substr(aRoot.length + 1);
+  }
   exports.relative = relative;
   var supportsNullProto = function() {
     var obj = Object.create(null);
     return !("__proto__" in obj);
   }();
+  function identity(s) {
+    return s;
+  }
+  function toSetString(aStr) {
+    if (isProtoString(aStr)) {
+      return "$" + aStr;
+    }
+    return aStr;
+  }
   exports.toSetString = supportsNullProto ? identity : toSetString;
+  function fromSetString(aStr) {
+    if (isProtoString(aStr)) {
+      return aStr.slice(1);
+    }
+    return aStr;
+  }
   exports.fromSetString = supportsNullProto ? identity : fromSetString;
+  function isProtoString(s) {
+    if (!s) {
+      return false;
+    }
+    var length = s.length;
+    if (length < 9) {
+      return false;
+    }
+    if (s.charCodeAt(length - 1) !== 95 || s.charCodeAt(length - 2) !== 95 || s.charCodeAt(length - 3) !== 111 || s.charCodeAt(length - 4) !== 116 || s.charCodeAt(length - 5) !== 111 || s.charCodeAt(length - 6) !== 114 || s.charCodeAt(length - 7) !== 112 || s.charCodeAt(length - 8) !== 95 || s.charCodeAt(length - 9) !== 95) {
+      return false;
+    }
+    for (var i = length - 10;i >= 0; i--) {
+      if (s.charCodeAt(i) !== 36) {
+        return false;
+      }
+    }
+    return true;
+  }
+  function compareByOriginalPositions(mappingA, mappingB, onlyCompareOriginal) {
+    var cmp = strcmp(mappingA.source, mappingB.source);
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalLine - mappingB.originalLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalColumn - mappingB.originalColumn;
+    if (cmp !== 0 || onlyCompareOriginal) {
+      return cmp;
+    }
+    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.generatedLine - mappingB.generatedLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return strcmp(mappingA.name, mappingB.name);
+  }
   exports.compareByOriginalPositions = compareByOriginalPositions;
+  function compareByOriginalPositionsNoSource(mappingA, mappingB, onlyCompareOriginal) {
+    var cmp;
+    cmp = mappingA.originalLine - mappingB.originalLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalColumn - mappingB.originalColumn;
+    if (cmp !== 0 || onlyCompareOriginal) {
+      return cmp;
+    }
+    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.generatedLine - mappingB.generatedLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return strcmp(mappingA.name, mappingB.name);
+  }
   exports.compareByOriginalPositionsNoSource = compareByOriginalPositionsNoSource;
+  function compareByGeneratedPositionsDeflated(mappingA, mappingB, onlyCompareGenerated) {
+    var cmp = mappingA.generatedLine - mappingB.generatedLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
+    if (cmp !== 0 || onlyCompareGenerated) {
+      return cmp;
+    }
+    cmp = strcmp(mappingA.source, mappingB.source);
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalLine - mappingB.originalLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalColumn - mappingB.originalColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return strcmp(mappingA.name, mappingB.name);
+  }
   exports.compareByGeneratedPositionsDeflated = compareByGeneratedPositionsDeflated;
+  function compareByGeneratedPositionsDeflatedNoLine(mappingA, mappingB, onlyCompareGenerated) {
+    var cmp = mappingA.generatedColumn - mappingB.generatedColumn;
+    if (cmp !== 0 || onlyCompareGenerated) {
+      return cmp;
+    }
+    cmp = strcmp(mappingA.source, mappingB.source);
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalLine - mappingB.originalLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalColumn - mappingB.originalColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return strcmp(mappingA.name, mappingB.name);
+  }
   exports.compareByGeneratedPositionsDeflatedNoLine = compareByGeneratedPositionsDeflatedNoLine;
+  function strcmp(aStr1, aStr2) {
+    if (aStr1 === aStr2) {
+      return 0;
+    }
+    if (aStr1 === null) {
+      return 1;
+    }
+    if (aStr2 === null) {
+      return -1;
+    }
+    if (aStr1 > aStr2) {
+      return 1;
+    }
+    return -1;
+  }
+  function compareByGeneratedPositionsInflated(mappingA, mappingB) {
+    var cmp = mappingA.generatedLine - mappingB.generatedLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.generatedColumn - mappingB.generatedColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = strcmp(mappingA.source, mappingB.source);
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalLine - mappingB.originalLine;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    cmp = mappingA.originalColumn - mappingB.originalColumn;
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return strcmp(mappingA.name, mappingB.name);
+  }
   exports.compareByGeneratedPositionsInflated = compareByGeneratedPositionsInflated;
+  function parseSourceMapInput(str) {
+    return JSON.parse(str.replace(/^\)]}'[^\n]*\n/, ""));
+  }
   exports.parseSourceMapInput = parseSourceMapInput;
+  function computeSourceURL(sourceRoot, sourceURL, sourceMapURL) {
+    sourceURL = sourceURL || "";
+    if (sourceRoot) {
+      if (sourceRoot[sourceRoot.length - 1] !== "/" && sourceURL[0] !== "/") {
+        sourceRoot += "/";
+      }
+      sourceURL = sourceRoot + sourceURL;
+    }
+    if (sourceMapURL) {
+      var parsed = urlParse(sourceMapURL);
+      if (!parsed) {
+        throw new Error("sourceMapURL could not be parsed");
+      }
+      if (parsed.path) {
+        var index = parsed.path.lastIndexOf("/");
+        if (index >= 0) {
+          parsed.path = parsed.path.substring(0, index + 1);
+        }
+      }
+      sourceURL = join(urlGenerate(parsed), sourceURL);
+    }
+    return normalize(sourceURL);
+  }
   exports.computeSourceURL = computeSourceURL;
 });
 
 // node_modules/source-map-js/lib/array-set.js
 var require_array_set = __commonJS((exports) => {
-  var ArraySet = function() {
-    this._array = [];
-    this._set = hasNativeMap ? new Map : Object.create(null);
-  };
   var util = require_util();
   var has = Object.prototype.hasOwnProperty;
   var hasNativeMap = typeof Map !== "undefined";
+  function ArraySet() {
+    this._array = [];
+    this._set = hasNativeMap ? new Map : Object.create(null);
+  }
   ArraySet.fromArray = function ArraySet_fromArray(aArray, aAllowDuplicates) {
     var set = new ArraySet;
     for (var i = 0, len = aArray.length;i < len; i++) {
@@ -540,19 +557,19 @@ var require_array_set = __commonJS((exports) => {
 
 // node_modules/source-map-js/lib/mapping-list.js
 var require_mapping_list = __commonJS((exports) => {
-  var generatedPositionAfter = function(mappingA, mappingB) {
+  var util = require_util();
+  function generatedPositionAfter(mappingA, mappingB) {
     var lineA = mappingA.generatedLine;
     var lineB = mappingB.generatedLine;
     var columnA = mappingA.generatedColumn;
     var columnB = mappingB.generatedColumn;
     return lineB > lineA || lineB == lineA && columnB >= columnA || util.compareByGeneratedPositionsInflated(mappingA, mappingB) <= 0;
-  };
-  var MappingList = function() {
+  }
+  function MappingList() {
     this._array = [];
     this._sorted = true;
     this._last = { generatedLine: -1, generatedColumn: 0 };
-  };
-  var util = require_util();
+  }
   MappingList.prototype.unsortedForEach = function MappingList_forEach(aCallback, aThisArg) {
     this._array.forEach(aCallback, aThisArg);
   };
@@ -576,7 +593,11 @@ var require_mapping_list = __commonJS((exports) => {
 });
 
 // node_modules/source-map-js/lib/source-map-generator.js
-var SourceMapGenerator = function(aArgs) {
+var base64VLQ = require_base64_vlq();
+var util = require_util();
+var ArraySet = require_array_set().ArraySet;
+var MappingList = require_mapping_list().MappingList;
+function SourceMapGenerator(aArgs) {
   if (!aArgs) {
     aArgs = {};
   }
@@ -588,11 +609,7 @@ var SourceMapGenerator = function(aArgs) {
   this._names = new ArraySet;
   this._mappings = new MappingList;
   this._sourcesContents = null;
-};
-var base64VLQ = require_base64_vlq();
-var util = require_util();
-var ArraySet = require_array_set().ArraySet;
-var MappingList = require_mapping_list().MappingList;
+}
 SourceMapGenerator.prototype._version = 3;
 SourceMapGenerator.fromSourceMap = function SourceMapGenerator_fromSourceMap(aSourceMapConsumer, generatorOps) {
   var sourceRoot = aSourceMapConsumer.sourceRoot;
@@ -689,7 +706,7 @@ SourceMapGenerator.prototype.applySourceMap = function SourceMapGenerator_applyS
   var sourceFile = aSourceFile;
   if (aSourceFile == null) {
     if (aSourceMapConsumer.file == null) {
-      throw new Error('SourceMapGenerator.prototype.applySourceMap requires either an explicit source file, or the source map\'s "file" property. Both were omitted.');
+      throw new Error("SourceMapGenerator.prototype.applySourceMap requires either an explicit source file, " + `or the source map's "file" property. Both were omitted.`);
     }
     sourceFile = aSourceMapConsumer.file;
   }
@@ -746,7 +763,7 @@ SourceMapGenerator.prototype.applySourceMap = function SourceMapGenerator_applyS
 };
 SourceMapGenerator.prototype._validateMapping = function SourceMapGenerator_validateMapping(aGenerated, aOriginal, aSource, aName) {
   if (aOriginal && typeof aOriginal.line !== "number" && typeof aOriginal.column !== "number") {
-    var message = "original.line and original.column are not numbers -- you probably meant to omit the original mapping entirely and only map the generated position. If so, pass null for the original mapping instead of an object with empty or null values.";
+    var message = "original.line and original.column are not numbers -- you probably meant to omit " + "the original mapping entirely and only map the generated position. If so, pass " + "null for the original mapping instead of an object with empty or null values.";
     if (this._ignoreInvalidMapping) {
       if (typeof console !== "undefined" && console.warn) {
         console.warn(message);
@@ -865,8 +882,94 @@ var $SourceMapGenerator = SourceMapGenerator;
 // src/bootstrap.tmp.mjs
 var symbolBreaker = ["(", ")", "[", "]", "{", "}"];
 var single = [...symbolBreaker, "@", "#", ":", "'", "~", ","];
-var whitespace = [" ", "\r", "\n", "\t"];
-var builtinMacros = `\n(macro array? [v]\n  '(Array.isArray ,v))\n\n(macro boolean? [v]\n  '(= (typeof ,v) :boolean))\n\n(macro object? [v]\n  '(= (typeof ,v) :object))\n\n(macro number? [v]\n  '(= (typeof ,v) :number))\n\n(macro bigint? [v]\n  '(= (typeof ,v) :bigint))\n\n(macro string? [v]\n  '(= (typeof ,v) :string))\n\n(macro zero? [v]\n  '(= ,v 0))\n\n(macro pos? [v]\n  '(> ,v 0))\n\n(macro neg? [v]\n  '(< ,v 0))\n\n(macro true? [v]\n  '(= ,v true))\n\n(macro false? [v]\n  '(= ,v false))\n\n(macro undefined? [v]\n  '(= (typeof ,v) :undefined))\n\n(macro defined? [v]\n  '(not= (typeof ,v) :undefined))\n\n(macro isa? [v k]\n  '(instanceof ,v ,k))\n\n(macro null? [v]\n  '(= ,v null))\n\n(macro inc [v]\n  '(+ ,v 1))\n\n(macro dec [v]\n  '(- ,v 1))\n\n(macro when [cond ...body]\n  '(if ,cond\n     (do ,...body)))\n\n(macro -> [v ...forms]\n  (.reduce forms\n           (fn [c f]\n             (if (= f.kind :list)\n               (do\n                 (.splice f 1 0 c)\n                 f)\n               '(,f ,c)))\n           v))\n\n(macro if-let [[form tst] then el]\n  '(let [temp# ,tst]\n     (if temp#\n       (let [,form temp#]\n         ,then)\n       ,el)))\n\n(macro when-let [[form tst] ...body]\n  '(let [temp# ,tst]\n     (if temp#\n       (let [,form temp#]\n         ,...body))))\n\n(macro doto [x ...forms]\n  '(let [gx# ,x]\n     ,(... (forms.map #(if (= \$.kind :list)\n                         '(,(. \$ 0) gx# ,(... (\$.splice 1)))\n                         '(,\$ gx#))))\n     gx#))\n`;
+var whitespace = [" ", "\r", `
+`, "\t"];
+var builtinMacros = `
+(macro array? [v]
+  '(Array.isArray ,v))
+
+(macro boolean? [v]
+  '(= (typeof ,v) :boolean))
+
+(macro object? [v]
+  '(= (typeof ,v) :object))
+
+(macro number? [v]
+  '(= (typeof ,v) :number))
+
+(macro bigint? [v]
+  '(= (typeof ,v) :bigint))
+
+(macro string? [v]
+  '(= (typeof ,v) :string))
+
+(macro zero? [v]
+  '(= ,v 0))
+
+(macro pos? [v]
+  '(> ,v 0))
+
+(macro neg? [v]
+  '(< ,v 0))
+
+(macro true? [v]
+  '(= ,v true))
+
+(macro false? [v]
+  '(= ,v false))
+
+(macro undefined? [v]
+  '(= (typeof ,v) :undefined))
+
+(macro defined? [v]
+  '(not= (typeof ,v) :undefined))
+
+(macro isa? [v k]
+  '(instanceof ,v ,k))
+
+(macro null? [v]
+  '(= ,v null))
+
+(macro inc [v]
+  '(+ ,v 1))
+
+(macro dec [v]
+  '(- ,v 1))
+
+(macro when [cond ...body]
+  '(if ,cond
+     (do ,...body)))
+
+(macro -> [v ...forms]
+  (.reduce forms
+           (fn [c f]
+             (if (= f.kind :list)
+               (do
+                 (.splice f 1 0 c)
+                 f)
+               '(,f ,c)))
+           v))
+
+(macro if-let [[form tst] then el]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,then)
+       ,el)))
+
+(macro when-let [[form tst] ...body]
+  '(let [temp# ,tst]
+     (if temp#
+       (let [,form temp#]
+         ,...body))))
+
+(macro doto [x ...forms]
+  '(let [gx# ,x]
+     ,(... (forms.map #(if (= $.kind :list)
+                         '(,(. $ 0) gx# ,(... ($.splice 1)))
+                         '(,$ gx#))))
+     gx#))
+`;
 var get_DASH_source = (ctx) => {
   return ctx.source ?? "<anonymous>";
 };
@@ -934,7 +1037,8 @@ var readString = (ctx, quote, input, len, pos) => {
           ;
           ;
           break;
-        case "\n":
+        case `
+`:
           pos.line++;
           pos.column = 0;
           buf.push(input.substring(start, end), "\\n");
@@ -944,7 +1048,8 @@ var readString = (ctx, quote, input, len, pos) => {
         case "\\":
           end++;
           pos.offset++;
-          if (input[end] === "\n") {
+          if (input[end] === `
+`) {
             pos.line++;
             pos.column = 0;
           } else {
@@ -1014,7 +1119,8 @@ var readEOL = (ctx, input, len, pos) => {
     for (let end = start;end < len; end++) {
       pos.offset++;
       pos.column++;
-      if (input[end] === "\n") {
+      if (input[end] === `
+`) {
         pos.line++;
         pos.column = 0;
         return input.substring(start, end);
@@ -1033,11 +1139,13 @@ var tokens = function* (ctx, input) {
     while (pos.offset < len) {
       {
         let c = input[pos.offset];
-        if (c === "\n") {
+        if (c === `
+`) {
           pos.line++;
           pos.column = 0;
           ctx.pos = { ...pos };
-          yield { kind: "newline", value: "\n", pos };
+          yield { kind: "newline", value: `
+`, pos };
           pos.offset++;
           continue;
         }
@@ -1067,9 +1175,9 @@ var tokens = function* (ctx, input) {
           continue;
         }
         switch (c) {
-          case "\"":
+          case '"':
             start = { ...pos };
-            value = readString(ctx, "\"", input, len, pos);
+            value = readString(ctx, '"', input, len, pos);
             ctx.pos = { ...start };
             yield { kind: "string", value, pos: start };
             ;
@@ -1300,9 +1408,9 @@ var transpileNodeArray = function* (ctx, node, hoist) {
   return yield "]";
 };
 var transpileNodeString = function* (ctx, token) {
-  yield ["\"", token];
+  yield ['"', token];
   yield token.value;
-  return yield "\"";
+  return yield '"';
 };
 var exprStart = "${";
 var exprEnd = "}";
@@ -2411,7 +2519,8 @@ var count_DASH_newlines = (s) => {
   {
     let l = 0;
     for (let c of s) {
-      if (c === "\n") {
+      if (c === `
+`) {
         l++;
       }
     }
@@ -2455,7 +2564,8 @@ var transpileStr = (code, config = {}) => {
     {
       let mapJSON = map.toJSON();
       if (config.sourcemap === "inline") {
-        parts.push("\n//# sourceMappingURL=data:application/json;base64,", btoa(JSON.stringify(mapJSON)));
+        parts.push(`
+//# sourceMappingURL=data:application/json;base64,`, btoa(JSON.stringify(mapJSON)));
       }
       return { code: parts.join(""), map: mapJSON };
     }
