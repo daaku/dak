@@ -1,7 +1,7 @@
-(import [:node:fs/promises [opendir]]
+(import [:node:fs/promises [opendir readFile]]
         [:node:path [join]]
         [:node:url [fileURLToPath]]
-        [:bun:test [test expect]]
+        [:node:test [test]]
         [:../src/transpiler.dak [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath (join "../__data__/bluewhale")))
@@ -13,11 +13,11 @@
 
 (for@ [ent @(opendir root)]
   (test ent.name
-    (fn@ []
+    (fn@ [t]
       (let [out (try
-                   @((-> (join root ent.name) Bun.file .text await
+                   @((-> (join root ent.name) (readFile {:encoding :utf8}) await
                          (transpileStr {:source ent.name :sourcemap :inline})
                          (. :code)
                          AsyncFunction))
                    (catch e `${e.message}\n\n--\n\n${(sanitize-stack e.stack)}`))]
-        (-> out expect .toMatchSnapshot)))))
+        (t.assert.snapshot out)))))
