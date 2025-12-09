@@ -1400,8 +1400,22 @@
                  :loader :js}))})
 
 ; special loading mode when loaded as bootstrap.mjs
-(if (import.meta.url.endsWith :bootstrap.mjs)
+(if (and (defined? Bun) (import.meta.url.endsWith :bootstrap.mjs))
   (Bun.plugin (bunPlugin)))
+
+(if (and (undefined? Bun) (import.meta.url.endsWith :bootstrap.mjs))
+  (let [{:keys [registerHooks]} @(import :node:module)
+        {:keys [readFileSync]} @(import :node:fs)
+        {:keys [fileURLToPath]} @(import :node:url)]
+    (registerHooks
+      {:load (fn [url ctx nextLoad]
+                (if (url.endsWith ".dak")
+                  {:format :module
+                   :shortCircuit true
+                   :source (-> url fileURLToPath (readFileSync {:encoding :utf8})
+                               (transpileStr {:source url :sourcemap :inline})
+                               (. :code))}
+                  (nextLoad url ctx)))})))
 
 ; to regenerate, simply run:
 ; bun run ./src/transpiler.dak

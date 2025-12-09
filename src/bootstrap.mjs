@@ -2578,8 +2578,22 @@ var bunPlugin = () => {
     });
   } };
 };
-if (import.meta.url.endsWith("bootstrap.mjs")) {
+if (typeof Bun !== "undefined" && import.meta.url.endsWith("bootstrap.mjs")) {
   Bun.plugin(bunPlugin());
+}
+if (typeof Bun === "undefined" && import.meta.url.endsWith("bootstrap.mjs")) {
+  {
+    let { registerHooks } = await import("module");
+    let { readFileSync } = await import("fs");
+    let { fileURLToPath } = await import("url");
+    registerHooks({ load: (url, ctx, nextLoad) => {
+      if (url.endsWith(".dak")) {
+        return { format: "module", shortCircuit: true, source: transpileStr(readFileSync(fileURLToPath(url), { encoding: "utf8" }), { source: url, sourcemap: "inline" }).code };
+      } else {
+        return nextLoad(url, ctx);
+      }
+    } });
+  }
 }
 if (import.meta.main) {
   {
