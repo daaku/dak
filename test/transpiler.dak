@@ -1,4 +1,5 @@
-(import [:bun:test [test expect]]
+(import [:node:test [test]]
+        [:node:assert/strict :as assert]
         [:../src/transpiler.dak [transpile transpileStr]])
 
 (fn tostr [code log]
@@ -14,7 +15,7 @@
 
 (test "transpileStr"
   (fn []
-    (-> (. (transpileStr ":hello") :code) expect (.toEqual `"hello";`))))
+    (-> (. (transpileStr ":hello") :code) (assert.equal `"hello";`))))
 
 (test "transpileStr sourcemap: inline"
   (fn []
@@ -22,13 +23,12 @@
       (.includes
         (. (transpileStr "hello" {:sourcemap :inline}) :code)
         "sourceMappingURL=data:application/json;base64")
-      expect
-      (.toBeTruthy))))
+      assert.ok)))
 
 (macro good [name input output]
   '(test ,name
      (fn []
-       (-> (tostr ,input) expect (.toEqual ,output)))))
+       (-> (tostr ,input) (assert.equal ,output)))))
 
 (macro bad [name input msg]
   '(test ,name
@@ -39,7 +39,7 @@
          (try
            (set output# (tostr input#))
            (catch e#
-             (-> e#.message expect (.toEqual msg#))
+             (-> e#.message (assert.equal msg#))
              (return)))
          (throw (Error (str "was expecting error: " msg#
                             "\nINPUT:\n" input# "\nOUTPUT:\n" output#)))))))
