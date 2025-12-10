@@ -2,7 +2,7 @@ name: Build
 on: [push, pull_request]
 jobs:
   build:
-    name: bun / ${{ matrix.os }}
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -10,11 +10,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v6
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: ./src/transpiler.dak
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+      - run: node install
+      # - run: ./src/transpiler.dak
       - run: git status --porcelain
-      - run: bun test $(ls ./test/*.dak)
+      - run: node --import=./src/bootstrap.mjs --enable-source-maps --test ./test/*.dak
 
   deploy:
     name: website
