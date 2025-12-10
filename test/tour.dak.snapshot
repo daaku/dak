@@ -30,6 +30,10 @@ exports[`lambda.dak 1`] = `
 "prn([1,2,3,].map(((lambda__0)=>{return (lambda__0**2)})))\\nprn([\\"a\\",\\"b\\",\\"c\\",].map(((lambda__1,lambda__2)=>{return (lambda__1+lambda__2)})))\\n((...lambda_rest__3)=>{return prn(lambda_rest__3)})(\\"a\\",\\"b\\",\\"c\\")\\nprn((()=>{return 42\\n})())\\n"
 `;
 
+exports[`literals.dak 1`] = `
+"prn(42)\\nprn(4.2)\\nprn(0o1234)\\nprn(0x1234)\\nprn(0b1010)\\nprn(1n)\\nprn(3.1415926)\\nprn(.123456789)\\nprn(3.1E+12)\\nprn(.1e-23)\\nprn(\\"hello world\\")\\nprn(\\"hello\\\\nworld\\")\\nprn(\\"hello\\\\nworld\\")\\nprn(\\"\\\\uD83D\\\\uDE00\\")\\nprn(\\"hello\\")\\nprn(\\"hello_world\\")\\nprn(\\"hello-world\\")\\nprn(/foo/)\\nprn(/foo/g)\\nprn([1,2,3,])\\nprn([1,\\"a\\",[2,\\"b\\",],])\\nprn({hello:\\"world\\",})\\nprn({answer:42,})\\nprn(true,false,null,undefined)\\n"
+`;
+
 exports[`loops.dak 1`] = `
 "{let i=5\\nwhile(i>0){prn(\\"while:\\",(i--))\\n}\\n}\\nfor(let i=0\\ni<5\\ni++){prn(\\"for step=1\\",i)\\n}\\nfor(let i=0\\ni<10\\ni+=2){prn(\\"for step=2\\",i)\\n}\\nconst vs=[\\"a\\",\\"b\\",\\"c\\",]\\n\\nfor(let v of vs){prn(\\"for-of:\\",v)\\n}\\nconst os=[{name:\\"yoda\\",age:900,},{name:\\"luke\\",age:90,},]\\n\\nfor(let {name,age} of os){prn(name,\\"is\\",age,\\"years old\\")\\n}\\nconst yoda={name:\\"yoda\\",age:900,}\\n\\nfor(let p in yoda){prn(p,yoda[p])\\n}\\nconst ps=[Promise.resolve(1),Promise.resolve(2),]\\n\\nfor await(let v of ps){prn(\\"for@\\",v)\\n}\\nfor(let i=0\\ni<5\\ni++){prn(\\"breaking\\",i)\\nbreak\\n}\\nfor(let i=0\\ni<5\\ni++){if((i%2)===0){prn(\\"even\\",i)}else{continue}\\n}\\n"
 `;

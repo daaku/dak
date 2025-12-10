@@ -7,9 +7,6 @@
 (const tour-dir (-> import.meta.url fileURLToPath (join "../../www/tour")))
 
 (for@ [ent @(opendir tour-dir)]
-  ; TODO: fixme in Bun?
-  (if (= ent.name :literals.dak)
-    (continue))
   (test ent.name
     (fn@ [t]
       (-> (join tour-dir ent.name) (readFile {:encoding :utf8}) await
