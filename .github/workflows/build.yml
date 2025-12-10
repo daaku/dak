@@ -10,11 +10,12 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v6
         with:
           node-version: latest
-      - run: npm install
-      # - run: ./src/transpiler.dak
+      - run: bun install
+      - run: ./src/transpiler.dak
       - run: git status --porcelain
       - run: node --import=./src/bootstrap.mjs --enable-source-maps --test ./test/*.dak
 
