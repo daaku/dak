@@ -1,0 +1,55 @@
+exports[`async.dak 1`] = `
+"const hello=async(w)=>{return prn(\\"hello\\",w)\\n}\\nawait hello(\\"world\\")\\nawait hello(\\"earth\\")\\nconst ps=[Promise.resolve(1),Promise.resolve(2),]\\n\\nfor await(let v of ps){prn(\\"for@\\",v)\\n}\\n"
+`;
+
+exports[`case.dak 1`] = `
+"for(let i=40\\ni<43\\ni++){switch (i){case 41:prn(i,\\"warm\\")\\nbreak\\ncase 42:prn(i,\\"boom\\")\\nbreak\\ndefault:prn(i,\\"no dice\\")\\nbreak}\\n}\\nconst answer=42\\n\\nlet hoist__0\\nswitch (answer){case 42:hoist__0=\\"boom\\"\\nbreak\\ndefault:hoist__0=\\"no dice\\"\\nbreak}\\nprn(\\"hoisted\\",hoist__0)\\nconst run=(answer)=>{switch (answer){case 41:return \\"warm\\"\\ncase 42:return \\"boom\\"\\ndefault:return \\"no dice\\"\\n}\\n}\\nprn(\\"run returns\\",run(42))\\nlet hoist__1\\nswitch (answer){case 41:case 42:case 43:hoist__1=\\"close-enough\\"\\nbreak\\ndefault:hoist__1=\\"no dice\\"\\nbreak}\\nprn(\\"array\\",hoist__1)\\n"
+`;
+
+exports[`classes.dak 1`] = `
+"class Animal{}\\nclass Dinosaur extends Animal{}\\nconst TRex=class extends Dinosaur{}\\n\\nconst pet=new TRex()\\n\\nprn(\\"instanceof TRex =\\",pet instanceof TRex)\\nprn(\\"isa? Dinosaur =\\",pet instanceof Dinosaur)\\nclass Stego extends Animal{#name\\nconstructor(name){super()\\nthis.#name=name\\nreturn\\n}async greet(){return prn(this.#name,\\"says hello.\\")\\n}}\\nawait new Stego(\\"Barney\\").greet()\\n"
+`;
+
+exports[`conditions.dak 1`] = `
+"const answer=42\\n\\nif(answer===42){prn(\\"simple\\",\\"boom\\")}else{prn(\\"simple\\",\\"no-dice\\")}\\nlet hoist__0\\nif(answer===42){hoist__0=\\"boom\\"}\\nprn(\\"hoisted\\",hoist__0)\\nlet hoist__1\\nif(answer<42){hoist__1=\\"too-low\\"}else if(answer>42){hoist__1=\\"too-high\\"}else if(answer===42){hoist__1=\\"just-right\\"}\\nprn(\\"multiple\\",hoist__1)\\nif(answer===42){prn(\\"when\\",answer)\\nprn(\\"when has an implicit do\\")\\n}\\n{let macro__1=(answer-41)\\nif(macro__1){{let one=macro__1\\nprn(\\"when-let\\",one)\\n}}\\n}\\n"
+`;
+
+exports[`destructuring.dak 1`] = `
+"const answers=[1,2,]\\n\\nconst [answer_DASH_one,answer_DASH_two,]=answers\\n\\nprn(\\"answers:\\",answer_DASH_one,answer_DASH_two)\\nconst jedi={name:\\"yoda\\",age:900,}\\n\\nlet {name,age}=jedi\\nprn(\\"jedi\\",name,age)\\nconst sith={darth:\\"vader\\",}\\n\\nlet {darth,masked=true}=sith\\nprn(\\"sith\\",darth,masked)\\n"
+`;
+
+exports[`functions.dak 1`] = `
+"const add=(a,b)=>{return (a+b)\\n}\\nprn(add(40,1))\\nconst add_DASH_promises=async(a,b)=>{return ((await a)+(await b))\\n}\\nprn((await add_DASH_promises(Promise.resolve(40),Promise.resolve(2))))\\nconst powers=function*(n,count){{let current=1\\nfor(let i=0\\ni<count\\ni++){yield (current*=n)\\n}\\n}\\n}\\nfor(let v of powers(2,5)){prn(v)\\n}\\nconst foo=async function*(a,b){yield ((await a)+1)\\nreturn yield ((await b)+1)\\n}\\nfor await(let v of foo(Promise.resolve(41),Promise.resolve(-43))){prn(v)\\n}\\nexport const plus=(a,b)=>{return (a+b)\\n}\\nexport default ((a,b)=>{return (a-b)\\n})\\nfunction TheClass(a){return this.answer=a\\n}\\nprn(new TheClass(42))\\nconst until=(a)=>{while(true){if((a++)===42){return \\"boom\\"}\\n}\\n}\\nprn(\\"returned\\",until(40))\\nconst it=function*(a){yield (a++)\\nreturn yield* [(a++),(a++),]\\n}\\nfor(let v of it(39)){prn(\\"it:\\",v)\\n}\\n"
+`;
+
+exports[`import.dak 1`] = `
+"import {writeFile} from \\"node:fs\\"\\n\\nimport {readFile} from \\"node:fs\\"\\nimport {dirname} from \\"node:path\\"\\n\\nimport Button from \\"./button.js\\"\\n\\nimport * as ui from \\"./ui.js\\"\\n\\nimport {Button as MainButton,Label as MainLabel} from \\"./main/ui.js\\"\\nimport {Button as AltButton} from \\"./alt/ui.js\\"\\n\\nimport TheDefault,{Label,Button as TheButton} from \\"./main/ui.js\\"\\nimport {relative} from \\"node:path\\"\\n\\n"
+`;
+
+exports[`lambda.dak 1`] = `
+"prn([1,2,3,].map(((lambda__0)=>{return (lambda__0**2)})))\\nprn([\\"a\\",\\"b\\",\\"c\\",].map(((lambda__1,lambda__2)=>{return (lambda__1+lambda__2)})))\\n((...lambda_rest__3)=>{return prn(lambda_rest__3)})(\\"a\\",\\"b\\",\\"c\\")\\nprn((()=>{return 42\\n})())\\n"
+`;
+
+exports[`loops.dak 1`] = `
+"{let i=5\\nwhile(i>0){prn(\\"while:\\",(i--))\\n}\\n}\\nfor(let i=0\\ni<5\\ni++){prn(\\"for step=1\\",i)\\n}\\nfor(let i=0\\ni<10\\ni+=2){prn(\\"for step=2\\",i)\\n}\\nconst vs=[\\"a\\",\\"b\\",\\"c\\",]\\n\\nfor(let v of vs){prn(\\"for-of:\\",v)\\n}\\nconst os=[{name:\\"yoda\\",age:900,},{name:\\"luke\\",age:90,},]\\n\\nfor(let {name,age} of os){prn(name,\\"is\\",age,\\"years old\\")\\n}\\nconst yoda={name:\\"yoda\\",age:900,}\\n\\nfor(let p in yoda){prn(p,yoda[p])\\n}\\nconst ps=[Promise.resolve(1),Promise.resolve(2),]\\n\\nfor await(let v of ps){prn(\\"for@\\",v)\\n}\\nfor(let i=0\\ni<5\\ni++){prn(\\"breaking\\",i)\\nbreak\\n}\\nfor(let i=0\\ni<5\\ni++){if((i%2)===0){prn(\\"even\\",i)}else{continue}\\n}\\n"
+`;
+
+exports[`macros.dak 1`] = `
+"\\nprn(\\"add\\",(1+2))\\n\\nif((!false)){prn(\\"unless\\")\\nprn(\\"world\\")\\n}\\n\\n{let macro__0=(1-1)\\nif((!macro__0)){{let v=macro__0\\nprn(\\"unless-let-hit\\",v)\\n}}else{prn(\\"unless-let-fail\\")}\\n}\\n\\nprn(\\" heLLo \\".trim().toLowerCase())\\n"
+`;
+
+exports[`operators.dak 1`] = `
+"prn(\\"str:\\",(\\"hello \\"+\\"world\\"))\\nprn(\\"+:\\",(1+2))\\nprn(\\"+ unary:\\",(+\\"1\\"))\\nprn(\\"-:\\",(3-1))\\nprn(\\"- unary:\\",(-4))\\nprn(\\"- multiple:\\",(1-2-3))\\nprn(\\"*: \\",(1*2))\\nprn(\\"/: \\",(1/2))\\nprn(\\"**: \\",(2**2))\\nprn(\\"%: \\",(5%2))\\nprn(\\"<<: \\",(1<<2))\\nprn(\\">>: \\",(1>>2))\\nprn(\\"bit-and\\",(1&2))\\nprn(\\"bit-or\\",(1|2))\\nprn(\\"bit-xor\\",(1^2))\\nprn(\\"||: \\",(1||2))\\nprn(\\"or\\",(1||2))\\nprn(\\"&&: \\",(1&&2))\\nprn(\\"and\\",(1&&2))\\nprn(\\"in\\",(\\"a\\" in {a:42,}))\\nprn(\\"bit-not\\",(~1))\\nprn(\\"not\\",(!1))\\nlet a=1\\nprn(\\"++:\\",(a++))\\nprn(\\"=: \\",1===1)\\nprn(\\"not=\\",1!==1)\\nprn(\\"==: \\",1==1)\\nprn(\\"!=: \\",1!=1)\\nprn(\\"<: \\",1<2)\\nprn(\\">: \\",1>2)\\nprn(\\">=: \\",1>=2)\\nprn(\\"<=: \\",1<=2)\\n"
+`;
+
+exports[`try-catch.dak 1`] = `
+"try{prn(neverDefined())\\n}catch(e){prn(\\"caught\\",e.message)\\n}finally{prn(\\"finally\\")\\n}\\nconst check=(answer)=>{let hoist__0\\ntry{switch (answer){case 42:hoist__0=\\"boom\\"\\nbreak\\ncase 41:hoist__0=\\"close\\"\\nbreak\\ndefault:throw new Error(\\"no-dice\\")\\nbreak}\\n}catch(e){hoist__0=\\"failed\\"\\n}\\nreturn prn(\\"check\\",hoist__0)\\n}\\ncheck(40)\\ncheck(41)\\ncheck(42)\\n"
+`;
+
+exports[`variables.dak 1`] = `
+"var answer=42\\nconst name=\\"deep thought\\"\\n\\nlet machine={planet:\\"earth\\",}\\nprn(answer,name,machine.planet)\\nanswer=43\\nmachine.planet=\\"destroyed\\"\\nprn(answer,name,machine.planet)\\nlet prop_DASH_name=\\"planet\\"\\nprn(machine[prop_DASH_name])\\nmachine[prop_DASH_name]=\\"destroyed\\"\\n{let author=\\"Adams\\"\\nlet programmer=\\"Lunkwill\\"\\nprn(author,programmer)\\n}\\n{let is_DASH_true_QMARK_=true\\nlet bad_BANG_=false\\nlet in_GT_=0\\nlet out_LT_=1\\nprn(is_DASH_true_QMARK_,bad_BANG_,in_GT_,out_LT_)\\n}\\n"
+`;
+
+exports[`welcome.dak 1`] = `
+""
+`;

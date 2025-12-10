@@ -1,7 +1,7 @@
-(import [:node:fs/promises [opendir]]
+(import [:node:fs/promises [opendir readFile]]
         [:node:path [join]]
         [:node:url [fileURLToPath]]
-        [:bun:test [test expect]]
+        [:node:test [test]]
         [:../src/transpiler.dak [transpileStr]])
 
 (const tour-dir (-> import.meta.url fileURLToPath (join "../../www/tour")))
@@ -11,7 +11,7 @@
   (if (= ent.name :literals.dak)
     (continue))
   (test ent.name
-    (fn@ []
-      (-> (join tour-dir ent.name) Bun.file .text await
+    (fn@ [t]
+      (-> (join tour-dir ent.name) (readFile {:encoding :utf8}) await
           transpileStr (. :code) (.replaceAll ";" "\n")
-          expect .toMatchSnapshot))))
+          t.assert.snapshot))))
