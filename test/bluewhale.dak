@@ -7,7 +7,7 @@
 (const root (-> import.meta.url fileURLToPath (join "../__data__/bluewhale")))
 
 (fn sanitize-stack [stack]
-  (and stack (-> stack (.replace (str (join root "../../..") "/") ""))))
+  (and stack (-> stack (.replaceAll (str (join root "../../..") "/") ""))))
 
 (const AsyncFunction (. (fn@ []) :constructor))
 

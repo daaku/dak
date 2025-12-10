@@ -1,3 +1,3 @@
 exports[`001-js-in-dak.dak 1`] = `
-"\\"hello\\" is not a function\\n\\n--\\n\\nTypeError: \\"hello\\" is not a function\\n    at eval (eval at <anonymous> (file://test/bluewhale.dak:1:517), <anonymous>:3:20)\\n    at TestContext.<anonymous> (/home/naitik/workspace/dak/test/bluewhale.dak:20:29)\\n    at async Test.run (node:internal/test_runner/test:1113:7)\\n    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)"
+"\\"hello\\" is not a function\\n\\n--\\n\\nTypeError: \\"hello\\" is not a function\\n    at eval (eval at <anonymous> (file://test/bluewhale.dak:1:520), <anonymous>:3:20)\\n    at TestContext.<anonymous> (test/bluewhale.dak:20:29)\\n    at async Test.run (node:internal/test_runner/test:1113:7)\\n    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)"
 `;
