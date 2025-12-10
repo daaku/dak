@@ -1399,10 +1399,13 @@
                                (. :code))
                  :loader :js}))})
 
-; special loading mode when loaded as bootstrap.mjs
+; Bun Plugin mode when loaded as bootstrap.mjs
+; bun --import=./bootstrap.mjs
 (if (and (defined? Bun) (import.meta.url.endsWith :bootstrap.mjs))
   (Bun.plugin (bunPlugin)))
 
+; Node Hooks mode when loaded as bootstrap.mjs
+; node --import=./bootstrap.mjs
 (if (and (undefined? Bun) (import.meta.url.endsWith :bootstrap.mjs))
   (let [{:keys [registerHooks]} @(import :node:module)
         {:keys [readFileSync]} @(import :node:fs)
@@ -1417,7 +1420,7 @@
                                (. :code))}
                   (nextLoad url ctx)))})))
 
-; to regenerate, simply run:
+; to regenerate, run:
 ; bun run ./src/transpiler.dak
 (if import.meta.main
   (let [{:keys [dirname join]} @(import :node:path)
