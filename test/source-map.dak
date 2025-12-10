@@ -1,7 +1,8 @@
 (import [:node:fs/promises [opendir readFile writeFile]]
         [:node:path [join dirname]]
         [:node:url [fileURLToPath]]
-        [:bun:test [test expect]]
+        [:node:test [test]]
+        [:node:assert/strict :as assert]
         [:../src/transpiler.dak [transpileStr]])
 
 (const root (-> import.meta.url fileURLToPath dirname))
@@ -19,8 +20,8 @@
       @(Promise.all [(writeFile code-file gen.code)
                      (writeFile map-file map-json)])
       (do
-        (-> @(readFile code-file :utf8) expect (.toEqual gen.code))
-        (-> @(readFile map-file :utf8) expect (.toEqual map-json))))))
+        (-> @(readFile code-file :utf8) (assert.equal gen.code))
+        (-> @(readFile map-file :utf8) (assert.equal map-json))))))
 
 (test :source-map
   (fn@ []
