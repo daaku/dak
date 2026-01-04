@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 (import ["source-map-js/lib/source-map-generator.js" [SourceMapGenerator]])
 
 (const symbolBreaker ["(" ")" "[" "]" "{" "}"])
@@ -1389,12 +1387,13 @@
                     (btoa (JSON.stringify mapJSON))))
       {:code (parts.join "") :map mapJSON})))
 
-(fn ^:export bunPlugin []
+(fn ^:export esbuildPlugin []
   {:name :dak
    :setup #($.onLoad
               {:filter #/\.dak$/}
               (fn@ [{:keys [path]}]
-                {:contents (-> path Bun.file .text await
+                (const {:keys [readFile]} @(import :node:fs/promises))
+                {:contents (-> path (readFile {:encoding :utf8}) await
                                (transpileStr {:source path :sourcemap :inline})
                                (. :code))
                  :loader :js}))})
@@ -1402,7 +1401,7 @@
 ; Bun Plugin mode when loaded as bootstrap.mjs
 ; bun --import=./bootstrap.mjs
 (if (and (defined? Bun) (import.meta.url.endsWith :bootstrap.mjs))
-  (Bun.plugin (bunPlugin)))
+  (Bun.plugin (esbuildPlugin)))
 
 ; Node Hooks mode when loaded as bootstrap.mjs
 ; node --import=./bootstrap.mjs
@@ -1421,17 +1420,14 @@
                   (nextLoad url ctx)))})))
 
 ; to regenerate, run:
-; bun run ./src/transpiler.dak
-(if import.meta.main
-  (let [{:keys [dirname join]} @(import :node:path)
-        {:keys [unlink]} @(import :node:fs/promises)
-        btmp (join (dirname import.meta.path) "bootstrap.tmp.mjs")
-        bjs (join (dirname import.meta.path) "bootstrap.mjs")
-        transpiled (-> import.meta.path Bun.file .text await
-                       (transpileStr {:source "<transpiler.dak>" :sourcemap :inline}))]
-    @(Bun.write btmp transpiled.code)
-    @(Bun.write bjs @(-> {:entrypoints [btmp]
-                          :target :bun
-                          :plugins [(bunPlugin)]}
-                         Bun.build await (. :outputs 0) .arrayBuffer))
-    @(unlink btmp)))
+; node --import=./src/bootstrap.mjs --enable-source-maps ./src/transpiler.dak
+(when import.meta.main
+  (let [esbuild @(import :esbuild)]
+    @(esbuild.build {:entryPoints [(+ import.meta.dirname "/transpiler.dak")]
+                     :bundle true
+                     ; prevents this block, and thereby esbuild in the bundle
+                     :define {"import.meta.main" "false"}
+                     :format :esm
+                     :platform :node
+                     :outfile (+ import.meta.dirname "/bootstrap.mjs")
+                     :plugins [(esbuildPlugin)]})))
