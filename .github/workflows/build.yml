@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: latest
       - run: bun install
-      - run: ./src/transpiler.dak
+      - run: node --import=./src/bootstrap.mjs --enable-source-maps ./src/transpiler.dak
       - run: git status --porcelain
       - run: node --import=./src/bootstrap.mjs --enable-source-maps --test ./test/*.dak
 
