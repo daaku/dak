@@ -1428,6 +1428,6 @@
                      ; prevents this block, and thereby esbuild in the bundle
                      :define {"import.meta.main" "false"}
                      :format :esm
-                     :platform :node
+                     :external ["node:*"]
                      :outfile (+ import.meta.dirname "/bootstrap.mjs")
                      :plugins [(esbuildPlugin)]})))

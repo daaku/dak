@@ -2843,7 +2843,7 @@ if (typeof Bun === "undefined" && import.meta.url.endsWith("bootstrap.mjs")) {
 if (false) {
   {
     let esbuild = await null;
-    await esbuild.build({ entryPoints: [import.meta.dirname + "/transpiler.dak"], bundle: true, define: { ["import.meta.main"]: "false" }, format: "esm", platform: "node", outfile: import.meta.dirname + "/bootstrap.mjs", plugins: [esbuildPlugin()] });
+    await esbuild.build({ entryPoints: [import.meta.dirname + "/transpiler.dak"], bundle: true, define: { ["import.meta.main"]: "false" }, format: "esm", external: ["node:*"], outfile: import.meta.dirname + "/bootstrap.mjs", plugins: [esbuildPlugin()] });
   }
   ;
 }
