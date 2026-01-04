@@ -27,6 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
       - run: bun install
       - run: node --import=./src/bootstrap.mjs --enable-source-maps ./src/website.dak
       - name: install rclone
