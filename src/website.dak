@@ -1,12 +1,14 @@
-#!/usr/bin/env bun
-
-(import [:node:fs/promises [readFile writeFile mkdir rm cp]]
+(import [:esbuild :as esbuild]
+        [:node:fs [createReadStream createWriteStream]]
+        [:node:fs/promises [readFile writeFile mkdir rm cp]]
         [:node:path [dirname join basename normalize]]
+        [:node:crypto [createHash]]
+        [:node:stream [Readable]]
+        [:node:stream/promises [pipeline]]
         [:marked [marked]]
         [:marked-base-url [baseUrl]]
         [:marked-gfm-heading-id [gfmHeadingId]]
-        ["@daaku/livereload" [lrPath lrJS lrHandler]]
-        [:./transpiler.dak [bunPlugin]]
+        [:./transpiler.dak [esbuildPlugin]]
         [:./html.dak [doc html unsafe]])
 
 (const prodURL "https://www.daklang.com/")
@@ -21,47 +23,33 @@
       (.replace #/\.\/www\/assets\/(\w+\.\w+)/g #(. assets $2))
       (.replaceAll prodURL "/")))
 
-(fn@ bun-build [config]
-  @(Bun.build {:entrypoints ["www/assets/logo.svg"
-                             "www/assets/logo.png"
-                             "www/assets/index.css"
-                             "www/assets/index.dak"]
-               :define {"globalThis.IS_PRODUCTION"
-                        (if (= config.env :production) "true" "false")}
-               :format :esm
-               :outdir "dist"
-               :minify true
-               :loader {:.svg :file :.png :file}
-               :sourcemap :external
-               :external ["/assets/external/*"]
-               :naming {:entry "assets/[dir]/[name].[hash].[ext]"
-                        :chunk "assets/[name].[hash].[ext]"
-                        :asset "assets/[name].[hash].[ext]"}
-               :plugins [(bunPlugin)]}))
+(fn@ esbuild-build [config]
+  @(esbuild.build {:entryPoints ["www/assets/logo.svg"
+                                 "www/assets/logo.png"
+                                 "www/assets/index.css"
+                                 "www/assets/index.dak"]
+                   :define {"globalThis.IS_PRODUCTION" "true"
+                            "import.meta.main" "false"}
+                   :bundle true
+                   :format :esm
+                   :outdir "dist"
+                   :metafile true
+                   :assetNames "assets/[name]-[hash]"
+                   :entryNames "assets/[name]-[hash]"
+                   :loader {:.svg :copy :.png :copy}
+                   :external ["/assets/external/*" "node:*"]
+                   :sourcemap true
+                   :plugins [(esbuildPlugin)]}))
 
-(fn asset-original-name [p]
-  (-> p
-    (.replace #/^\/assets\// "")
-    (.replace #/\.\w+(\.\w+)$/ "$1")))
+(fn strip-prefix [s prefix]
+  (if (s.startsWith prefix) (s.slice prefix.length) s))
 
-(fn@ delete-js-shims [build-result]
-  (let [shims (Set. (-> build-result.outputs
-                      (.filter #(and (or (= $.loader :file) (= $.loader :css))
-                                         (= $.kind :entry-point)))
-                      (.map #(do [$.path $.sourcemap?.path]))
-                      .flat
-                      (.filter #(do $))))]
-    @(Promise.all (-> [...shims] (.map #(rm $))))
-    {...build-result :outputs (build-result.outputs?.filter #(not (shims.has $.path)))}))
-
-(fn assets-map [{:keys [outputs]}]
+(fn assets-map [build-result]
   (let [assets {}]
-    (-> outputs
-        (.filter #(or (and (= $.kind :entry-point) (= $.loader :js))
-                      (and (= $.kind :asset) (= $.loader :file))))
-        (.map #(. $ :path))
-        (.map #(-> "/dist/" $.indexOf (+ 5) $.substring))
-        (.forEach #(set (. assets (asset-original-name $)) $)))
+    (for-of [[hashed-path info] (Object.entries build-result.metafile.outputs)]
+      (when info.entryPoint
+        (set (. assets (strip-prefix info.entryPoint "www/assets/"))
+             (strip-prefix hashed-path "dist"))))
     assets))
 
 (const tour [:welcome :literals :variables :import :functions :lambda
@@ -86,10 +74,8 @@
    [:link {:rel :stylesheet :type "text/css" :href (. assets "index.css")}]
    [:link {:rel :icon :type "image/svg+xml" :href (. assets "logo.svg")}]])
 
-(fn foot-ui [{:or {env :production}}]
+(fn foot-ui []
   [:footer
-    (when (= env :development)
-      [:script (unsafe lrJS)])
     [:ul
      [:li [:a {:href "/"} "Dak Language"]]
      [:li [:a {:href "/tour/"} "Tour"]]
@@ -104,8 +90,7 @@
 
 (fn play-ui [assets {:or {title "Dak Playground"
                           code ""
-                          description ""
-                          env :production}}]
+                          description ""}}]
   (doc {:lang :en}
    (head-ui assets
      {:title title
@@ -139,10 +124,10 @@
                  :autocapitalize :none
                  :spellcheck false}]]
     [:div#output]
-    (foot-ui {:env env})
+    (foot-ui)
     [:script {:src "/assets/external/source-map-0.7.4.js"}]
     [:script {:src "/assets/external/terser-5.31.0.js"}]
-    [:script {:type :module :src (. assets "index.js")}]]))
+    [:script {:type :module :src (. assets "index.dak")}]]))
 
 (fn@ play-build [config assets name]
   (let [source-file (str "www/tour/" name ".dak")
@@ -150,7 +135,7 @@
         title (str (tour-title name) ": Dak Tour")
         code @(readFile source-file "utf-8")]
     @(mkdir (dirname out-file) {:recursive true})
-    @(writeFile out-file (play-ui assets {:title title :code code :env config.env}))))
+    @(writeFile out-file (play-ui assets {:title title :code code}))))
 
 (fn@ error-html [config assets]
   @(writeFile "dist/error.html"
@@ -161,7 +146,7 @@
         [:div
         [:h1 "\u26a0"]
         "There was a problem trying to get the page you requested."]]
-      [:script {:type :module :src (. assets "index.js")}]])))
+      [:script {:type :module :src (. assets "index.dak")}]])))
 
 (fn exit [{:keys [sym title href action]} ...body]
   [:div.exit
@@ -200,7 +185,7 @@
              (.replace "<!--exits-->" (html (exits-ui)))
              unsafe)]
        (foot-ui config)
-       [:script {:type :module :src (. assets "index.js")}]])))
+       [:script {:type :module :src (. assets "index.dak")}]])))
 
 (fn@ tour-index-html [config assets]
   @(writeFile "dist/tour/index.html"
@@ -215,20 +200,18 @@
          (fn [v]
            [:li [:a {:href (str "/tour/" v "/")} (tour-title v)]])))]]]
        (foot-ui config)
-       [:script {:type :module :src (. assets "index.js")}])))
+       [:script {:type :module :src (. assets "index.dak")}])))
 
 (fn@ play-index-html [config assets]
   @(writeFile "dist/play/index.html"
     (play-ui assets
       {:title "Dak Playground"
-       :description "A Playground to experiment with the Dak Language."
-       :env config.env})))
+       :description "A Playground to experiment with the Dak Language."})))
 
 (fn@ hex-sha256-file [path]
-  (let [hasher (Bun.CryptoHasher. :sha256)]
-    (for@ [chunk (-> path Bun.file .stream)]
-      (hasher.update chunk))
-    (-> hasher .digest Buffer.from (.toString :hex))))
+  (let [hash (createHash :sha256)]
+    @(pipeline (createReadStream path) hash)
+    (hash.digest :hex)))
 
 (fn@ external-one [config file url expected-sha256]
   (let [cache-file (join "external" file)
@@ -238,7 +221,7 @@
         (throw (Error. "invalid sha256")))
       @(cp cache-file dist-file)
       (catch e
-        @(Bun.write cache-file @(fetch url))
+        @(-> url fetch await (. :body) Readable.fromWeb (pipeline (createWriteStream cache-file)))
         (when (not= @(hex-sha256-file cache-file) expected-sha256)
           (throw (Error. "invalid sha256 of fresh download")))
         @(cp cache-file dist-file)))))
@@ -264,7 +247,8 @@
 (fn since [start]
   (str (Math.round (- (performance.now) start)) "ms"))
 
-(fn@ main-prod [config]
+(fn@ main []
+  (const config {})
   (const start (performance.now))
   @(rm "dist" {:recursive true :force true})
   @(Promise.all
@@ -272,37 +256,14 @@
      (mkdir "dist/assets/external" {:recursive true})
      (mkdir "dist/tour" {:recursive true})
      (mkdir "dist/play" {:recursive true})])
-  (let [assets (-> config bun-build await delete-js-shims await assets-map)]
+  (let [assets (-> config esbuild-build await assets-map)]
     @(Promise.all
-      [(Bun.write "dist/assets-map.json" (JSON.stringify assets))
-       (externals config)
+      [(externals config)
        (index-html config assets)
        (error-html config assets)
        (tour-index-html config assets)
        (play-index-html config assets)
        (... (tour.map #(play-build config assets $)))]))
   (console.log "Build completed in" (since start)))
-
-(fn headers-for [path]
-  (when (path.includes "/assets/")
-    {:cache-control "public, immutable, max-age: 31557600"}))
-
-(fn@ main-dev [config]
-  (main-prod config)
-  (let [token (crypto.randomUUID)]
-    (Bun.serve {:fetch
-      (fn@ [req]
-        (let [req-pathname (-> req.url URL. (. :pathname) normalize)]
-          (if (= req-pathname lrPath)
-            (lrHandler req)
-            (let [pathname (join "./dist" req-pathname)
-                  file (Bun.file pathname)]
-              (if @(file.exists)
-                (Response. file {:headers (headers-for pathname)})
-                (Response. "not found" {:status 404}))))))})))
-
-(fn@ main []
-  (let [config {:env (if (= process.env.DEV "1") :development :production)}]
-    ((if (= config.env :development) main-dev main-prod) config)))
 
 @(main)
